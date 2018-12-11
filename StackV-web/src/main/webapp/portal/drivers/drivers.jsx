@@ -29,6 +29,7 @@ class Drivers extends React.Component {
         };
 
         this.openDriver = this.openDriver.bind(this);
+        this.setType = this.setType.bind(this);
         this.resetDriverModal = this.resetDriverModal.bind(this);
         this.loadData = this.loadData.bind(this);
 
@@ -77,12 +78,22 @@ class Drivers extends React.Component {
         if (e.target.tagName !== "BUTTON" || urn === null) {
             if ($(e.target.parentElement).hasClass("backend")) {
                 iziToast.show(unavailableToast);
+                $(".driver-modal-body-header").show();
             } else {
-                this.setState({ openDriver: this.state.data.find(x => x.urn === urn) });
+                if (urn === null) {
+                    this.setState({ openDriver: { type: "" } });
+                    $(".driver-modal-body-header").show();
+                } else {
+                    this.setState({ openDriver: this.state.data.find(x => x.urn === urn) });
+                    $(".driver-modal-body-header").hide();
+                }
                 $("#driver-modal").modal("show");
                 $("#driver-modal-body-select").val(null);
             }
         }
+    }
+    setType(type) {
+        this.setState({ openDriver: { type: type } });
     }
 
     plugDriver(urn, status, e) {
@@ -121,7 +132,7 @@ class Drivers extends React.Component {
             let cacheClass = e.target.className;
 
             e.target.className = "btn btn-sm btn-danger";
-            $(e.target).text("Confirm Unplug");
+            $(e.target).text("Confirm");
 
             $(document).on("click", "#main-pane", (e) => {
                 setTimeout(() => {
@@ -194,7 +205,7 @@ class Drivers extends React.Component {
             let cacheClass = e.target.className;
 
             e.target.className = "btn btn-sm btn-danger";
-            $(e.target).text("Confirm Disable");
+            $(e.target).text("Confirm");
 
             $(document).on("click", "#main-pane", (e) => {
                 setTimeout(() => {
@@ -225,9 +236,9 @@ class Drivers extends React.Component {
     }
 
     render() {
-        let pageClasses = "stack-panel page page-details";
+        let pageClasses = "stack-panel page page-drivers";
         if (this.state.loading) {
-            pageClasses = "stack-panel page page-details loading";
+            pageClasses = "stack-panel page page-drivers loading";
         }
         return <div className={pageClasses}>
             <ReactInterval timeout={this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
@@ -256,7 +267,7 @@ class Drivers extends React.Component {
                     </table>
                 </div>
             </div>
-            <DriverModal {...this.state.openDriver} reset={this.resetDriverModal} {...this.props} />
+            <DriverModal {...this.state.openDriver} reset={this.resetDriverModal} setType={this.setType} {...this.props} />
         </div>;
     }
 }

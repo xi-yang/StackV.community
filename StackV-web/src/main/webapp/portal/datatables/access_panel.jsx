@@ -71,8 +71,6 @@ class AccessPanel extends React.Component {
     }
     componentDidMount() {
         this.initTable();
-        this.updateIPA();
-        this.state.dataTable.ajax.reload();
     }
     loadData() {
         if (this.props.active && this.state.dataTable.scroller.page().start === 0) {
@@ -152,7 +150,7 @@ class AccessPanel extends React.Component {
             e.preventDefault();
         });
 
-        panel.setState({ dataTable: dataTable }, () => { panel.setState({ refreshEnabled: true }); });
+        panel.setState({ dataTable: dataTable }, () => { panel.setState({ refreshEnabled: true }); }, () => { panel.updateIPA(); panel.state.dataTable.ajax.reload(); });
     }
 
     updateIPA() {

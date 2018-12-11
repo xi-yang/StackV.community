@@ -266,7 +266,7 @@ public class WebResource {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
-    
+
     /**
      * @apiDefine AuthHeader
      * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
@@ -329,7 +329,7 @@ public class WebResource {
             commonsClose(front_conn, prep, rs, logger);
         }
     }
-    
+
     @GET
     @Path("/access/ipa/{uuid}")
     @Produces("application/json")
@@ -725,7 +725,7 @@ public class WebResource {
             logger.catching("getUsers", ex);
             throw ex;
         }
-    }    
+    }
 
     // >Drivers
     @GET
@@ -783,17 +783,38 @@ public class WebResource {
                 retArr.add(driver);
             }
 
-            // Give all backend-only drivers dummy data.
+            // Synchronize any missing backend drivers
             for (int i = 0; i < resJSON.size(); i++) {
                 JSONObject resDriver = (JSONObject) resJSON.get(i);
-                if (!mapped.contains(resDriver.get("topologyUri"))) {
-                    JSONObject driver = new JSONObject();
-                    driver.put("urn", resDriver.get("topologyUri"));
-                    driver.put("type", resDriver.get("driverEjbPath"));
-                    driver.put("xml", "<driverInstance><properties></properties></driverInstance>");
-                    driver.put("status", "plugged");
+                if (!mapped.contains(resDriver.get("topologyUri"))) {                   
+                    // Translate properties into xml
+                    String xml = "<driverInstance><properties>";
+                    String propStr;
+                    try {
+                        URL url = new URL(String.format("%s/driver/%s", host, (String) resDriver.get("topologyUri")));
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        propStr = executeHttpMethod(url, connection, "GET", null, token.auth());
+                    } catch (IOException ex) {
+                        logger.catching("installDriver", ex);
+                        throw ex;
+                    }
+                    JSONObject propJSON = (JSONObject) parser.parse(propStr);
+                    for (Object key : propJSON.keySet()) {                        
+                        String keyStr = (String) key;
+                        String keyValue = (String) propJSON.get(keyStr);                        
+                        xml += "<entry><key>" + keyStr + "</key><value>" + keyValue + "</value></entry>";
+                    }
+                    xml += "</properties></driverInstance>";
 
-                    retArr.add(driver);
+                    String urn = (String) resDriver.get("topologyUri");
+                    String type = (String) resDriver.get("driverEjbPath");
+                    prep = front_conn.prepareStatement("INSERT INTO frontend.driver VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `type` = ?,`xml` = ?");
+                    prep.setString(1, urn);
+                    prep.setString(2, type);
+                    prep.setString(3, xml);
+                    prep.setString(4, type);
+                    prep.setString(5, xml);
+                    prep.executeUpdate();
                 }
             }
 

@@ -14,14 +14,9 @@ class DriverModal extends React.Component {
     constructor(props) {
         super(props);
 
-        this.state = {
-            opened: false,
-            advanced: false,
-        };
-
         this.parseInputFields = this.parseInputFields.bind(this);
-        this.changeType = this.changeType.bind(this);
         this.save = this.save.bind(this);
+        this.importRawDriver = this.importRawDriver.bind(this);
         this.delete = this.delete.bind(this);
     }
     componentDidMount() {
@@ -36,41 +31,40 @@ class DriverModal extends React.Component {
     save() {
         let page = this;
         let schema;
-        let type;
 
-        // Retrieve schema
         if (this.props.type) {
-            type = this.props.type;
-        } else {
-            type = this.state.type;
-        }
-        schema = JSON.parse(JSON.stringify(getSchema(type)));
+            let type = this.props.type;
+            if (type === "raw") { return this.importRawDriver(); }
 
-        // Map input values to schema
-        let entries = schema.driverInstance.properties[0].entry;
-        for (let input of $(".driver-modal-body-content input")) {
-            let obj = entries.find(x => x.key[0] === input.name);
-            if (obj) { obj.value[0] = input.value; }
-        }
+            // Retrieve schema
+            schema = JSON.parse(JSON.stringify(getSchema(type)));
 
-        let xml = convert.json2xml(schema, { compact: true, spaces: 4 });
-        console.log(xml);
-
-        let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
-        let data = { urn: entries.find(x => x.key[0] === "topologyUri").value[0], type: type, xml: xml };
-        $.ajax({
-            url: apiUrl,
-            type: "PUT",
-            contentType: "application/json",
-            data: JSON.stringify(data),
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
-                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
-            },
-            success: function (result) {
-                $("#driver-modal").modal("hide");
+            // Map input values to schema
+            let entries = schema.driverInstance.properties[0].entry;
+            for (let input of $(".driver-modal-body-content input")) {
+                let obj = entries.find(x => x.key[0] === input.name);
+                if (obj) { obj.value[0] = input.value; }
             }
-        });
+
+            let xml = convert.json2xml(schema, { compact: true, spaces: 4 });
+            console.log(xml);
+
+            let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
+            let data = { urn: entries.find(x => x.key[0] === "topologyUri").value[0], type: type, xml: xml };
+            $.ajax({
+                url: apiUrl,
+                type: "PUT",
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                    xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+                },
+                success: function (result) {
+                    $("#driver-modal").modal("hide");
+                }
+            });
+        }
     }
     delete() {
         let page = this;
@@ -93,8 +87,8 @@ class DriverModal extends React.Component {
 
     render() {
         let modalContent;
-        if (this.state.advanced) {
-            modalContent = (<textarea></textarea>);
+        if (this.props.type === "raw") {
+            modalContent = (<textarea id="driver-modal-raw"></textarea>);
         } else {
             modalContent = this.parseInputFields();
         }
@@ -108,7 +102,7 @@ class DriverModal extends React.Component {
                     </div>
                     <div className="modal-body">
                         <p className="driver-modal-body-header">Select a service type:
-                            <select id="driver-modal-body-select" value={this.props.type ? this.props.type : this.state.type} onChange={(e) => this.changeType(e)}>
+                            <select id="driver-modal-body-select" value={this.props.type} onChange={(e) => this.changeType(e)}>
                                 <option ></option>
                                 <OptionElements />
                             </select>
@@ -132,23 +126,17 @@ class DriverModal extends React.Component {
 
     parseInputFields() {
         let savedEntries;
-        let type;
         if (this.props.type) {
-            // Opened profile
-            type = this.props.type;
-            $("#driver-modal-body-select").val(type);
-            savedEntries = JSON.parse(convert.xml2json(this.props.xml, { compact: true, spaces: 4 })).driverInstance.properties.entry;
-        } else {
-            // New profile
-            type = this.state.type;
-        }
+            $("#driver-modal-body-select").val(this.props.type);
+            if (this.props.xml) { savedEntries = JSON.parse(convert.xml2json(this.props.xml, { compact: true, spaces: 4 })).driverInstance.properties.entry; }
 
-        let schema = getSchema(type);
-        if (schema.driverInstance) {
-            let entries = schema.driverInstance.properties[0].entry;
-            return entries.map(this.editCallback.bind(null, savedEntries, this.props.status === "Plugged"));
-        } else {
-            return <div></div>;
+            let schema = getSchema(this.props.type);
+            if (schema.driverInstance) {
+                let entries = schema.driverInstance.properties[0].entry;
+                return entries.map(this.editCallback.bind(null, savedEntries, this.props.status === "Plugged"));
+            } else {
+                return <div></div>;
+            }
         }
     }
 
@@ -205,7 +193,33 @@ class DriverModal extends React.Component {
     }
 
     changeType(e) {
-        this.setState({ type: e.target.value });
+        this.props.setType(e.target.value);
+    }
+
+    importRawDriver() {
+        let page = this;
+        let raw = $("#driver-modal-raw").val().replace(/\n| /g, "");
+
+        let uriReg = /<key>topologyUri<\/key><value>(.*?)<\/value>/g;
+        let urn = uriReg.exec(raw)[1];
+        let ejbReg = /<key>driverEjbPath<\/key><value>(.*?)<\/value>/g;
+        let type = ejbReg.exec(raw)[1];
+
+        let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
+        let data = { urn: urn, type: type, xml: $("#driver-modal-raw").val() };
+        $.ajax({
+            url: apiUrl,
+            type: "PUT",
+            contentType: "application/json",
+            data: JSON.stringify(data),
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+            },
+            success: function (result) {
+                $("#driver-modal").modal("hide");
+            }
+        });
     }
 }
 DriverModal.propTypes = {
@@ -220,7 +234,9 @@ DriverModal.propTypes = {
 export default DriverModal;
 
 function OptionElements() {
-    return schemas.map((d) => <option key={d.meta[0].name[0]} value={d.properties[0].entry.find(x => x.key[0] === "driverEjbPath").value[0]}>{d.meta[0].name[0]}</option>);
+    let map = schemas.map((d) => <option key={d.meta[0].name[0]} value={d.properties[0].entry.find(x => x.key[0] === "driverEjbPath").value[0]}>{d.meta[0].name[0]}</option>);
+    map.push(<option key="raw" value="raw">Raw</option>);
+    return map;
 }
 
 // ----- //
