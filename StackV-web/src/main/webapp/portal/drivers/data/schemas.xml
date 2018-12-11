@@ -12,10 +12,10 @@
             <entry><key>aws_access_key_id</key><value></value></entry>
             <entry><key>aws_secret_access_key</key><value></value></entry>
             <entry><key>region</key><value></value></entry>
-            <entry><key>defaultInstanceType</key><value></value></entry>
-            <entry><key>defaultImage</key><value></value></entry>
-            <entry><key>defaultKeyPair</key><value></value></entry>
-            <entry><key>defaultSecGroup</key><value></value></entry>
+            <entry editable="true"><key>defaultInstanceType</key><value></value></entry>
+            <entry editable="true"><key>defaultImage</key><value></value></entry>
+            <entry editable="true"><key>defaultKeyPair</key><value></value></entry>
+            <entry editable="true"><key>defaultSecGroup</key><value></value></entry>
         </properties>	
     </driverInstance>
     <driverInstance>
@@ -41,7 +41,7 @@
                     <key>driverEjbPath</key>
                     <value>java:module/SenseRMDriver</value>
             </entry>
-            <entry><key>subsystemBaseUrl</key><value></value></entry>
+            <entry editable="true" required="true"><key>subsystemBaseUrl</key><value></value></entry>
         </properties>
     </driverInstance>
 </catalog>

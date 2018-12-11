@@ -16,6 +16,7 @@ class DriverModal extends React.Component {
 
         this.parseInputFields = this.parseInputFields.bind(this);
         this.save = this.save.bind(this);
+        this.update = this.update.bind(this);
         this.importRawDriver = this.importRawDriver.bind(this);
         this.delete = this.delete.bind(this);
     }
@@ -47,8 +48,6 @@ class DriverModal extends React.Component {
             }
 
             let xml = convert.json2xml(schema, { compact: true, spaces: 4 });
-            console.log(xml);
-
             let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
             let data = { urn: entries.find(x => x.key[0] === "topologyUri").value[0], type: type, xml: xml };
             $.ajax({
@@ -65,6 +64,29 @@ class DriverModal extends React.Component {
                 }
             });
         }
+    }
+    update() {
+        let page = this;
+        $(".driver-modal-body-content input").each((i, ele) => {
+            if ($(ele).val() !== $(ele).attr("value")) {
+                console.log($(ele).prop("name") + " changed!");
+                // Value changed, update property
+                let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + this.props.urn + "/" + $(ele).prop("name") + "/" + encodeURIComponent($(ele).val());
+                $.ajax({
+                    url: apiURL,
+                    type: "PUT",
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                        xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+                    },
+                    success: function (result) {
+
+                    },
+                });
+            }
+        });
+
+        this.save();
     }
     delete() {
         let page = this;
@@ -115,7 +137,7 @@ class DriverModal extends React.Component {
                     <div className="modal-footer">
                         <small style={{ marginRight: "7px", color: "#777" }}>To save as a new driver, change the Topology URN.</small>
                         <div className="btn-group" role="group">
-                            <button type="button" className="btn btn-primary" id="button-editor-save" onClick={this.save}>Save</button>
+                            <button type="button" className="btn btn-primary" id="button-editor-save" onClick={this.props.status === "Plugged" ? this.update : this.save}>Save</button>
                             <button type="button" className="btn btn-danger" id="button-editor-delete" disabled={this.props.status === "Plugged" ? true : undefined} onClick={this.delete}>Delete</button>
                         </div>
                     </div>
@@ -133,7 +155,7 @@ class DriverModal extends React.Component {
             let schema = getSchema(this.props.type);
             if (schema.driverInstance) {
                 let entries = schema.driverInstance.properties[0].entry;
-                return entries.map(this.editCallback.bind(null, savedEntries, this.props.status === "Plugged"));
+                return entries.map(this.editCallback.bind(null, savedEntries, this.props.status === "Plugged", this.props.disabled));
             } else {
                 return <div></div>;
             }
@@ -142,8 +164,9 @@ class DriverModal extends React.Component {
 
 
 
-    editCallback(saved, plugged, entry) {
-        let formatted, key, value, savedValue;
+    editCallback(saved, plugged, disabled, entry) {
+        let formatted, key, value, savedValue, editable = false, required = false;
+        if (entry.$) { editable = entry.$.editable === "true"; required = entry.$.required === "true"; }
         if (Object.prototype.toString.call(entry.key) === "[object Object]") {
             key = entry.key._text;
             value = entry.value._text;
@@ -163,13 +186,17 @@ class DriverModal extends React.Component {
         }
         formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
 
+        let modReadOnly = (editable
+            ? (plugged && !disabled ? true : undefined)
+            : (plugged ? true : undefined));
+
         switch (key) {
             case "topologyUri":
                 return (<label style={{ width: "100%" }} key={key}>Topology URN<input className="form-control" name={key} data-original={savedValue} defaultValue={savedValue} onChange={(e) => urnChange(e)} /><br /></label>);
             case "driverEjbPath":
                 return (<label key={key}>{formatted}<input className="form-control" name={key} value={value} readOnly /></label>);
             default:
-                return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={savedValue} readOnly={plugged ? true : undefined} /></label>);
+                return (<label key={key}>{formatted}<input className="form-control" name={key} defaultValue={savedValue} readOnly={modReadOnly} /></label>);
         }
 
         function urnChange(e) {
