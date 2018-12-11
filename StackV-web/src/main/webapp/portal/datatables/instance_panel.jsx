@@ -24,7 +24,7 @@ class InstancePanel extends React.Component {
         //ReactDOM.unmountComponentAtNode(document.getElementById("button-panel"));
     }
     loadData() {
-        if (this.props.refreshEnabled && $("tr.shown").length === 0) {
+        if (this.props.refreshEnabled) {
             this.state.dataTable.ajax.reload(null, false);
         }
     }

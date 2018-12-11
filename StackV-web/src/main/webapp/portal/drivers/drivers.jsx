@@ -279,23 +279,23 @@ export default Drivers;
 function DriverElements(props) {
 
 
-    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 ? "danger" : (d.disabled || d.errors > 0 ? "warning" : "success")) : undefined} onClick={(e) => props.open(d.urn, e)}>
+    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 ? "danger" : (d.disabled || d.errors > 0 || d.errors == null ? "warning" : "success")) : undefined} onClick={(e) => props.open(d.urn, e)}>
         <td>
-            <i className={d.status === "Plugged" ? (d.errors === 0 ? "fas fa-lg driver-health-icon fa-check-circle pass" : (d.errors < 5 ? "fas fa-lg driver-health-icon fa-exclamation-triangle warn" : "fas fa-lg driver-health-icon fa-exclamation-circle fail")) : undefined}></i>
+            <i className={d.status === "Plugged" ? (d.errors === 0 ? "fas fa-lg driver-health-icon fa-check-circle pass" : (d.errors < 5 || d.errors == null ? "fas fa-lg driver-health-icon fa-exclamation-triangle warn" : "fas fa-lg driver-health-icon fa-exclamation-circle fail")) : undefined}></i>
             {d.urn}
         </td>
         <td>{d.type}</td>
         <td>
             {d.xml !== "<driverInstance><properties></properties></driverInstance>" ? (
                 <div className="btn-group pull-right" role="group" style={{ marginLeft: "5px", marginBottom: "5px" }}>
-                    <button type="button" className={d.status === "Plugged" ? "btn btn-sm btn-default" : "btn btn-sm btn-primary"} onClick={(e) => props.unplug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Unplug" : "Unplugged"}</button>
-                    <button type="button" className={d.status === "Plugged" ? "btn btn-sm btn-primary" : "btn btn-sm btn-default"} onClick={(e) => props.plug(d.urn, d.status, e)}>{d.status === "Plugged" ? "Plugged" : "Plug"}</button>
+                    <button type="button" className={d.status === "Plugged" ? "btn btn-sm btn-default" : "btn btn-sm btn-primary"} onClick={(e) => props.unplug(d.urn, d.status, e)} disabled={d.status !== "Plugged"}>{d.status === "Plugged" ? "Unplug" : "Unplugged"}</button>
+                    <button type="button" className={d.status === "Plugged" ? "btn btn-sm btn-primary" : "btn btn-sm btn-default"} onClick={(e) => props.plug(d.urn, d.status, e)} disabled={d.status === "Plugged"}>{d.status === "Plugged" ? "Plugged" : "Plug"}</button>
                 </div>
             ) : (<button type="button" className="btn btn-sm btn-default" onClick={(e) => props.unplug(d.urn, d.status, e)}>Unplug (Manually Installed)</button>)}
             {d.status === "Plugged" &&
                 <div className="btn-group pull-right" role="group">
-                    <button type="button" className={d.disabled ? "btn btn-sm btn-danger" : "btn btn-sm btn-default"} onClick={(e) => props.disable(d.urn, d.disabled, e)}>{d.disabled ? "Disabled" : "Disable"}</button>
-                    <button type="button" className={d.disabled ? "btn btn-sm btn-default" : "btn btn-sm btn-success"} onClick={(e) => props.enable(d.urn)}>{d.disabled ? "Enable" : "Enabled"}</button>
+                    <button type="button" className={d.disabled ? "btn btn-sm btn-danger" : "btn btn-sm btn-default"} onClick={(e) => props.disable(d.urn, d.disabled, e)} disabled={d.disabled}>{d.disabled ? "Disabled" : "Disable"}</button>
+                    <button type="button" className={d.disabled ? "btn btn-sm btn-default" : "btn btn-sm btn-success"} onClick={(e) => props.enable(d.urn)} disabled={!d.disabled}>{d.disabled ? "Enable" : "Enabled"}</button>
                 </div>
             }
         </td>

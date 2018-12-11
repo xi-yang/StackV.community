@@ -177,7 +177,12 @@ class ButtonPanel extends React.Component {
                         }
                         break;
                     default:
-                        panel.props.load(.5);
+                        if (panel.props.page === "details") {
+                            panel.props.load(5);
+                        } else {
+                            if (panel.props.resume) { panel.props.resume(); }
+                        }
+                        break;
                 }
             }
         });

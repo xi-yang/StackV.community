@@ -58,7 +58,7 @@ class Portal extends React.Component {
             keycloakIntervalRef: keycloakIntervalRef,
             visualMode: "new",
             page: "catalog",
-            refreshTimer: 1000,
+            refreshTimer: 500,
             refreshEnabled: false,
         };
 

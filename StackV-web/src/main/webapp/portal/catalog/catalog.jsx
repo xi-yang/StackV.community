@@ -461,14 +461,14 @@ class Catalog extends React.Component {
                         $.ajax({
                             url: apiUrl,
                             type: "PUT",
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                            },
                             data: JSON.stringify({
                                 "name": $("#profileBlankName").val(),
                                 "username": page.props.keycloak.tokenParsed.preferred_username,
                                 "data": {}
                             }),
-                            beforeSend: function (xhr) {
-                                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
-                            },
                             success: function () {
                                 $("#profileBlankName").removeClass("opened");
                                 $("#button-profile-blank-add").text("Add Blank Profile");
@@ -535,6 +535,9 @@ class Catalog extends React.Component {
                                         $.ajax({
                                             url: apiUrl,
                                             type: "GET",
+                                            beforeSend: function (xhr) {
+                                                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                                            },
                                             async: false,
                                             contentType: "application/json; charset=utf-8",
                                             success: function (result) {
@@ -580,6 +583,9 @@ class Catalog extends React.Component {
                                     $.ajax({
                                         url: apiUrl,
                                         type: "GET",
+                                        beforeSend: function (xhr) {
+                                            xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                                        },
                                         contentType: "application/json; charset=utf-8",
                                         success: function (result) {
                                             var used = result;
@@ -614,16 +620,19 @@ class Catalog extends React.Component {
 
                     var $select = $("<select class=\"form-control\" id=\"licenseUsername\" style=\"width: 70%;margin-left: 25px;\"></select>");
 
-                    var apiUrl = window.location.origin + "/StackV-web/restapi/app/keycloak/users";
+                    var apiUrl = window.location.origin + "/StackV-web/restapi/app/data/users";
                     $.ajax({
                         url: apiUrl,
                         type: "GET",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                        },
                         contentType: "application/json; charset=utf-8",
                         success: function (result) {
                             var $existingArr = $(".profile-details-modal-meta-sharing-list li p:first-child");
-                            for (var i in result) {
+                            for (var i of result.data) {
                                 var existing = false;
-                                var user = result[i][0];
+                                var user = i.username;
                                 $existingArr.each(function (i, val) {
                                     if (val.innerText === user) {
                                         existing = true;
@@ -684,6 +693,9 @@ class Catalog extends React.Component {
                         $.ajax({
                             url: apiUrl,
                             type: "PUT",
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                            },
                             data: JSON.stringify({
                                 "name": $("#profileEditName").val(),
                                 "description": $("#profileEditDescription").val()
@@ -719,6 +731,9 @@ class Catalog extends React.Component {
                     $.ajax({
                         url: apiUrl,
                         type: "POST",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                        },
                         data: JSON.stringify({
                             "username": $("#licenseUsername").val(),
                             "type": $("input[name=licenseProfileType]:checked").val(),
@@ -738,6 +753,9 @@ class Catalog extends React.Component {
                     $.ajax({
                         url: apiUrl,
                         type: "PUT",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                        },
                         data: JSON.stringify({
                             "username": $(".profile-license-modal-username-div p")[0].innerHTML,
                             "type": $("input[name=licenseProfileType]:checked").val(),
@@ -757,6 +775,9 @@ class Catalog extends React.Component {
                     $.ajax({
                         url: apiUrl,
                         type: "PUT",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                        },
                         data: JSON.stringify({
                             "username": $(".profile-license-modal-username-div p")[0].innerHTML,
                             "remaining": "0"
