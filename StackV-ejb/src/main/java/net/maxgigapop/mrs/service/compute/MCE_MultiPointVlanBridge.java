@@ -443,7 +443,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                         }
                         if (candidatePath.bandwithProfile == null || candidatePath.bandwithProfile.reservableCapacity == null) {
                             throw logger.error_throwing(method, "input schedule without bandwidth.");
-                        } else if (!candidatePath.bandwithProfile.type.equalsIgnoreCase("guaranteedCapped") || !candidatePath.bandwithProfile.type.equalsIgnoreCase("softCapped")) {
+                        } else if (!candidatePath.bandwithProfile.type.equalsIgnoreCase("guaranteedCapped") && !candidatePath.bandwithProfile.type.equalsIgnoreCase("softCapped")) {
                             throw logger.error_throwing(method, "MCETools.computeFeasibleL2KSP - advance scheduling can only work with guaranteedCapped or softCapped bandwidth service.");
                         }
                         candidatePath.bandwithScedule.setBandwidth(normalizeBandwidthPorfile(candidatePath.bandwithProfile).reservableCapacity);
