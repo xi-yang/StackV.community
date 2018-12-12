@@ -137,7 +137,7 @@ class ButtonPanel extends React.Component {
                 <OpButton operation="Delete" uuid={this.props.uuid} visible={this.state.delete} send={this.sendRequest} />
             </div>
             <div style={{ display: "inline" }}>
-                {this.props.owner === this.props.keycloak.tokenParsed.preferred_username && <button className="btn btn-success pull-right" id="button-instance-access" onClick={() => { $("#access-modal").modal("show"); }}>Manage Access</button>}
+                {this.props.owner === this.props.keycloak.tokenParsed.preferred_username && <button className="btn btn-success pull-right" id="button-instance-access" onClick={() => { $("#access-modal").modal("show"); }}>Delegate</button>}
                 {this.props.page === "catalog" && <button className="btn btn-default pull-right" style={{ marginRight: "5px" }} id="button-instance-details" onClick={() => { this.props.switchPage("details", { uuid: this.props.uuid }); }}>Full Details</button>}
                 <AccessModal {...this.props} />
             </div>

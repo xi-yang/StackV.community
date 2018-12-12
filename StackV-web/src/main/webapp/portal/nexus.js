@@ -31,6 +31,7 @@ import ReactDOM from "react-dom";
 /* Pages */
 import Portal from "./portal";
 import { loadIntent } from "./intent/intentEngine";
+import { loadManifest } from "./visual/manifest/manifest";
 /* */
 
 export var page;
@@ -87,6 +88,8 @@ $(function () {
             ReactDOM.render(React.createElement(Portal, null), document.getElementById("root"));
         } else if (window.location.pathname === "/StackV-web/portal/intent/") {
             loadIntent(getURLParameter("intent"));
+        } else if (window.location.pathname === "/StackV-web/portal/visual/manifest/manifestPortal.jsp") {
+            loadManifest();
         }
     };
 });

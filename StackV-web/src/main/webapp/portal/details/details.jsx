@@ -56,12 +56,6 @@ class Details extends React.Component {
         this.fetchData();
         this.loadVisualization();
 
-        let page = this;
-        let visInterval = setInterval(function () {
-            page.loadVisualization();
-        }, (10000));
-        this.setState({ visIntervalRef: visInterval });
-
         $intentModal.iziModal(intentConfig);
         $intentModal.iziModal("setContent", "<textarea readonly id=\"details-intent-modal-text\"></textarea>");
 
@@ -69,7 +63,6 @@ class Details extends React.Component {
     }
     componentWillUnmount() {
         $intentModal.iziModal("destroy");
-        clearInterval(this.state.visIntervalRef);
     }
 
     load(seconds) {
@@ -107,6 +100,7 @@ class Details extends React.Component {
         }
         return <div style={{ width: "100%", height: "100%" }}>
             <ReactInterval timeout={this.props.refreshTimer} enabled={(this.props.refreshEnabled && !this.state.loading)} callback={this.fetchData} />
+            <ReactInterval timeout={10000} enabled={(this.props.refreshEnabled && !this.state.loading)} callback={this.loadVisualization} />
             <RotateLoader
                 className={override}
                 sizeUnit={"px"}

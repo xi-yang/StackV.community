@@ -1,4 +1,4 @@
-import { keycloak } from "./nexus";
+import { keycloak } from "../../nexus";
 
 export function loadManifest() {
     var uuid = location.search.split("?uuid=")[1];
@@ -47,6 +47,9 @@ function subloadManifest(templateURL) {
     var uuid = location.search.split("?uuid=")[1];
     $.get({
         url: "/StackV-web/data/xml/manifest-templates/" + templateURL,
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
         success: function (data) {
             var template = data;
             $.ajax({

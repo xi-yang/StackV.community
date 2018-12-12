@@ -335,7 +335,7 @@ function showDiactivatedViz(viz_id) {
     //var viz_table = viz_container.closest("table");
     //viz_table.find("th:nth-child(" + index + ")").css( "color", "#ccc");
 }
-function showManifest() {
+function showManifest(uuid) {
     var uuid = sessionStorage.getItem("instance-uuid");
     window.open("/StackV-web/portal/visual/manifest/manifestPortal.jsp?uuid=" + uuid, "newwindow", config = "height=1200,width=700, top=0,left=800, toolbar=no, menubar=no, scrollbars=no, resizable=no,location=no, directories=no, status=no");
 }

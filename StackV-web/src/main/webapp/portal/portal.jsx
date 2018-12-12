@@ -137,8 +137,10 @@ class Portal extends React.Component {
                 case "details":
                     if (param && param.uuid) {
                         this.setState({ page: "details", uuid: param.uuid, refreshEnabled: false });
+                        sessionStorage.setItem("instance-uuid", param.uuid);
                     } else if (this.state.uuid) {
                         this.setState({ page: "details", uuid: this.state.uuid, refreshEnabled: false });
+                        sessionStorage.setItem("instance-uuid", this.state.uuid);
                     } else {
                         iziToast.show(detailsErrorToast);
                     }
