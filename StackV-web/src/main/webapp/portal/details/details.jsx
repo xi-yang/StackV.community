@@ -99,6 +99,8 @@ class Details extends React.Component {
                 modActive = [false, false, false, true];
                 break;
         }
+
+        let accessAvailable = (this.state.state.sub === "READY" && (this.state.state.super === "CREATE" || this.state.state.super === "REINSTATE"));
         let pageClasses = "page page-details";
         if (this.state.loading) {
             pageClasses = "page page-details loading";
@@ -113,13 +115,14 @@ class Details extends React.Component {
                 loading={this.state.loading}
             />
             <div className={pageClasses}>
-                <DetailsDots view={this.state.view} setView={this.setView}></DetailsDots>
+                <DetailsDots view={this.state.view} setView={this.setView} access={accessAvailable}></DetailsDots>
 
                 <LoggingPanel {...this.props} active={modActive[0]}></LoggingPanel>
                 <DetailsPanel active={modActive[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
                     verify={Map(this.state.verify)} load={this.load} {...this.props} />
                 <VisualizationPanel active={modActive[2]} verify={Map(this.state.verify)}></VisualizationPanel>
-                <AccessPanel active={modActive[3]} {...this.props} />
+
+                {accessAvailable && <AccessPanel active={modActive[3]} {...this.props} />}
                 <div id="details-viz"></div>
             </div>
         </div>;

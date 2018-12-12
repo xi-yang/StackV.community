@@ -46,10 +46,10 @@ class DetailsDots extends React.Component {
                 <FontAwesomeIcon className={dots} icon={this.props.view === "visual" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
                 <span className={text} style={this.props.view === "visual" ? {} : { fontSize: 0 }}>Visualization</span>
             </div>
-            <div onClick={() => { this.props.setView("access"); }}>
+            {this.props.access && <div onClick={() => { this.props.setView("access"); }}>
                 <FontAwesomeIcon className={dots} icon={this.props.view === "access" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
                 <span className={text} style={this.props.view === "access" ? {} : { fontSize: 0 }}>Resources</span>
-            </div>
+            </div>}
         </div>;
     }
 }
