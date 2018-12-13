@@ -49,13 +49,8 @@ class Portal extends React.Component {
         let keycloak = window.keycloak;
 
         this.verifyPageAccess = this.verifyPageAccess.bind(this);
-        let keycloakIntervalRef = setInterval(() => {
-            keycloak.updateToken(45);
-        }, 20000);
-
         this.state = {
             keycloak: keycloak,
-            keycloakIntervalRef: keycloakIntervalRef,
             visualMode: "new",
             page: "catalog",
             refreshTimer: 500,
@@ -69,6 +64,7 @@ class Portal extends React.Component {
         this.resumeRefresh = this.resumeRefresh.bind(this);
         this.setRefresh = this.setRefresh.bind(this);
         this.healthCheck = this.healthCheck.bind(this);
+        this.tokenCheck = this.tokenCheck.bind(this);
 
         Mousetrap.bind("shift+left", () => { this.viewShift("left"); });
         Mousetrap.bind("shift+right", () => { this.viewShift("right"); });
@@ -90,10 +86,6 @@ class Portal extends React.Component {
             }
         });*/
     }
-    componentWillUnmount() {
-        clearInterval(this.state.keycloakIntervalRef);
-    }
-
     verifyPageAccess(newPage, param) {
         let portal = this;
         let roles = this.state.keycloak.tokenParsed.realm_access.roles;
@@ -178,9 +170,13 @@ class Portal extends React.Component {
             }
         });
     }
+    tokenCheck() {
+        this.state.keycloak.updateToken(45);
+    }
 
     render() {
         return <div>
+            <ReactInterval timeout={10000} enabled={true} callback={this.tokenCheck} />
             <ReactInterval timeout={this.state.refreshTimer} enabled={this.state.refreshEnabled} callback={this.healthCheck} />
             <Navbar {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} setRefresh={this.setRefresh} ></Navbar>
             <div id="main-pane">

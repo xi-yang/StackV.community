@@ -16,7 +16,7 @@ var modelMap = {}; // stores models in <visualization div, model> format
 var outputApiMap = {};
 var outputApi;
 
-function details_viz(token) {
+function details_viz(uuid, keycloak) {
     $(function () {
         $("#dialog_policyAction").dialog({
             autoOpen: false
@@ -51,7 +51,7 @@ function details_viz(token) {
             type: "GET",
             url: "/StackV-web/restapi/service/ready",
             beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + token);
+                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
             },
 
             dataType: "text",
@@ -73,7 +73,7 @@ function details_viz(token) {
 
                     ModelConstructor = m;
                     model = new ModelConstructor();
-                    model.init(1, renderModels, null, "default", token);
+                    model.init(1, renderModels, null, uuid, keycloak);
 
                     functionMap["ModelBrowser"] = function (o, m, e) {
                         positionDisplayPanel(m + "_displayPanel", e);
@@ -374,13 +374,13 @@ function disableButtons(prefix) {
     $("#" + prefix + "_viz_toggle_model").attr("disabled", "disabled");
 }
 
-function renderModels(UUID, token) {
+function renderModels(UUID, keycloak) {
     $.ajax({
         crossDomain: true,
         type: "GET",
         url: "/StackV-web/restapi/app/delta/" + UUID,
         beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + token);
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
         dataType: "json",
         success: function (data, textStatus, jqXHR) {
@@ -488,7 +488,7 @@ function renderModels(UUID, token) {
         type: "GET",
         url: "/StackV-web/restapi/app/service/lastverify/" + UUID,
         beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + token);
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
         },
 
         dataType: "json",

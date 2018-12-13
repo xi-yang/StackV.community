@@ -251,7 +251,7 @@ class Details extends React.Component {
     }
 
     loadVisualization() {
-        details_viz(this.props.keycloak.token);
+        details_viz(this.props.uuid, this.props.keycloak.token);
         let page = this;
         if (!(page.state.state.sub === "INIT" || (page.state.state.sub === "FAILED" && page.state.state.last === "INIT"))) {
             $("#details-viz").load("/StackV-web/details_viz.html", function () {
