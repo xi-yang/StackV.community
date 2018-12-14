@@ -157,7 +157,7 @@ class DriverModal extends React.Component {
                 let entries = schema.driverInstance.properties[0].entry;
                 return entries.map(this.editCallback.bind(null, savedEntries, this.props.status === "Plugged", this.props.disabled));
             } else {
-                return <textarea id="driver-modal-raw" value={this.props.xml}></textarea>;
+                return <textarea id="driver-modal-raw">{this.props.xml}</textarea>;
             }
         }
     }

@@ -279,9 +279,9 @@ export default Drivers;
 function DriverElements(props) {
 
 
-    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 ? "danger" : (d.disabled || d.errors > 0 || d.errors == null ? "warning" : "success")) : undefined} onClick={(e) => props.open(d.urn, e)}>
+    const listItems = props.data.map((d) => <tr key={d.urn} id={d.urn} className={d.status === "Plugged" ? (d.errors > 5 ? "danger" : (d.errors == null || d.errors === undefined ? "warning" : (d.disabled || d.errors > 0 ? "info" : "success"))) : undefined} onClick={(e) => props.open(d.urn, e)}>
         <td>
-            <i className={d.status === "Plugged" ? (d.errors === 0 ? "fas fa-lg driver-health-icon fa-check-circle pass" : (d.errors < 5 || d.errors == null ? "fas fa-lg driver-health-icon fa-exclamation-triangle warn" : "fas fa-lg driver-health-icon fa-exclamation-circle fail")) : undefined}></i>
+            <i className={d.status === "Plugged" ? (d.errors === 0 ? "fas fa-lg driver-health-icon fa-check-circle pass" : (d.errors < 5 || d.errors == null || d.errors === undefined ? "fas fa-lg driver-health-icon fa-exclamation-triangle warn" : "fas fa-lg driver-health-icon fa-exclamation-circle fail")) : undefined}></i>
             {d.urn}
         </td>
         <td>{d.type}</td>
