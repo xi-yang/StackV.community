@@ -73,7 +73,7 @@ function details_viz(uuid, keycloak) {
 
                     ModelConstructor = m;
                     model = new ModelConstructor();
-                    model.init(1, renderModels, null, uuid, keycloak);
+                    model.init(1, renderModels, null, uuid, keycloak.token);
 
                     functionMap["ModelBrowser"] = function (o, m, e) {
                         positionDisplayPanel(m + "_displayPanel", e);
@@ -374,13 +374,13 @@ function disableButtons(prefix) {
     $("#" + prefix + "_viz_toggle_model").attr("disabled", "disabled");
 }
 
-function renderModels(UUID, keycloak) {
+function renderModels(UUID, token) {
     $.ajax({
         crossDomain: true,
         type: "GET",
         url: "/StackV-web/restapi/app/delta/" + UUID,
         beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Authorization", "bearer " + token);
         },
         dataType: "json",
         success: function (data, textStatus, jqXHR) {
@@ -488,7 +488,7 @@ function renderModels(UUID, keycloak) {
         type: "GET",
         url: "/StackV-web/restapi/app/service/lastverify/" + UUID,
         beforeSend: function (xhr) {
-            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Authorization", "bearer " + token);
         },
 
         dataType: "json",
@@ -580,8 +580,8 @@ function renderModels(UUID, keycloak) {
             disableButtons("vr");
         }
     });
-
 }
+
 function removeIfEmpty(viz) {
     var viz = $("#" + viz);
     var table = viz.closest("table");
