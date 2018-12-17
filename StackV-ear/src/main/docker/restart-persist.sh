@@ -25,5 +25,7 @@ rm -rf StackV-ejb-1.0-SNAPSHOT.jar META-INF
 # Start wildfly
 export LAUNCH_JBOSS_IN_BACKGROUND=true
 export JBOSS_PIDFILE=/opt/jboss/wildfly.pid
-/opt/jboss/wildfly/bin/standalone.sh -c standalone-full.xml -b 0.0.0.0  &
+/opt/jboss/wildfly/bin/standalone.sh -c standalone-full.xml -b 0.0.0.0  2>&1 > /dev/null &
 exit $?
+#/bin/bash -c "while true; do sleep 1; done"
+

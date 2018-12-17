@@ -2096,7 +2096,7 @@ public class WebResource {
 
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT * FROM service_instance WHERE referenceUUID = ?");
+            prep = front_conn.prepareStatement("SELECT * FROM service_instance WHERE referenceUUID = ? ORDER BY service_instance_id DESC");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
