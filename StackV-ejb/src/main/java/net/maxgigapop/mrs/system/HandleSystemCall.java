@@ -732,4 +732,24 @@ public class HandleSystemCall {
         di.getProperties().put(property, value);
         DriverInstancePersistenceManager.merge(di);
     }
+    
+    public void updateDriverInstance(String diId, Map<String, String> properties) {
+        logger.cleanup();
+        String method = "updateDriverInstance";
+        logger.start(method);
+        DriverInstance di;
+        if (diId.startsWith("urn")) {
+            di = DriverInstancePersistenceManager.findByTopologyUri(diId);
+        } else {
+            di = DriverInstancePersistenceManager.findById(Long.parseLong(diId));
+        }
+        if (di == null) {
+            throw logger.error_throwing(method, String.format("canot find DriverInstance with ID='%d'.", diId));
+        }
+        for (String property : properties.keySet()) {
+            String value = properties.get(property);
+            di.putProperty(property, value);
+        }
+        DriverInstancePersistenceManager.merge(di);
+    }
 }

@@ -229,4 +229,18 @@ public class DriverResource {
         logger.trace_end(method);
         return "plug successfully";
     }
+    
+    @POST
+    @Produces({"application/json"})
+    @Path("/{driverId}")
+    public void update(@PathParam("driverId") String driverId, ApiDriverInstance di) {
+        String method = "putProperty";
+        logger.targetid(driverId);
+
+        try {
+            systemCallHandler.updateDriverInstance(driverId, di.getProperties());
+        } catch (Exception e) {
+            throw logger.throwing(method, e);
+        }
+    }
 }
