@@ -37,32 +37,51 @@ class DriverModal extends React.Component {
             let type = this.props.type;
             if (type === "raw") { return this.importRawDriver(); }
 
-            // Retrieve schema
-            schema = JSON.parse(JSON.stringify(getSchema(type)));
+            if ($("#driver-modal-raw").size() === 1) {
+                let xml = $("#driver-modal-raw").val();
+                let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
+                let data = { urn: /<key>topologyUri<\/key><value>(.*?)<\/value>/g.exec(xml)[1], type: /<key>driverEjbPath<\/key><value>(.*?)<\/value>/g.exec(xml)[1], xml: xml };
+                $.ajax({
+                    url: apiUrl,
+                    type: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                        xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        $("#driver-modal").modal("hide");
+                    }
+                });
+            } else {
+                // Retrieve schema
+                schema = JSON.parse(JSON.stringify(getSchema(type)));
 
-            // Map input values to schema
-            let entries = schema.driverInstance.properties[0].entry;
-            for (let input of $(".driver-modal-body-content input")) {
-                let obj = entries.find(x => x.key[0] === input.name);
-                if (obj) { obj.value[0] = input.value; }
-            }
-
-            let xml = convert.json2xml(schema, { compact: true, spaces: 4 });
-            let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
-            let data = { urn: entries.find(x => x.key[0] === "topologyUri").value[0], type: type, xml: xml };
-            $.ajax({
-                url: apiUrl,
-                type: "PUT",
-                contentType: "application/json",
-                data: JSON.stringify(data),
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
-                    xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
-                },
-                success: function (result) {
-                    $("#driver-modal").modal("hide");
+                // Map input values to schema
+                let entries = schema.driverInstance.properties[0].entry;
+                for (let input of $(".driver-modal-body-content input")) {
+                    let obj = entries.find(x => x.key[0] === input.name);
+                    if (obj) { obj.value[0] = input.value; }
                 }
-            });
+
+                let xml = convert.json2xml(schema, { compact: true, spaces: 4 });
+                let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
+                let data = { urn: entries.find(x => x.key[0] === "topologyUri").value[0], type: type, xml: xml };
+                $.ajax({
+                    url: apiUrl,
+                    type: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                        xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+                    },
+                    success: function (result) {
+                        $("#driver-modal").modal("hide");
+                    }
+                });
+            }
         }
     }
     update() {
@@ -91,7 +110,7 @@ class DriverModal extends React.Component {
     delete() {
         let page = this;
         let apiUrl = window.location.origin + "/StackV-web/restapi/app/drivers/";
-        let data = { urn: $("input[name=\"topologyUri\"]").val() };
+        let data = ($("#driver-modal-raw").size() === 1 ? { urn: /<key>topologyUri<\/key><value>(.*?)<\/value>/g.exec($("#driver-modal-raw").val())[1] } : { urn: $("input[name=\"topologyUri\"]").val() });
         $.ajax({
             url: apiUrl,
             type: "DELETE",
