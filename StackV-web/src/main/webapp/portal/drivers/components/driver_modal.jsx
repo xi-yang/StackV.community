@@ -57,9 +57,15 @@ class DriverModal extends React.Component {
             } else {
                 // Retrieve schema
                 schema = JSON.parse(JSON.stringify(getSchema(type)));
-
-                // Map input values to schema
                 let entries = schema.driverInstance.properties[0].entry;
+
+                // Clean schema
+                delete schema.driverInstance.meta;
+                for (let obj of entries) {
+                    delete obj.$;
+                }
+
+                // Map input values to schema                
                 for (let input of $(".driver-modal-body-content input")) {
                     let obj = entries.find(x => x.key[0] === input.name);
                     if (obj) { obj.value[0] = input.value; }
@@ -86,25 +92,41 @@ class DriverModal extends React.Component {
     }
     update() {
         let page = this;
-        $(".driver-modal-body-content input").each((i, ele) => {
-            if ($(ele).val() !== $(ele).attr("value")) {
-                console.log($(ele).prop("name") + " changed!");
-                // Value changed, update property
-                let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + this.props.urn + "/" + $(ele).prop("name") + "/" + encodeURIComponent($(ele).val());
-                $.ajax({
-                    url: apiURL,
-                    type: "PUT",
-                    beforeSend: function (xhr) {
-                        xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
-                        xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
-                    },
-                    success: function (result) {
+        // Retrieve schema
+        let schema = JSON.parse(JSON.stringify(getSchema(this.props.type)));
+        let entries = schema.driverInstance.properties[0].entry;
 
-                    },
-                });
+        // Clean schema
+        delete schema.driverInstance.meta;
+        for (let obj of entries) {
+            delete obj.$;
+        }
+
+        // Map input values to schema
+        for (let input of $(".driver-modal-body-content input")) {
+            let obj = entries.find(x => x.key[0] === input.name);
+            if (obj) { obj.value[0] = input.value; }
+        }
+
+        let xml = convert.json2xml(schema, { compact: true, spaces: 4 });
+        let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + entries.find(x => x.key[0] === "topologyUri").value[0];
+        $.ajax({
+            url: apiURL,
+            type: "POST",
+            contentType: "application/xml",
+            data: xml,
+            dataType: "xml",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+            },
+            success: function (result) {
+                page.props.resumeRefresh();
+            },
+            error: function (err) {
+                page.props.resumeRefresh();
             }
         });
-
         this.save();
     }
     delete() {
