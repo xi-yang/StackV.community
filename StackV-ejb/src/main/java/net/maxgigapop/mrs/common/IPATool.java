@@ -33,12 +33,23 @@ import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.util.logging.Logger;
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 
 /**
- * IPA tools to interact with FreeIPA
+ * IPA tool to interact with FreeIPA.
+ * Derived from Antonio Heard's IPAResource.java (located in StackV-web
+ * net.maxgigapop.mrs.rest.api). Antonio strips the RPC headers, but I do not
+ * as Alm.java uses those headers to verify the success/failure of the request
  *
  * @author saiarvind
  */
@@ -55,6 +66,44 @@ public class IPATool {
     
     public IPATool() {
     }
+    
+    static {
+        TrustManager[] trustAllCerts = new TrustManager[]{
+            new X509TrustManager() {
+                @Override
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+
+                @Override
+                public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                }
+
+                @Override
+                public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                }
+
+            }
+        };
+
+        SSLContext sc;
+        try {
+            sc = SSLContext.getInstance("SSL");
+            sc.init(null, trustAllCerts, new java.security.SecureRandom());
+            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+
+            HostnameVerifier allHostsValid = new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            };
+            // set the  allTrusting verifier
+            HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+        } catch (KeyManagementException | NoSuchAlgorithmException ex) {
+
+        }
+    }
 
     public String ipaLogin() throws UnsupportedEncodingException {
 
@@ -65,6 +114,7 @@ public class IPATool {
             String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
 
             try {
+                
                 URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
                 HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
                 conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
@@ -73,6 +123,7 @@ public class IPATool {
                 conn.setRequestMethod("POST");
                 conn.setDoInput(true);
                 conn.setDoOutput(true);
+//                conn.setSSLSocketFactory();
                 DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
                 wr.writeBytes(formattedLoginData);
                 wr.flush();
