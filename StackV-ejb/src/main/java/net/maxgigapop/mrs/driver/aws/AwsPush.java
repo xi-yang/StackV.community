@@ -836,7 +836,16 @@ public class AwsPush {
                 runInstance.withMaxCount(Integer.parseInt(parameters[11]));
                 runInstance.withMinCount(Integer.parseInt(parameters[11]));
                 //runInstance.withSecurityGroupIds(parameters[4]);
-
+                
+                // update 12/18
+                // creating a dck server entry
+                Dck dckOps = new Dck();
+                JSONObject vmContainerAttrs = new JSONObject();
+                vmContainerAttrs.put("fqdn",System.getProperty("ipa_url"));
+                JSONObject vmAttrs = new JSONObject();
+                
+                // dckOps.addDCKVMEntry(cn, "urn:ogf:network:aws.amazon.com:aws-cloud", vmContainerAttrs, vmAttrs); // move to create instance
+                
                 //integrate the root device
                 if (!parameters[7].equalsIgnoreCase("any")) {
                     EbsBlockDevice device = new EbsBlockDevice();
@@ -1138,6 +1147,7 @@ public class AwsPush {
      * ****************************************************************
      * Function to extract Globus virtual function and create EAS tasks for them
      * ****************************************************************
+     * Create VF in commit stage
      */
     private void globusConnectRequests(OntModel model, OntModel modelAdd, boolean creation) {
         String method = "globusConnectRequests";
@@ -1226,7 +1236,11 @@ public class AwsPush {
         System.out.println("**AWS PUSH - globusConnectRequests - vmContainerAttrs: " + vmContainerAttrs.toString());
         System.out.println("**AWS PUSH - globusConnectRequests - vmAttrs: " + vmAttrs.toString());
         // dckOps.addDCKVMEntry(cn, topologyUri, vmContainerAttrs, vmAttrs);
-        dckOps.addDCKVMEntry(cn, "urn:ogf:network:aws.amazon.com:aws-cloud", vmContainerAttrs, vmAttrs);
+        //dckOps.addDCKVMEntry(cn, "urn:ogf:network:aws.amazon.com:aws-cloud", vmContainerAttrs, vmAttrs); // move to run instance
+        // 1) create vm entry in run instance requests, 2) create VF in globus requests
+        
+        // create virtual function
+        
     }
 
     /**
