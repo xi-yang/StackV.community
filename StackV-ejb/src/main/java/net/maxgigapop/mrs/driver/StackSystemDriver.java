@@ -163,7 +163,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
             throw logger.error_throwing(method, driverInstance + " has no property key=systemInstanceUUID as required for commit");
         }
         driverInstance.getProperties().remove("stackSystemInstanceUUID:" + driverInstance.getId().toString() + aDelta.getReferenceUUID().toString());
-        DriverInstancePersistenceManager.merge(driverInstance);
+        driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
         String authServer = driverInstance.getProperty("authServer");
         String credential = driverInstance.getProperty("credential");
         // Step 1. commit to systemInstance
@@ -316,7 +316,7 @@ public class StackSystemDriver implements IHandleDriverSystemCall {
                 vi.setDriverInstance(driverInstance);
                 VersionItemPersistenceManager.save(vi);
                 driverInstance.setHeadVersionItem(vi);
-                DriverInstancePersistenceManager.merge(driverInstance);
+                driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
             } catch (Exception e) {
                 try {
                     if (dm != null) {

@@ -48,18 +48,14 @@ public class ApplicationConfig extends Application {
     }
 
     private void addRestResourceClasses(Set<Class<?>> resources) {
-        // CORE SB
         resources.add(net.maxgigapop.mrs.rest.api.CORSResponseFilter.class);
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
-        // CORE NB
         resources.add(net.maxgigapop.mrs.rest.api.IPAResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.SecurityInterceptor.class);
-        // SENSE NB
         resources.add(net.maxgigapop.mrs.rest.api.SenseDiscoveryApi.class);
         resources.add(net.maxgigapop.mrs.rest.api.SenseServiceApi.class);
-        // Helpers
         resources.add(net.maxgigapop.mrs.rest.api.ServiceResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.WebResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);

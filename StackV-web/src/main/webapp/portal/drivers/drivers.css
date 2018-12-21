@@ -1,0 +1,85 @@
+div.stack-panel.page-drivers {
+    max-width: 90%;
+}
+
+#drivers-table-div {    
+    margin: 5px;
+    border: 2px solid #ddd;
+    border-radius: 7px;
+    box-shadow: 0px 3px 7px 1px #777
+}
+
+#drivers-table-div thead th, #drivers-table-div td {
+    padding: 12px 15px;
+}
+
+#drivers-table-div td {
+    border-left: 1px solid rgba(221, 221, 221, 0.7);
+    vertical-align: middle;
+}
+#drivers-table-div td:first-child {
+    border-left: none;
+}
+
+tr.backend {
+    background: #ccc;
+}
+tr.backend:hover {
+    background: #bbb !important;
+}
+
+#drivers-table-footer {
+    padding: 15px;
+    border-radius: 15px;
+    background: #eee;
+    box-shadow: 0px 3px 4px 1px #ccc;
+    color: #777;
+}
+
+.driver-modal-body {
+    padding: 20px 30px 10px 30px;
+    text-align: left;
+}
+.driver-modal-body-header {
+    font-size: 1.15em;
+    font-weight: bold;
+    vertical-align: top;
+    padding-right: 40px;
+    padding-bottom: 10px;
+}
+.driver-modal-body-select {
+    margin-left: 10px;
+    font-size: 0.8em;
+}
+
+.driver-modal-body-content {
+    max-height: 50%;
+    overflow-y: auto;
+}
+
+.driver-modal-body-content label {
+    display: inline-grid;
+    width: 50%;
+    padding: 5px;
+}
+.driver-modal-body-select {
+    margin-left: 5px;
+}
+#driver-modal-raw {
+    width: 100%;
+    height: 30vh;
+    resize: vertical;
+}
+
+.driver-health-icon {
+    margin-right: 5px;    
+}
+.pass {
+    color: #206721;
+}
+.warn {
+    color: #a55f1f;
+}
+.fail {
+    color: #bf3632;
+}

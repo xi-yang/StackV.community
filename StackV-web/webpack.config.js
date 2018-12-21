@@ -1,11 +1,11 @@
 const path = require("path");
-const CleanWebpackPlugin = require('clean-webpack-plugin')
+const CleanWebpackPlugin = require("clean-webpack-plugin");
 
 module.exports = {
     mode: "production",
     entry: {
         babel: "@babel/polyfill",
-        "StackV-main": __dirname + "/src/main/webapp/portal/nexus.js",
+        "StackV-main": __dirname + "/src/main/webapp/portal/nexus.js"
     },
     output: {
         filename: "[name].bundle.js",
@@ -18,6 +18,17 @@ module.exports = {
     },
     module: {
         rules: [
+            { test: /\.xml$/, loader: "xml-loader" },
+            { test: /\.css$/, loader: "style-loader!css-loader" },
+            {
+                test: /\.(jpg|png|svg)$/,
+                use: {
+                    loader: "url-loader",
+                    options: {
+                        limit: 25000,
+                    },
+                },
+            },
             {
                 test: /\.jsx?$/,
                 exclude: {
@@ -35,6 +46,7 @@ module.exports = {
                                 ["@babel/transform-runtime"],
                                 ["transform-class-properties"],
                                 ["@babel/plugin-proposal-class-properties", { "loose": false }],
+                                ["emotion"]
                             ]
                         }
                     }

@@ -70,9 +70,9 @@
                 <type>select</type>
                 <source>
                     <url>/driver</url>
-                    <interval>3</interval>
-                    <text>3</text>
-                    <value>3</value>
+                    <interval>map</interval>
+                    <text>topologyUri</text>
+                    <value>topologyUri</value>
                 </source>
                 <valid>select</valid>
             </input>

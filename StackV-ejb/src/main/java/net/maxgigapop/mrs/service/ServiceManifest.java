@@ -255,6 +255,9 @@ public class ServiceManifest {
         }
         if (jo.containsKey("sparql-ext")) {
             jo.remove("sparql-ext");
+            if (joArr.isEmpty() && !required) {
+                return null;
+            }
         }
         return joArr;
     }

@@ -246,6 +246,7 @@ public class BandwidthCalendar {
             if (overlapSchedule.getStartTime() > gapStart) {
                 this._addSchedule(gapStart, overlapSchedule.getStartTime(), bw);
                 overlapIndex++;
+                lastOverlap++;
             } 
             gapStart = overlapSchedule.getEndTime();
             if (overlapSchedule.getBandwidth() + bw > this.capacity) {
@@ -308,6 +309,15 @@ public class BandwidthCalendar {
         ListIterator<BandwidthSchedule> it = bwCalendar.schedules.listIterator();
         while (it.hasNext()) {
             BandwidthSchedule schedule = it.next();
+            // calibration: when bwSmall < bwCalendar.capacity. Reduce all schedules bw
+            if (bwCalendar.getCapacity() > this.capacity) {
+                long bwAdjusted = bwCalendar.getCapacity() - this.capacity;
+                if (schedule.getBandwidth() <= bwAdjusted){
+                    continue; // a schedule from bwCalendar has smaller bandwidth than diff of base bw, skip 
+                } else {
+                    schedule.setBandwidth(schedule.getBandwidth() - bwAdjusted);
+                }
+            }
             this.combineSchedule(schedule.getStartTime(), schedule.getEndTime(), schedule.getBandwidth());
         }
     }
@@ -478,14 +488,34 @@ public class BandwidthCalendar {
             } else {
                 return null;
             }
+        } else if (options.containsKey("use-tbmb")) { // total-block-maximum-bandwidth
+            BandwidthCalendar residual = pathAvailBwCal.residual(start, start+deadline);
+            ListIterator<BandwidthSchedule> it = residual.getSchedules().listIterator();
+            long maxBw = residual.getCapacity();
+            while (it.hasNext()) {
+                BandwidthSchedule residualSchedule = it.next();
+                if (residualSchedule.getEndTime() <= start) {
+                    continue;
+                }
+                if (residualSchedule.getStartTime() >= start + deadline) {
+                    continue;
+                }
+                if (residualSchedule.getBandwidth() < maxBw) {
+                    maxBw = residualSchedule.getBandwidth();
+                }
+            }
+            if (maxBw == 0) {
+                return null;
+            }
+            schedule = new BandwidthSchedule(start, start+deadline, maxBw);
         } else {
             if (options.containsKey("sliding-duration")) {
-                duration = (long)options.get("sliding-duration");
-            } 
+                duration = (long) options.get("sliding-duration");
+            }
             schedule = pathAvailBwCal.makeSchedule(path.getBandwithScedule().getBandwidth(), start, duration, deadline, false);
         }
         // scenarios: extra options / queries
-        return schedule;    
+        return schedule;
     }
     
     //$$ normalize bandwidth unit internally
@@ -509,11 +539,12 @@ public class BandwidthCalendar {
             return null;
         }
 
-        sparql = "SELECT ?subport ?start ?end WHERE {"
+        sparql = "SELECT ?subport ?start ?end ?subport_start ?subport_end WHERE {"
                 + String.format("<%s> nml:hasBidirectionalPort ?subport. ", hop.getURI())
                 + "?subport nml:hasService ?subBwSvc. "
                 + "?subBwSvc a mrs:BandwidthService. "
                 + "OPTIONAL { ?subBwSvc nml:existsDuring ?lifetime. ?lifetime nml:start ?start. ?lifetime nml:end ?end. } "
+                + "OPTIONAL { ?subport nml:existsDuring ?lifetime. ?lifetime nml:start ?subport_start. ?lifetime nml:end ?subport_end. } "
                 + "}";
         rs = ModelUtil.sparqlQuery(model, sparql);
         while (rs.hasNext()) {
@@ -523,13 +554,20 @@ public class BandwidthCalendar {
             if (subBwProfile == null || subBwProfile.reservableCapacity == null) {
                 continue;
             }
-            long start = new Date().getTime()/1000L;
+            long now = new Date().getTime()/1000L;
+            long start = now;
             long end = infinite;
             if (solution.contains("start")) {
                 try {
                     start = DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("start").getString());
                 } catch (Exception ex) {
                     throw new BandwidthCalendarException("cannot parse schedule start time: " + solution.getLiteral("start").getString());
+                } 
+            } else if (solution.contains("subport_start")) {
+                try {
+                    start = DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("subport_start").getString());
+                } catch (Exception ex) {
+                    throw new BandwidthCalendarException("cannot parse schedule start time: " + solution.getLiteral("subport_start").getString());
                 } 
             }
             if (solution.contains("end")) {
@@ -538,6 +576,15 @@ public class BandwidthCalendar {
                 } catch (Exception ex) {
                     throw new BandwidthCalendarException("cannot parse schedule end time: " + solution.getLiteral("end").getString());
                 }
+            } else if (solution.contains("subport_end")) {
+                try {
+                    end = DateTimeUtil.getBandwidthScheduleSeconds(solution.getLiteral("subport_end").getString());
+                } catch (Exception ex) {
+                    throw new BandwidthCalendarException("cannot parse schedule start time: " + solution.getLiteral("subport_end").getString());
+                } 
+            }
+            if (start == now && end == infinite) {
+                continue;
             }
             bwCal.addSchedule(start, end, subBwProfile.reservableCapacity);
         }

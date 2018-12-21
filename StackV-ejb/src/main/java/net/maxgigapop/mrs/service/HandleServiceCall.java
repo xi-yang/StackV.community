@@ -127,7 +127,7 @@ public class HandleServiceCall {
                         SystemInstancePersistenceManager.delete(systemInstance);
                     }
                     systemDelta.setServiceDelta(null);
-                    DeltaPersistenceManager.merge(systemDelta);
+                    systemDelta = (SystemDelta)DeltaPersistenceManager.merge(systemDelta);
                 }
                 svcDelta.setSystemDelta(null);
                 svcDelta.setServiceInstance(null);
@@ -199,7 +199,7 @@ public class HandleServiceCall {
             worker.run();
         } catch (EJBException ex) {
             serviceInstance.setStatus("FAILED");
-            ServiceInstancePersistenceManager.merge(serviceInstance);
+            serviceInstance = (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
             logger.status("compileAddDelta", "FAILED");
             throw logger.throwing("compileAddDelta", ex);
         }
@@ -389,12 +389,12 @@ public class HandleServiceCall {
                     }
                     serviceDelta.setNegotiationMarkup(ex.getMessage());
                     serviceDelta.setStatus("NEGOTIATING");
-                    DeltaPersistenceManager.merge(serviceDelta);
+                    serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
                 } catch (EJBException ex) {
                     logger.throwing(method, ex);
                 }
                 serviceDelta.setStatus("PROPAGATED");
-                DeltaPersistenceManager.merge(serviceDelta);
+                serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiPropagate) {
                     break;
                 }
@@ -431,7 +431,7 @@ public class HandleServiceCall {
         } else if (!hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance = (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
         return serviceInstance.getStatus();
     }
@@ -493,7 +493,7 @@ public class HandleServiceCall {
                 systemInstance.setCommitStatus(asynResult);
                 //systemInstance.setCommitFlag(true);
                 serviceDelta.setStatus("COMMITTING");
-                DeltaPersistenceManager.merge(serviceDelta);
+                serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiCommit) {
                     break;
                 }
@@ -524,7 +524,7 @@ public class HandleServiceCall {
         } else if (!hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance = (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
         return serviceInstance.getStatus();
     }
@@ -708,113 +708,11 @@ public class HandleServiceCall {
         } else {
             serviceInstance.setStatus("COMMITTING-PARTIAL");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance = (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
         return reverseSvcDelta.getId();
     }
 
-    //By default, this only checks the last service delta. If multiPropagate==true, check all deltas.
-    public String checkStatus(String serviceInstanceUuid) {
-        logger.cleanup();
-        String method = "checkStatus";
-        logger.refuuid(serviceInstanceUuid);
-        logger.trace_start(method);
-        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
-        if (serviceInstance == null) {
-            throw logger.error_throwing(method, "cannot find ref:ServiceInstance");
-        }
-        if (!serviceInstance.getStatus().equals(ServiceInstancePersistenceManager.findById(serviceInstance.getId()).getStatus())) {
-            ServiceInstancePersistenceManager.merge(serviceInstance);
-        }
-        if (!serviceInstance.getStatus().equals("COMMITTING")) {
-            logger.trace_end(method, serviceInstance.getStatus());
-            return serviceInstance.getStatus();
-        }
-        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
-        //@TODO? change (multiPropagate==true) into using another property?
-        String multiPropagate = serviceInstance.getProperty("multiPropagate");
-        boolean checkAllDeltas = false;
-        if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
-            checkAllDeltas = true;
-        }
-        while (itSD.hasNext()) {
-            ServiceDelta serviceDelta = itSD.next();
-            if (!checkAllDeltas && itSD.hasNext()) {
-                continue;
-            }
-            if (serviceDelta.getSystemDelta() == null) {
-                throw logger.error_throwing(method, "ref:ServiceInstance encounters uncompiled ref:ServiceDelta (having null SystemDelta).");
-            }
-            if (serviceDelta.getStatus().equals("COMMITTED")) {
-                continue;
-            }
-            if (serviceDelta.getStatus().equals("FAILED")) {
-                continue;
-            }
-            if (!serviceDelta.getStatus().equals("COMMITTING")) {
-                throw logger.error_throwing(method, "ref:ServiceInstance encounters uncompiled ref:ServiceDelta in unexpected status=" + serviceDelta.getStatus());
-            }
-            // for committing serviceDelta we check if the systemDelta has been committing
-            SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
-            if (systemInstance == null) {
-                throw logger.error_throwing(method, "cannot find SystemInstance based on ref:ServiceDelta.");
-            }
-            // get cached systemInstance
-            systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
-            if (systemInstance == null || systemInstance.getCommitStatus() == null) {
-                throw logger.error_throwing(method, "ref:ServiceInstance encounters null " + (systemInstance == null ? " SystemInstance.": " asyncStatus cache." ) );
-            }
-            Future<String> asyncStatus = systemInstance.getCommitStatus();
-            serviceDelta.setStatus("FAILED");
-            if (asyncStatus.isDone()) {
-                try {
-                    String commitStatus = asyncStatus.get();
-                    if (commitStatus.equals("SUCCESS")) {
-                        serviceDelta.setStatus("COMMITTED");
-                    }
-                } catch (Exception ex) {
-                    logger.error(method, "ref:ServiceInstance->SystemInstance commit done and asyncStatus.get() -exception- "+ex);
-                    serviceDelta.setStatus("FAILED");
-                }
-            } else {
-                serviceDelta.setStatus("COMMITTING");
-            }
-            DeltaPersistenceManager.merge(serviceDelta);
-        }
-        // collect status from systemDeltas (all_commited == ready)
-        boolean failed = false;
-        boolean ready = true;
-        itSD = serviceInstance.getServiceDeltas().iterator();
-        while (itSD.hasNext()) {
-            ServiceDelta serviceDelta = itSD.next();
-            if (!checkAllDeltas && itSD.hasNext()) {
-                continue;
-            }
-            if (serviceDelta.getStatus().equals("FAILED")) {
-                failed = true;
-                break;
-            } else if (serviceDelta.getStatus().equals("COMMITTING")) {
-                ready = false;
-            }
-        }
-        if (failed) {
-            serviceInstance.setStatus("FAILED");
-        } else if (ready) {
-            serviceInstance.setStatus("COMMITTED");
-        } else {
-            serviceInstance.setStatus("COMMITTING");
-        }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
-        logger.trace_end(method, serviceInstance.getStatus());
-        return serviceInstance.getStatus();
-    }
-
-    public void updateStatus(String serviceInstanceUuid, String status) {
-        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
-        serviceInstance.setStatus(status);
-        ServiceInstancePersistenceManager.merge(serviceInstance);
-    }
-    
     // retry always companies FAILED status | forced => VG refresh requested
     public String propagateRetry(String serviceInstanceUuid, boolean useCachedVG, boolean refreshForced) {
         logger.cleanup();
@@ -876,11 +774,11 @@ public class HandleServiceCall {
                         DeltaPersistenceManager.delete(dsd);
                     }
                     systemInstance.getSystemDelta().getDriverSystemDeltas().clear();
-                    DeltaPersistenceManager.merge(systemInstance.getSystemDelta());
+                    systemInstance.setSystemDelta((SystemDelta)DeltaPersistenceManager.merge(systemInstance.getSystemDelta()));
                 }
                 systemCallHandler.propagateDelta(systemInstance, serviceDelta.getSystemDelta(), useCachedVG, refreshForced);
                 serviceDelta.setStatus("PROPAGATED");
-                DeltaPersistenceManager.merge(serviceDelta);
+                serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
                 if (!canMultiPropagate) {
                     break;
                 }
@@ -910,7 +808,7 @@ public class HandleServiceCall {
         } else if (!hasPropagated && isCommitting) {
             serviceInstance.setStatus("COMMITTING");
         }
-        ServiceInstancePersistenceManager.merge(serviceInstance);
+        serviceInstance= (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
         logger.end(method, serviceInstance.getStatus());
         return serviceInstance.getStatus();
     }
@@ -1172,6 +1070,7 @@ public class HandleServiceCall {
         serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
         Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
         ServiceDelta theDelta = null;
+        // find the first serviceDelta with compiled systemDelta for "creation". if asked to reset into 'INIT', we may also get an uncompiled serviceDelta for "creation"
         while (itSD.hasNext()) {
             ServiceDelta serviceDelta = itSD.next();
             if (serviceDelta.getSystemDelta() != null && serviceDelta.getSystemDelta().getModelAddition() != null && serviceDelta.getSystemDelta().getModelReduction() == null) {
@@ -1210,6 +1109,115 @@ public class HandleServiceCall {
                 DeltaPersistenceManager.delete(serviceDelta);
             }
         }
+        serviceInstance.setStatus(status);
+        ServiceInstancePersistenceManager.merge(serviceInstance);
+    }
+
+    //By default, this only checks the last service delta. If multiPropagate==true, check all deltas.
+    public String checkStatus(String serviceInstanceUuid) {
+        logger.cleanup();
+        String method = "checkStatus";
+        logger.refuuid(serviceInstanceUuid);
+        logger.trace_start(method);
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
+        if (serviceInstance == null) {
+            throw logger.error_throwing(method, "cannot find ref:ServiceInstance");
+        }
+        /*
+        ServiceInstance persistedInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        if (!serviceInstance.getStatus().equals(persistedInstance.getStatus())) {
+            ServiceInstancePersistenceManager.merge(serviceInstance);
+        }
+        */
+        // always merge
+        serviceInstance= (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
+        // refresh once again
+        serviceInstance = ServiceInstancePersistenceManager.findById(serviceInstance.getId());
+        if (!serviceInstance.getStatus().equals("COMMITTING")) {
+            logger.trace_end(method, serviceInstance.getStatus());
+            return serviceInstance.getStatus();
+        }
+        Iterator<ServiceDelta> itSD = serviceInstance.getServiceDeltas().iterator();
+        //@TODO? change (multiPropagate==true) into using another property?
+        String multiPropagate = serviceInstance.getProperty("multiPropagate");
+        boolean checkAllDeltas = false;
+        if (multiPropagate != null && multiPropagate.equalsIgnoreCase("true")) {
+            checkAllDeltas = true;
+        }
+        while (itSD.hasNext()) {
+            ServiceDelta serviceDelta = itSD.next();
+            if (!checkAllDeltas && itSD.hasNext()) {
+                continue;
+            }
+            if (serviceDelta.getSystemDelta() == null) {
+                throw logger.error_throwing(method, "ref:ServiceInstance encounters uncompiled ref:ServiceDelta (having null SystemDelta).");
+            }
+            if (serviceDelta.getStatus().equals("COMMITTED")) {
+                continue;
+            }
+            if (serviceDelta.getStatus().equals("FAILED")) {
+                continue;
+            }
+            if (!serviceDelta.getStatus().equals("COMMITTING")) {
+                throw logger.error_throwing(method, "ref:ServiceInstance encounters uncompiled ref:ServiceDelta in unexpected status=" + serviceDelta.getStatus());
+            }
+            // for committing serviceDelta we check if the systemDelta has been committing
+            SystemInstance systemInstance = SystemInstancePersistenceManager.findBySystemDelta(serviceDelta.getSystemDelta());
+            if (systemInstance == null) {
+                throw logger.error_throwing(method, "cannot find SystemInstance based on ref:ServiceDelta.");
+            }
+            // get cached systemInstance
+            systemInstance = SystemInstancePersistenceManager.findByReferenceUUID(systemInstance.getReferenceUUID());
+            if (systemInstance == null || systemInstance.getCommitStatus() == null) {
+                throw logger.error_throwing(method, "ref:ServiceInstance encounters null " + (systemInstance == null ? " SystemInstance.": " asyncStatus cache." ) );
+            }
+            Future<String> asyncStatus = systemInstance.getCommitStatus();
+            serviceDelta.setStatus("FAILED");
+            if (asyncStatus.isDone()) {
+                try {
+                    String commitStatus = asyncStatus.get();
+                    if (commitStatus.equals("SUCCESS")) {
+                        serviceDelta.setStatus("COMMITTED");
+                    }
+                } catch (Exception ex) {
+                    logger.error(method, "ref:ServiceInstance->SystemInstance commit done and asyncStatus.get() -exception- "+ex);
+                    serviceDelta.setStatus("FAILED");
+                }
+            } else {
+                serviceDelta.setStatus("COMMITTING");
+            }
+            serviceDelta = (ServiceDelta)DeltaPersistenceManager.merge(serviceDelta);
+        }
+        // collect status from systemDeltas (all_commited == ready)
+        boolean failed = false;
+        boolean ready = true;
+        itSD = serviceInstance.getServiceDeltas().iterator();
+        while (itSD.hasNext()) {
+            ServiceDelta serviceDelta = itSD.next();
+            if (!checkAllDeltas && itSD.hasNext()) {
+                continue;
+            }
+            if (serviceDelta.getStatus().equals("FAILED")) {
+                failed = true;
+                break;
+            } else if (serviceDelta.getStatus().equals("COMMITTING")) {
+                ready = false;
+            }
+        }
+        if (failed) {
+            serviceInstance.setStatus("FAILED");
+        } else if (ready) {
+            serviceInstance.setStatus("COMMITTED");
+        } else {
+            serviceInstance.setStatus("COMMITTING");
+        }
+        serviceInstance= (ServiceInstance)ServiceInstancePersistenceManager.merge(serviceInstance);
+        logger.trace_end(method, serviceInstance.getStatus());
+        return serviceInstance.getStatus();
+    }
+
+    public void updateStatus(String serviceInstanceUuid, String status) {
+        ServiceInstance serviceInstance = ServiceInstancePersistenceManager.findByReferenceUUID(serviceInstanceUuid);
         serviceInstance.setStatus(status);
         ServiceInstancePersistenceManager.merge(serviceInstance);
     }

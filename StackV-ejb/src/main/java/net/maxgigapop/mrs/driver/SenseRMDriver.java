@@ -241,11 +241,11 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     }
                     aDelta.setStatus(((String) responseJSON.get("state")).toUpperCase());
                     DeltaPersistenceManager.merge(aDelta);
-                    if (aDelta.getStatus().equals("COMMITTED") || aDelta.getStatus().equals("ACTIVATED")) {
+                    if (aDelta.getStatus().equalsIgnoreCase("COMMITTED") || aDelta.getStatus().equalsIgnoreCase("ACTIVATING") || aDelta.getStatus().equalsIgnoreCase("ACTIVATED")) {
                         doPoll = false;
-                    } else if (aDelta.getStatus().equals("COMMITTING")) {
+                    } else if (aDelta.getStatus().equalsIgnoreCase("COMMITTING")) {
                         doPoll = true;
-                    } else if (aDelta.getStatus().equals("FAILED") ) {
+                    } else if (aDelta.getStatus().equalsIgnoreCase("FAILED") ) {
                         //@TODO: responseJSON.error
                         throw logger.error_throwing(method, driverInstance + "RM Internal Error - " + response[0]);
                     }
@@ -324,7 +324,7 @@ public class SenseRMDriver implements IHandleDriverSystemCall {
                     conn.addRequestProperty("If-Modified-Since", lastModified);
                 }
                 conn.setConnectTimeout(5*1000);
-                conn.setReadTimeout(15*1000);
+                conn.setReadTimeout(30*1000);
                 conn.addRequestProperty("Content-Encoding", "gzip");
                 String[] response;
                 if (sslClientCertAlias == null) {

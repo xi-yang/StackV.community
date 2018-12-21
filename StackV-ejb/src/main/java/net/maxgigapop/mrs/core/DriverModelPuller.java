@@ -69,8 +69,8 @@ public class DriverModelPuller {
         GlobalPropertyPersistenceManager.setProperty("system.boot_strapped", "false");
         // schedule model pull timer
         ScheduleExpression sexpr = new ScheduleExpression();
-        //sexpr.hour("*").minute("*").second("15/30"); // every 30 seconds, starting at 15th
-        sexpr.hour("*").minute("*").second("30/30"); // every 30 seconds, starting at 30th sec
+        //sexpr.hour("*").minute("*").second("30/15"); // every 30 seconds, starting at 15th
+        sexpr.hour("*").minute("*").second("30"); // every minute, starting at 30th sec
         // persistent must be false because the timer is started by the HASingleton service
         timerService.createCalendarTimer(sexpr, new TimerConfig("", false));
     }
@@ -114,23 +114,62 @@ public class DriverModelPuller {
         Context ejbCxt = null;
         for (String topoUri : DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().keySet()) {
             DriverInstance driverInstance = DriverInstancePersistenceManager.getDriverInstanceByTopologyMap().get(topoUri);
+            // get driverInstance operational metadata / properties
+            boolean driverInstanceDisabled = false;
+            driverInstance = (DriverInstance) DriverInstancePersistenceManager.merge(driverInstance);
+            String strDisabled = driverInstance.getProperty("disabled");
+            if (strDisabled != null) {
+                driverInstanceDisabled = Boolean.parseBoolean(strDisabled);
+            }
+            if (driverInstanceDisabled) {
+                logger.trace(method, "model pulling skipped - driver instance ["+topoUri+"] disabled");
+                String strContErrors = driverInstance.getProperty("contErrors");
+                if (strContErrors != null && strContErrors.equals("0")) {
+                    driverInstance.getProperties().remove("contErrors");
+                    driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
+                }
+                continue;
+            }
+            int contErrors = 0;
+            String strContErrors = driverInstance.getProperty("contErrors");
+            if (strContErrors != null) {
+                contErrors = Integer.parseInt(strContErrors);
+            } else {
+                strContErrors = "0";
+            }
+            int contDelays = 0;
+            String strContDelays = driverInstance.getProperty("contDelays");
+            if (strContDelays != null) {
+                contDelays = Integer.parseInt(strContDelays);
+            }
             Future<String> previousResult = pullResultMap.get(driverInstance);
             if (previousResult != null) {
                 if (previousResult.isDone()) {
+                    if (contDelays > 0) {
+                        driverInstance.putProperty("contDelays", "0");
+                    }
                     try {
                         String status = previousResult.get();
                         logger.trace(method, "model pulling - previousResult ready for topologyURI="+topoUri+" with status="+status);
+                        driverInstance.putProperty("contErrors", "0");
                     } catch (Exception ex) {
                         pullNormal = false;
                         logger.catching(method, ex);
-                        //@TODO: retry couple of times, then exception if still failed
+                        contErrors++;
+                        strContErrors = Integer.toString(contErrors);
+                        driverInstance.putProperty("contErrors", strContErrors);
+                    } finally {
+                        driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
                     }
                 } else {
                     pullNormal = false;
                     logger.trace(method, "model pulling - previousResult not ready for topologyURI="+topoUri);
                     // Assume the previous drvier instance will always finish or time out by itself
+                    contDelays++;
+                    strContDelays = Integer.toString(contDelays);
+                    driverInstance.putProperty("contDelays", strContDelays);
+                    driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
                     continue;
-                    //@TODO: timeout handling: skip and check after one more cycle, then previousResult.cancel(true); 
                 }
             } else {
                 pullNormal = false;

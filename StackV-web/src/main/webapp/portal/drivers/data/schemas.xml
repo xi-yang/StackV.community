@@ -1,0 +1,58 @@
+<catalog>
+    <driverInstance>
+        <meta>
+            <name>AWS</name>
+        </meta>
+        <properties>
+            <entry><key>topologyUri</key><value></value></entry>
+            <entry><key>driverEjbPath</key><value>java:module/AwsDriver</value></entry>	
+            <entry><key>aws_access_key_id</key><value></value></entry>
+            <entry><key>aws_secret_access_key</key><value></value></entry>
+            <entry><key>region</key><value></value></entry>
+            <entry editable="true"><key>defaultInstanceType</key><value></value></entry>
+            <entry editable="true"><key>defaultImage</key><value></value></entry>
+            <entry editable="true"><key>defaultKeyPair</key><value></value></entry>
+            <entry editable="true"><key>defaultSecGroup</key><value></value></entry>
+        </properties>	
+    </driverInstance>
+    <driverInstance>
+        <meta>
+            <name>Generic</name>
+        </meta>
+        <properties>
+            <entry><key>topologyUri</key><value></value></entry>
+            <entry><key>driverEjbPath</key><value>java:module/GenericRESTDriver</value></entry>	            
+            <entry><key>subsystemBaseUrl</key><value></value></entry>
+        </properties>
+    </driverInstance>
+    <driverInstance>
+        <meta>
+            <name>SENSE</name>
+        </meta>
+        <properties>
+            <entry><key>topologyUri</key><value></value></entry>
+            <entry><key>driverEjbPath</key><value>java:module/SenseRMDriver</value></entry>
+            <entry editable="true" required="true"><key>subsystemBaseUrl</key><value></value></entry>
+        </properties>
+    </driverInstance>
+    <driverInstance>
+        <meta>
+            <name>OpenStack</name>
+        </meta>
+        <properties>
+            <entry><key>url</key><value></value></entry>
+            <entry><key>NATServer</key><value></value></entry>
+            <entry><key>driverEjbPath</key><value>java:module/OpenStackDriver</value></entry>
+            <entry><key>username</key><value></value></entry>
+            <entry><key>password</key><value></value></entry>
+            <entry><key>topologyUri</key><value></value></entry>
+            <entry><key>tenant</key><value></value></entry>
+            <entry><key>adminUsername</key><value></value></entry>
+            <entry><key>adminPassword</key><value></value></entry>
+            <entry><key>adminTenant</key><value></value></entry>
+            <entry><key>defaultImage</key><value></value></entry>
+            <entry><key>defaultFlavor</key><value></value></entry>
+            <entry><key>modelExt</key><value></value></entry>
+        </properties>
+    </driverInstance>
+</catalog>

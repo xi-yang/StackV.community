@@ -231,7 +231,10 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null; //default = 1
             reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
             reqBandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class") != null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+            reqBandwithProfile.unit = (jsonBw.containsKey("unit") && jsonBw.get("unit") != null) ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
             reqBandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
+            reqBandwithProfile.minimumCapacity = (jsonBw.containsKey("minimum") && jsonBw.get("minimum") != null) ? Long.parseLong(jsonBw.get("minimum").toString()) : null; //default = null
+            reqBandwithProfile.individualCapacity = (jsonBw.containsKey("individual") && jsonBw.get("individual") != null) ? Long.parseLong(jsonBw.get("individual").toString()) : null; //default = null
         }
         if (bridgeSwitchingService != null) {
             // get SwitchingSubnet provided by bridgeSwitchingService from mpvbPath 
@@ -297,7 +300,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     throw logger.error_throwing(method, "malformed schedule: " + jsonSchedule.toJSONString());
                 }
                 try {
-                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                    candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds_Obsolute(startTime));
                 } catch (Exception ex) {
                     throw logger.throwing(method, "malformed schedule startTme", ex);
                 }
@@ -399,10 +402,6 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                     } catch (Exception ex) {
                         throw logger.throwing(method, "verifyL2Path -exception- ", ex);
                     }
-                    if (verified && jsonConnReq.containsKey("bandwidth")) {
-                        bridgePath.bandwithProfile = reqBandwithProfile;
-                        verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
-                    }
                     // check&make schedule
                     //@TODO: combine this block into common method
                     if (verified && jsonConnReq.containsKey("schedule")) {
@@ -417,7 +416,7 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                             throw logger.error_throwing(method, "malformed schedule: " + jsonSchedule.toJSONString());
                         }
                         try {
-                            candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds(startTime));
+                            candidatePath.bandwithScedule.setStartTime(DateTimeUtil.getBandwidthScheduleSeconds_Obsolute(startTime));
                         } catch (Exception ex) {
                             throw logger.throwing(method, "malformed schedule startTme", ex);
                         }
@@ -444,6 +443,8 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                         }
                         if (candidatePath.bandwithProfile == null || candidatePath.bandwithProfile.reservableCapacity == null) {
                             throw logger.error_throwing(method, "input schedule without bandwidth.");
+                        } else if (!candidatePath.bandwithProfile.type.equalsIgnoreCase("guaranteedCapped") && !candidatePath.bandwithProfile.type.equalsIgnoreCase("softCapped")) {
+                            throw logger.error_throwing(method, "MCETools.computeFeasibleL2KSP - advance scheduling can only work with guaranteedCapped or softCapped bandwidth service.");
                         }
                         candidatePath.bandwithScedule.setBandwidth(normalizeBandwidthPorfile(candidatePath.bandwithProfile).reservableCapacity);
                         JSONObject jsonScheduleOptions = jsonSchedule.containsKey("options") ? (JSONObject) jsonSchedule.get("options") : new JSONObject();
@@ -480,7 +481,11 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
                             logger.trace(method, candidatePath.getConnectionId() + " -- " + ex.getMessage());
                             verified = false;
                         }
+                    } else  if (verified && jsonConnReq.containsKey("bandwidth")) {
+                        bridgePath.bandwithProfile = reqBandwithProfile;
+                        verified = MCETools.verifyPathBandwidthProfile(transformedModel, bridgePath);
                     }
+
                     if (verified) {
                         // connect bridge path into MPVB bridging subnet
                         OntModel bridgePathModel = MCETools.createL2PathVlanSubnets(transformedModel, bridgePath, jsonTerminals);
@@ -533,7 +538,10 @@ public class MCE_MultiPointVlanBridge extends MCEBase {
             reqBandwithProfile.availableCapacity = (jsonBw.containsKey("available") && jsonBw.get("available") != null) ? Long.parseLong(jsonBw.get("available").toString()) : null; //default = 1
             reqBandwithProfile.granularity = (jsonBw.containsKey("granularity") && jsonBw.get("granularity") != null) ? Long.parseLong(jsonBw.get("granularity").toString()) : 1L; //default = 1
             reqBandwithProfile.type = (jsonBw.containsKey("qos_class") && jsonBw.get("qos_class") != null) ? jsonBw.get("qos_class").toString() : "guaranteedCapped"; //default = "guaranteedCapped"
+            reqBandwithProfile.unit = (jsonBw.containsKey("unit") && jsonBw.get("unit") != null) ? jsonBw.get("unit").toString() : "bps"; //default = "bps"
             reqBandwithProfile.priority = (jsonBw.containsKey("priority") && jsonBw.get("priority") != null) ? jsonBw.get("priority").toString() : "0"; //default = "0"
+            reqBandwithProfile.minimumCapacity = (jsonBw.containsKey("minimum") && jsonBw.get("minimum") != null) ? Long.parseLong(jsonBw.get("minimum").toString()) : null; //default = null
+            reqBandwithProfile.individualCapacity = (jsonBw.containsKey("individual") && jsonBw.get("individual") != null) ? Long.parseLong(jsonBw.get("individual").toString()) : null; //default = null
         }
         if (bridgeOpenflowService != null) {
             Resource bridgePort = terminalX;

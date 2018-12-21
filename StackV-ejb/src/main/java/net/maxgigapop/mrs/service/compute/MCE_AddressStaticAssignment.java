@@ -107,8 +107,6 @@ public class MCE_AddressStaticAssignment extends MCEBase {
         return new AsyncResult(outputDelta);
     }
 
-    //@TODO: Stitch ( VGW | VPC | Subnet? )to ( DcVx | L2Path )
-
     // General logic: 1. find the "terminal / end" containing resource (eg. Host Node or Topology)
     // 2. identify the "attach-point" resource (eg. VLAN port) along with a stitching path
     // 3. add statements to the stitching path to connect the terminal to the attach-point (if applicable)
@@ -165,6 +163,9 @@ public class MCE_AddressStaticAssignment extends MCEBase {
             if (AddressUtil.isIpAddressMaskRange(ipRange)) {
                 List<Long> ipList = AddressUtil.ipMaskRangeToLongList(ipRange);
                 Long mask = ipList.get(0);
+                if (mask < 16) {
+                    throw logger.error_throwing("normalizeIpAddressList", "cannot handle network range with mask < 16");
+                }
                 ipList.remove(0);
                 for (Long ip: ipList) {
                     listAddresses.add(AddressUtil.ipToString(ip, mask));
@@ -172,6 +173,9 @@ public class MCE_AddressStaticAssignment extends MCEBase {
             } else if (AddressUtil.isIpAddressPrefixkRange(ipRange)) {
                 List<Long> ipList = AddressUtil.ipPrefixRangeToLongList(ipRange);
                 Long mask = ipList.get(0);
+                if (mask < 16) {
+                    throw logger.error_throwing("normalizeIpAddressList", "cannot handle network prefix with mask < 16");
+                }
                 ipList.remove(0);
                 for (Long ip: ipList) {
                     listAddresses.add(AddressUtil.ipToString(ip, mask));
@@ -212,7 +216,8 @@ public class MCE_AddressStaticAssignment extends MCEBase {
                     + "?terminal nml:hasBidirectionalPort ?vif."
                     + String.format("FILTER (?terminal = <%s> && ?vif = <%s>)", terminalUri, hopUri)
                     + "} "
-                    + "FILTER NOT EXISTS { ?vif mrs:type \"shared\". ?vif mrs:hasNetworkAddress ?na. } "
+                    + "FILTER (NOT EXISTS { ?port mrs:type \"shared\". ?vif mrs:hasNetworkAddress ?na. ?na mrs:type \"ipv4-address\"}"
+                    + " && NOT EXISTS { ?vif mrs:type \"shared\". ?vif mrs:hasNetworkAddress ?na. ?na mrs:type \"ipv4-address\"}) "
                     + "}";
             ResultSet r = ModelUtil.sparqlQuery(unionSysModel, sparql);
             if (r.hasNext()) {

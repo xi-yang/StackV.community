@@ -125,7 +125,7 @@ public class AwsDriver implements IHandleDriverSystemCall {
         String defaultInstanceType = driverInstance.getProperty("defaultInstanceType");
         String defaultKeyPair = driverInstance.getProperty("defaultKeyPair");
         String defaultSecGroup = driverInstance.getProperty("defaultSecGroup");
-        DriverInstancePersistenceManager.merge(driverInstance);
+        driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
         AwsPush push = new AwsPush(access_key_id, secret_access_key, region, topologyURI, defaultImage, defaultInstanceType, defaultKeyPair, defaultSecGroup);
         try {
             push.pushCommit(requests);

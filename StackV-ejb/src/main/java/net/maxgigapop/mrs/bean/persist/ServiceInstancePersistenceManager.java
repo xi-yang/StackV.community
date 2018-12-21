@@ -41,16 +41,18 @@ public class ServiceInstancePersistenceManager extends PersistenceManager {
     
     private static final StackLogger logger = new StackLogger(ServiceInstancePersistenceManager.class.getName(), "ServiceInstancePersistenceManager");
 
-    private static Map<String, ServiceInstance> serviceInstanceByUuidMap = null;
+    //private static Map<String, ServiceInstance> serviceInstanceByUuidMap = null;
 
     public static ServiceInstance findById(Long id) {
         return PersistenceManager.find(ServiceInstance.class, id);
     }
 
     public static ServiceInstance findByReferenceUUID(String uuid) {
+        /*
         if (serviceInstanceByUuidMap != null && serviceInstanceByUuidMap.containsKey(uuid)) {
             return serviceInstanceByUuidMap.get(uuid);
         }
+        */
         try {
             Query q = createQuery(String.format("FROM %s WHERE referenceUUID='%s'", ServiceInstance.class.getSimpleName(), uuid));
             List<ServiceInstance> listSI = (List<ServiceInstance>) q.getResultList();
@@ -68,6 +70,7 @@ public class ServiceInstancePersistenceManager extends PersistenceManager {
         }
     }
 
+    /*
     public static void save(ServiceInstance si) {
         PersistenceManager.save(si);
         if (serviceInstanceByUuidMap == null) {
@@ -87,4 +90,5 @@ public class ServiceInstancePersistenceManager extends PersistenceManager {
             serviceInstanceByUuidMap.remove(si.getReferenceUUID());
         }
     }
+    */
 }

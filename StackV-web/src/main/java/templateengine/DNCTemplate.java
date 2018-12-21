@@ -20,5 +20,6 @@ public class DNCTemplate extends Template {
         helpers.put("DNCType", new DNCType());
         helpers.put("DNCPolicyData", new DNCPolicyData());
         helpers.put("DNCAssignIpAddress", new DNCAssignIpAddress());
+        helpers.put("isIPAssigned", new isIPAssigned());
     }
 }

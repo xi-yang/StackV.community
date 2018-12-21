@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost:3306
--- Generation Time: Apr 06, 2018 at 04:53 PM
+-- Generation Time: Dec 04, 2018 at 10:45 PM
 -- Server version: 5.5.42
 -- PHP Version: 5.6.7
 
@@ -14,7 +14,7 @@ SET time_zone = "+00:00";
 -- Database: `frontend`
 --
 DROP DATABASE IF EXISTS `frontend`;
-CREATE DATABASE `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+CREATE DATABASE IF NOT EXISTS `frontend` DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE `frontend`;
 
 -- --------------------------------------------------------
@@ -29,6 +29,34 @@ CREATE TABLE `acl` (
   `subject` varchar(45) COLLATE utf8_unicode_ci NOT NULL,
   `is_group` tinyint(1) NOT NULL DEFAULT '0',
   `object` varchar(45) COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `clipbook`
+--
+
+DROP TABLE IF EXISTS `clipbook`;
+CREATE TABLE `clipbook` (
+  `clipbook_id` int(11) NOT NULL,
+  `username` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  `name` varchar(256) COLLATE utf8_unicode_ci NOT NULL,
+  `clip` longtext COLLATE utf8_unicode_ci NOT NULL,
+  `color` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `driver`
+--
+
+DROP TABLE IF EXISTS `driver`;
+CREATE TABLE `driver` (
+  `urn` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `type` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `xml` longtext COLLATE utf8_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -204,6 +232,20 @@ ALTER TABLE `acl`
   ADD PRIMARY KEY (`acl_id`);
 
 --
+-- Indexes for table `clipbook`
+--
+ALTER TABLE `clipbook`
+  ADD PRIMARY KEY (`clipbook_id`);
+
+--
+-- Indexes for table `driver`
+--
+ALTER TABLE `driver`
+  ADD PRIMARY KEY (`urn`),
+  ADD UNIQUE KEY `urn` (`urn`),
+  ADD KEY `urn_2` (`urn`);
+
+--
 -- Indexes for table `label`
 --
 ALTER TABLE `label`
@@ -230,7 +272,8 @@ ALTER TABLE `service_instance`
   ADD PRIMARY KEY (`service_instance_id`),
   ADD KEY `service_instance-service_idx` (`type`),
   ADD KEY `service_instance-user_info_idx` (`username`),
-  ADD KEY `service_instance-service_state_idx` (`super_state`);
+  ADD KEY `service_instance-service_state_idx` (`super_state`),
+  ADD KEY `service_wizard_id` (`service_wizard_id`);
 
 --
 -- Indexes for table `service_renders`
@@ -265,6 +308,11 @@ ALTER TABLE `service_wizard_licenses`
 --
 ALTER TABLE `acl`
   MODIFY `acl_id` int(11) NOT NULL AUTO_INCREMENT;
+--
+-- AUTO_INCREMENT for table `clipbook`
+--
+ALTER TABLE `clipbook`
+  MODIFY `clipbook_id` int(11) NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `log`
 --

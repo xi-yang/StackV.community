@@ -204,155 +204,26 @@ public class WebResource {
         }
     }
 
-    /**
-     * @apiDefine AuthHeader
-     * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
-     */
-    // >ACL
-    /**
-     * @api {post} /app/acl/:refUUID Add ACL Entry
-     * @apiVersion 1.0.0
-     * @apiDescription Add subject pairing to object specified by UUID.
-     * @apiGroup ACL
-     * @apiUse AuthHeader
-     * @apiParam {String} subject subject ID
-     * @apiParam {String} refUUID object reference UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X POST -H "Content-Type: application/json" -d "test1"
-     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
-    @POST
-    @Path(value = "/acl/{refUUID}")
-    @Consumes(value = {"application/json", "application/xml"})
-    @RolesAllowed("F_ACL-W")
-    public void addACLEntry(@PathParam("refUUID") String refUUID, final String subject) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "addACLEntry";
-            logger.start(method);
-            // Authorize service.
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                    .getName());
-            final AccessToken accessToken = securityContext.getToken();
-
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
-                    + "VALUES (?, '0', ?)");
-            prep.setString(1, subject);
-            prep.setString(2, refUUID);
-            prep.executeUpdate();
-
-            logger.end(method);
-        } catch (SQLException ex) {
-            logger.catching("addACLEntry", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
-    /**
-     * @api {delete} /app/acl/:refUUID Delete ACL Entry
-     * @apiDescription Delete subject associated with object specified by UUID.
-     * @apiVersion 1.0.0
-     * @apiGroup ACL
-     * @apiUse AuthHeader
-     * @apiParam {String} subject subject ID
-     * @apiParam {String} refUUID object reference UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl -X DELETE -H "Content-Type: application/json" -d "test1"
-     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     */
-    @DELETE
-    @Path(value = "/acl/{refUUID}")
-    @Consumes(value = {"application/json", "application/xml"})
-    @RolesAllowed("F_ACL-W")
-    public void removeACLEntry(@PathParam("refUUID") String refUUID, final String subject) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "removeACLEntry";
-            logger.start(method);
-            // Authorize service.
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                    .getName());
-            final AccessToken accessToken = securityContext.getToken();
-
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("DELETE FROM `frontend`.`acl` WHERE subject = ? AND object = ?");
-            prep.setString(1, subject);
-            prep.setString(2, refUUID);
-            prep.executeUpdate();
-
-            logger.end(method);
-        } catch (SQLException ex) {
-            logger.catching("removeACLEntry", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
-    /**
-     * @api {GET} /app/acl/:refUUID Get ACL Entries
-     * @apiVersion 1.0.0
-     * @apiDescription Get all entries associated with object specified by UUID.
-     * @apiGroup ACL
-     * @apiUse AuthHeader
-     * @apiParam {String} refUUID object reference UUID
-     *
-     * @apiExample {curl} Example Call:
-     * curl
-     * http://localhost:8080/StackV-web/restapi/app/acl/b7688fef-1911-487e-b5d9-3e9e936599a8
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} users users JSON
-     * @apiSuccess {JSONArray} users.user user JSON
-     * @apiSuccess {String} users.user.username username
-     * @apiSuccess {String} users.user.name full name
-     * @apiSuccess {String} users.user.email email
-     * @apiSuccessExample {json} Example Response:
-     * [["admin","",null]]
-     */
     @GET
-    @Path("/acl/{refUuid}")
+    @Path("/access/{uuid}")
     @Produces("application/json")
-    @RolesAllowed("F_ACL-R")
-    public ArrayList<ArrayList<String>> getACLwithInfo(@PathParam("refUuid") String refUUID) throws SQLException, IOException, ParseException {
+    public String getUserAccess(@PathParam(value = "uuid") String instance) throws IOException, ParseException {
+        String method = "getUserAccess";
+        JSONObject retJSON = new JSONObject();
+        JSONArray retArr = new JSONArray();
+
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+        AccessToken accessToken = securityContext.getToken();
+        String username = accessToken.getPreferredUsername();
+
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            String method = "getACLwithInfo";
-            logger.trace_start(method);
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            ArrayList<String> sqlList = new ArrayList<>();
-
-            try {
-                front_conn = factory.getConnection("frontend");
-
-                prep = front_conn.prepareStatement("SELECT A.subject FROM acl A WHERE A.object = ?");
-                prep.setString(1, refUUID);
-                rs = prep.executeQuery();
-
-                while (rs.next()) {
-                    sqlList.add(rs.getString("subject"));
-                }
-            } catch (SQLException ex) {
-                logger.catching("getACLwithInfo", ex);
-                throw ex;
-            } finally {
-                commonsClose(front_conn, prep, rs, logger);
-            }
+            front_conn = factory.getConnection("frontend");
+            prep = front_conn.prepareStatement("SELECT `subject` FROM `acl` WHERE `object` = ?");
+            prep.setString(1, instance);
+            rs = prep.executeQuery();
 
             final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             URL url = new URL(kc_url + "/admin/realms/StackV/users");
@@ -363,7 +234,6 @@ public class WebResource {
             conn.setRequestMethod("GET");
             conn.setDoInput(true);
             conn.connect();
-            logger.trace("getACLwithInfo", conn.getResponseCode() + " - " + conn.getResponseMessage(), "users");
             StringBuilder responseStr;
             try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String inputLine;
@@ -377,28 +247,126 @@ public class WebResource {
             JSONArray userArr = (JSONArray) obj;
             for (Object user : userArr) {
                 JSONObject userJSON = (JSONObject) user;
-                String username = (String) userJSON.get("username");
-
-                if (sqlList.contains(username)) {
-                    ArrayList<String> userList = new ArrayList<>();
-                    userList.add(username);
-
-                    if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
-                        userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
-                    } else {
-                        userList.add("");
+                rs.beforeFirst();
+                while (rs.next()) {
+                    if (rs.getString("subject").equals(userJSON.get("username"))) {
+                        userJSON.put("permitted", true);
                     }
-
-                    userList.add((String) userJSON.get("email"));
-                    retList.add(userList);
+                }
+                if (!userJSON.get("username").equals(username)) {
+                    retArr.add(userJSON);
                 }
             }
-            logger.trace_end(method);
-            return retList;
-        } catch (IOException | ParseException ex) {
-            logger.catching("getACLwithInfo", ex);
-            throw ex;
+            retJSON.put("data", retArr);
+            return retJSON.toJSONString();
+        } catch (IOException | SQLException | ParseException ex) {
+            logger.catching(method, ex);
+            return retJSON.toJSONString();
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
         }
+    }
+
+    /**
+     * @apiDefine AuthHeader
+     * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
+     */
+    // >Access
+    /**
+     * Gives a user access to specified instance.
+     * @param uuid
+     * @param username
+     * @throws SQLException
+     */
+    @PUT
+    @Path("/access/{uuid}/{username}")
+    @Consumes(value = {"application/json"})
+    public void addAccess(@PathParam("uuid") String uuid, @PathParam("username") String username) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+
+            // excluding the topuri if the driver type is raw
+            prep = front_conn.prepareStatement("INSERT INTO acl (`subject`, `object`) VALUES (?, ?)");
+            prep.setString(1, username);
+            prep.setString(2, uuid);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("addAccess", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
+        }
+    }
+
+    /**
+     * Removes a user's access to specified instance.
+     * @param uuid
+     * @param username
+     * @throws SQLException
+     */
+    @DELETE
+    @Path("/access/{uuid}/{username}")
+    @Consumes(value = {"application/json"})
+    public void removeAccess(@PathParam("uuid") String uuid, @PathParam("username") String username) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            front_conn = factory.getConnection("frontend");
+
+            // excluding the topuri if the driver type is raw
+            prep = front_conn.prepareStatement("DELETE FROM acl WHERE `subject` = ? AND `object` = ?");
+            prep.setString(1, username);
+            prep.setString(2, uuid);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("removeAccess", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
+        }
+    }
+
+    @GET
+    @Path("/access/ipa/{uuid}")
+    @Produces("application/json")
+    public String getUserResourceAccess(@PathParam(value = "uuid") String instance) throws IOException, ParseException {
+        String method = "getUserResourceAccess";
+        JSONObject retJSON = new JSONObject();
+        JSONArray retArr = new JSONArray();
+
+        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+        URL url = new URL(kc_url + "/admin/realms/StackV/users");
+        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+        conn.setRequestProperty("Authorization", auth);
+        conn.setReadTimeout(10000);
+        conn.setConnectTimeout(15000);
+        conn.setRequestMethod("GET");
+        conn.setDoInput(true);
+        conn.connect();
+        StringBuilder responseStr;
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            String inputLine;
+            responseStr = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                responseStr.append(inputLine);
+            }
+        }
+
+        Object obj = parser.parse(responseStr.toString());
+        JSONArray userArr = (JSONArray) obj;
+        for (Object user : userArr) {
+            JSONObject userJSON = (JSONObject) user;
+            retJSON = new JSONObject();
+            retJSON.put("username", userJSON.get("username"));
+
+            retArr.add(userJSON);
+        }
+        retJSON.put("data", retArr);
+        return retJSON.toJSONString();
     }
 
     // >FreeIPA-based ACL
@@ -468,7 +436,7 @@ public class WebResource {
     //@RolesAllowed("F_ACL-R")
     public String ipaRequest(String postData) {
         JSONObject result = new JSONObject();
-        if (ipaBaseServerUrl != null) {            
+        if (ipaBaseServerUrl != null) {
             try {
                 URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
                 HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
@@ -686,7 +654,7 @@ public class WebResource {
             // excluding the topuri if the driver type is raw
             prep = front_conn.prepareStatement("DELETE FROM frontend.clipbook WHERE username = ? AND name = ?");
             prep.setString(1, username);
-            prep.setString(2, name);            
+            prep.setString(2, name);
             prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("deleteClip", ex);
@@ -696,90 +664,179 @@ public class WebResource {
         }
     }
 
-    // >Drivers
-    @PUT
-    @Path("/driver/install")
-    @Consumes("application/json")
-    @Produces("text/plain")
-    @RolesAllowed("F_Drivers-X")
-    public String installDriver(final String dataInput) throws SQLException, IOException, ParseException {
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-        final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
-        final TokenHandler token = new TokenHandler(refresh);
-
-        Object obj = parser.parse(dataInput);
-        JSONObject JSONtemp = (JSONObject) obj;
-        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
-        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-        String xmldata = JSONtoxml(JSONdata, (String) JSONdata.get("driverType"));
+    // >Data
+    /**
+     * @api {get} /app/keycloak/users Get Users
+     * @apiVersion 1.0.0
+     * @apiDescription Get a list of existing users.
+     * @apiGroup Keycloak
+     * @apiUse AuthHeader
+     *
+     * @apiExample {curl} Example Call:
+     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users
+     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     *
+     * @apiSuccess {JSONArray} users users JSON
+     * @apiSuccess {JSONArray} users.user user JSON
+     * @apiSuccess {String} users.user.username username
+     * @apiSuccess {String} users.user.name full name
+     * @apiSuccess {String} users.user.email email
+     * @apiSuccess {String} users.user.time timestamp of user creation
+     * @apiSuccess {String} users.user.subject user ID
+     * @apiSuccessExample {json} Example Response:
+     * [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
+     */
+    @GET
+    @Path("/data/users")
+    @Produces("application/json")
+    public String getUsers() throws IOException, ParseException {
         try {
-            URL url = new URL(String.format("%s/driver", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = executeHttpMethod(url, connection, "POST", xmldata, token.auth());
-            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
-            {
-                return "PLUGIN FAILED: Driver Resource did not return successfull";
+            JSONObject retJSON = new JSONObject();
+            JSONArray retArr = new JSONArray();
+
+            String method = "getUsers";
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(kc_url + "/admin/realms/StackV/users");
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setRequestProperty("Authorization", auth);
+            conn.setReadTimeout(10000);
+            conn.setConnectTimeout(15000);
+            conn.setRequestMethod("GET");
+            conn.setDoInput(true);
+            conn.connect();
+            StringBuilder responseStr;
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String inputLine;
+                responseStr = new StringBuilder();
+                while ((inputLine = in.readLine()) != null) {
+                    responseStr.append(inputLine);
+                }
             }
-        } catch (IOException ex) {
-            logger.catching("installDriver", ex);
+
+            Object obj = parser.parse(responseStr.toString());
+            JSONArray userArr = (JSONArray) obj;
+            for (Object user : userArr) {
+                JSONObject userJSON = (JSONObject) user;
+                retArr.add(userJSON);
+            }
+            retJSON.put("data", retArr);
+            return retJSON.toJSONString();
+        } catch (IOException | ParseException ex) {
+            logger.catching("getUsers", ex);
             throw ex;
         }
-
-        return "PLUGIN SUCCEEDED";
     }
 
-    @PUT
-    @Path("/driver/{user}/install/{topuri}")
-    @Produces("text/plain")
-    @RolesAllowed("F_Drivers-X")
-    public String installDriverProfile(@PathParam("user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, IOException, ParseException {
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+    // >Drivers
+    @GET
+    @Path("/drivers")
+    @Produces("application/json")
+    @RolesAllowed("F_Drivers-R")
+    public String getDrivers() throws SQLException, IOException, ParseException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
+        JSONArray retArr = new JSONArray();
 
-        Connection front_conn = factory.getConnection("frontend");
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = ? AND TopUri = ?");
-        prep.setString(1, username);
-        prep.setString(2, topuri);
-        ResultSet rs = prep.executeQuery();
-
-        rs.next();
-        Object obj = parser.parse(rs.getString("data"));
-        JSONObject JSONtemp = (JSONObject) obj;
-        JSONArray JSONtempArray = (JSONArray) JSONtemp.get("jsonData");
-        JSONObject JSONdata = (JSONObject) JSONtempArray.get(0);
-
-        String xmldata = JSONtoxml(JSONdata, rs.getString("drivertype"));
-
-        commonsClose(front_conn, prep, rs, logger);
-
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
         try {
-            URL url = new URL(String.format("%s/driver", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String result = executeHttpMethod(url, connection, "POST", xmldata, auth);
-            if (!result.equalsIgnoreCase("plug successfully")) //plugin error
-            {
-                return "PLUGIN FAILED: Driver Resource Failed";
-            }
-        } catch (IOException ex) {
-            logger.catching("installDriverProfile", ex);
-            throw ex;
-        }
+            front_conn = factory.getConnection("frontend");
 
-        return "PLUGIN SUCCEEDED";
+            prep = front_conn.prepareStatement("SELECT * FROM driver");
+            ResultSet ret = prep.executeQuery();
+            String resStr;
+            try {
+                URL url = new URL(String.format("%s/driver", host));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                resStr = executeHttpMethod(url, connection, "GET", null, token.auth());
+            } catch (IOException ex) {
+                logger.catching("installDriver", ex);
+                throw ex;
+            }
+
+            JSONArray resJSON = (JSONArray) parser.parse(resStr);
+            ArrayList<String> mapped = new ArrayList<>();
+            // Iterate through saved/known drivers.
+            while (ret.next()) {
+                JSONObject driver = new JSONObject();
+                String status = "Unplugged";
+                String urn = ret.getString("urn");
+                driver.put("urn", urn);
+                driver.put("type", ret.getString("type"));
+                driver.put("xml", ret.getString("xml"));
+
+                // Iterate through backend results looking for match.
+                for (int i = 0; i < resJSON.size(); i++) {
+                    JSONObject resDriver = (JSONObject) resJSON.get(i);
+                    if (resDriver != null && resDriver.get("topologyUri").equals(urn)) {
+                        status = "Plugged";
+                        mapped.add(urn);
+
+                        driver.put("errors", resDriver.get("contErrors"));
+                        driver.put("disabled", resDriver.get("disabled"));
+
+                        break;
+                    }
+                }
+                driver.put("status", status);
+                retArr.add(driver);
+            }
+
+            // Synchronize any missing backend drivers
+            for (int i = 0; i < resJSON.size(); i++) {
+                JSONObject resDriver = (JSONObject) resJSON.get(i);
+                if (!mapped.contains(resDriver.get("topologyUri"))) {                   
+                    // Translate properties into xml
+                    String xml = "<driverInstance><properties>";
+                    String propStr;
+                    try {
+                        URL url = new URL(String.format("%s/driver/%s", host, (String) resDriver.get("topologyUri")));
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        propStr = executeHttpMethod(url, connection, "GET", null, token.auth());
+                    } catch (IOException ex) {
+                        logger.catching("installDriver", ex);
+                        throw ex;
+                    }
+                    JSONObject propJSON = (JSONObject) parser.parse(propStr);
+                    for (Object key : propJSON.keySet()) {                        
+                        String keyStr = (String) key;
+                        String keyValue = (String) propJSON.get(keyStr);                        
+                        xml += "<entry><key>" + keyStr + "</key><value>" + keyValue + "</value></entry>";
+                    }
+                    xml += "</properties></driverInstance>";
+
+                    String urn = (String) resDriver.get("topologyUri");
+                    String type = (String) resDriver.get("driverEjbPath");
+                    prep = front_conn.prepareStatement("INSERT INTO frontend.driver VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `type` = ?,`xml` = ?");
+                    prep.setString(1, urn);
+                    prep.setString(2, type);
+                    prep.setString(3, xml);
+                    prep.setString(4, type);
+                    prep.setString(5, xml);
+                    prep.executeUpdate();
+                }
+            }
+
+            return retArr.toJSONString();
+        } catch (SQLException ex) {
+            logger.catching("getDrivers", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
+        }
     }
 
     /**
-     * Adds a new driver profile
-     * @param username
+     * Adds a new driver
      * @param dataInput
      * @throws SQLException
      */
     @PUT
-    @Path("/driver/{user}/add")
+    @Path("/drivers/")
     @Consumes(value = {"application/json"})
     @RolesAllowed("F_Drivers-W")
-    public void addDriver(@PathParam("user") String username, final String dataInput) throws SQLException {
+    public void addDriver(final String dataInput) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -793,38 +850,57 @@ public class WebResource {
                 logger.catching("addDriver", ex);
             }
 
-            String user = (String) inputJSON.get("username");
-            String drivername = (String) inputJSON.get("drivername");
-            String desc = (String) inputJSON.get("driverDescription");
-            String data = (String) inputJSON.get("data");
-            String uri = (String) inputJSON.get("topuri");
-            String drivertype = (String) inputJSON.get("drivertype");
+            String urn = (String) inputJSON.get("urn");
+            String type = (String) inputJSON.get("type");
+            String xml = (String) inputJSON.get("xml");
 
             front_conn = factory.getConnection("frontend");
-
-            if (drivertype.equals("raw")) {
-                // excluding the topuri if the driver type is raw
-                prep = front_conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
-                prep.setString(1, user);
-                prep.setString(2, drivername);
-                prep.setString(3, drivertype);
-                prep.setString(4, "");
-                prep.setString(5, desc);
-                prep.setString(6, data);
-                prep.executeUpdate();
-            } else {
-                prep = front_conn.prepareStatement("INSERT INTO frontend.driver_wizard VALUES (?, ?, ?, ?, ?, ?)");
-                prep.setString(1, user);
-                prep.setString(2, drivername);
-                prep.setString(3, drivertype);
-                prep.setString(4, uri);
-                prep.setString(5, desc);
-                prep.setString(6, data);
-                prep.executeUpdate();
-
-            }
+            prep = front_conn.prepareStatement("INSERT INTO frontend.driver VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `type` = ?,`xml` = ?");
+            prep.setString(1, urn);
+            prep.setString(2, type);
+            prep.setString(3, xml);
+            prep.setString(4, type);
+            prep.setString(5, xml);
+            prep.executeUpdate();
         } catch (SQLException ex) {
             logger.catching("addDriver", ex);
+            throw ex;
+        } finally {
+            commonsClose(front_conn, prep, rs, logger);
+        }
+    }
+
+    /**
+     * Deletes a driver
+     * @param dataInput
+     * @throws SQLException
+     */
+    @DELETE
+    @Path("/drivers/")
+    @Consumes(value = {"application/json"})
+    @RolesAllowed("F_Drivers-W")
+    public void deleteDriver(final String dataInput) throws SQLException {
+        Connection front_conn = null;
+        PreparedStatement prep = null;
+        ResultSet rs = null;
+        try {
+            JSONObject inputJSON = new JSONObject();
+            try {
+                Object obj = parser.parse(dataInput);
+                inputJSON = (JSONObject) obj;
+
+            } catch (ParseException ex) {
+                logger.catching("addDriver", ex);
+            }
+
+            String urn = (String) inputJSON.get("urn");
+
+            front_conn = factory.getConnection("frontend");
+            prep = front_conn.prepareStatement("DELETE FROM frontend.driver WHERE `urn` = ?");
+            prep.setString(1, urn);
+            prep.executeUpdate();
+        } catch (SQLException ex) {
+            logger.catching("deleteDriver", ex);
             throw ex;
         } finally {
             commonsClose(front_conn, prep, rs, logger);
@@ -953,84 +1029,7 @@ public class WebResource {
         }
     }
 
-    // >Keycloak
-    /**
-     * @api {get} /app/keycloak/users Get Users
-     * @apiVersion 1.0.0
-     * @apiDescription Get a list of existing users.
-     * @apiGroup Keycloak
-     * @apiUse AuthHeader
-     *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
-     *
-     * @apiSuccess {JSONArray} users users JSON
-     * @apiSuccess {JSONArray} users.user user JSON
-     * @apiSuccess {String} users.user.username username
-     * @apiSuccess {String} users.user.name full name
-     * @apiSuccess {String} users.user.email email
-     * @apiSuccess {String} users.user.time timestamp of user creation
-     * @apiSuccess {String} users.user.subject user ID
-     * @apiSuccessExample {json} Example Response:
-     * [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
-     */
-    @GET
-    @Path("/keycloak/users")
-    @Produces("application/json")
-    @RolesAllowed("F_Keycloak-R")
-    public ArrayList<ArrayList<String>> getUsers() throws IOException, ParseException {
-        try {
-            String method = "getUsers";
-            logger.trace_start(method);
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            URL url = new URL(kc_url + "/admin/realms/StackV/users");
-            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-            conn.setRequestProperty("Authorization", auth);
-            conn.setReadTimeout(10000);
-            conn.setConnectTimeout(15000);
-            conn.setRequestMethod("GET");
-            conn.setDoInput(true);
-            conn.connect();
-            StringBuilder responseStr;
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                String inputLine;
-                responseStr = new StringBuilder();
-                while ((inputLine = in.readLine()) != null) {
-                    responseStr.append(inputLine);
-                }
-            }
-
-            Object obj = parser.parse(responseStr.toString());
-            JSONArray userArr = (JSONArray) obj;
-            for (Object user : userArr) {
-                JSONObject userJSON = (JSONObject) user;
-                String subject = (String) userJSON.get("id");
-                String username = (String) userJSON.get("username");
-
-                ArrayList<String> userList = new ArrayList<>();
-                userList.add(username);
-
-                if (userJSON.containsKey("firstName") && userJSON.containsKey("lastName")) {
-                    userList.add((String) userJSON.get("firstName") + " " + (String) userJSON.get("lastName"));
-                } else {
-                    userList.add("");
-                }
-
-                userList.add((String) userJSON.get("email"));
-                userList.add(Long.toString((Long) userJSON.get("createdTimestamp")));
-                userList.add(subject);
-                retList.add(userList);
-            }
-            logger.trace_end(method);
-            return retList;
-        } catch (IOException | ParseException ex) {
-            logger.catching("getUsers", ex);
-            throw ex;
-        }
-    }
-
+    // >Keycloak    
     /*Andrew's Draft for new post method for adding additional roles to groups*/
     @POST
     @Path("/keycloak/groups/{group}")
@@ -2097,7 +2096,7 @@ public class WebResource {
 
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT * FROM service_instance WHERE referenceUUID = ?");
+            prep = front_conn.prepareStatement("SELECT * FROM service_instance WHERE referenceUUID = ? ORDER BY service_instance_id DESC");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
@@ -2939,6 +2938,7 @@ public class WebResource {
             logger.start(method, "Thread:" + Thread.currentThread());
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
+            logger.message(method, inputString);
             Object obj = parser.parse(inputString);
             final JSONObject inputJSON = (JSONObject) obj;
             String serviceType = (String) inputJSON.get("service");
@@ -3156,10 +3156,10 @@ public class WebResource {
     private void negotiateService(JSONObject inputJSON, TokenHandler token, String refUUID) throws EJBException, SQLException, IOException, InterruptedException {
         TemplateEngine template = new TemplateEngine();
 
-        System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
+        //System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
         String retString = template.apply(inputJSON);
         retString = retString.replace("&lt;", "<").replace("&gt;", ">");
-        System.out.println("\n\n\nResult:\n" + retString);
+        //System.out.println("\n\n\nResult:\n" + retString);
         inputJSON.put("data", retString);
         ServiceEngine.orchestrateInstance(refUUID, inputJSON, (String) inputJSON.get("uuid"), token, false);
     }
@@ -3270,7 +3270,7 @@ public class WebResource {
         return roleSet.contains(role);
     }
 
-    public static void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs, StackLogger logger) {        
+    public static void commonsClose(Connection front_conn, PreparedStatement prep, ResultSet rs, StackLogger logger) {
         try {
             DbUtils.close(rs);
             DbUtils.close(prep);

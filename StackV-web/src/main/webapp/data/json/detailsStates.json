@@ -1,4 +1,17 @@
 {
+    "CANCEL": {
+        "FAILED": {
+            "instruction": "Service has failed. Please see logging for more information.",
+            "lastState": {
+                "INIT": {
+                    "buttons": [
+                        "force_retry",
+                        "delete"
+                    ]
+                }
+            }        
+        }
+    },
     "REINSTATE": {
         "FAILED": {
             "instruction": "Service has failed. Please see logging for more information.",

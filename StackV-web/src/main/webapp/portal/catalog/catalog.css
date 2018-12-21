@@ -1,0 +1,233 @@
+ul.catalog-tabs li {
+    width: 50%;
+}
+ul.catalog-tabs li a {
+    color: #c7c7c7;
+    border: 1px solid #FFF;
+    background: linear-gradient(rgba(75,75,75,0.3), rgba(0,0,0,0.4)), url('/StackV-web/img/background.png');
+}
+ul.catalog-tabs li a:hover {
+    color: #FFF;
+}
+ul.catalog-tabs li.active a {
+    background: white;
+}
+ul.catalog-tabs li.active a:hover {
+    cursor: pointer;
+}
+
+button.button-header {
+    background-color: #50657c;
+    float: right;
+    border: 0
+}
+
+button.button-service-create {
+    float: right;
+    position: relative;
+    top: -6px;
+}
+
+.button-profile-meta-edit {
+    position: absolute;
+    top: 19px;
+    left: calc(30% - 25px);
+    font-size: .9em;
+    margin: 0;
+    padding: 2px 3px;
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+div.service-instance-panel {
+    float: right;
+}
+div#refresh-panel {
+    display: inline;
+    vertical-align: text-top;
+    color: #ffffff;
+    margin-right: 10px;
+    margin-left: 10px;
+}
+
+tr.instance-row {
+    cursor: pointer;
+}
+
+.catalog-modal-body, .profiles-modal-body {
+    padding: 20px 30px 10px 30px;
+    text-align: left;
+}
+.catalog-modal-body-header, .profiles-modal-body-header {
+    font-size: 1.25em;
+    vertical-align: top;
+    padding-right: 40px;
+    padding-bottom: 10px;
+}
+.catalog-modal-body .list-group, .profiles-modal-body .list-group {
+    cursor: pointer;
+    max-height: 65vh;
+    overflow: scroll;
+}
+
+#profileBlankName {
+    display: inline;
+    transform: scaleX(0);
+    opacity: 0;
+    transition: opacity 1s, transform 1s;
+    transform-origin: 0 0;
+    margin-left: 5px;
+}
+#profileBlankName.opened {
+    transform: scaleX(1) !important;
+    opacity: 1 !important;
+}
+
+#profile-license-metadata {
+    display: block;    
+    text-align: left;   
+    color: #777;
+}
+
+#saving-collapse input, #saving-collapse textarea {
+    width: 90%;
+    margin: auto;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#profile-details-modal-text {
+    float: right;
+    width: 70%;
+    height: 100%;
+    padding: 15px 10px;
+}
+#profile-details-modal-text-area {
+    width: 100%;
+    height: 100%;
+    padding: 7px;
+}
+
+#profile-details-modal-text-area[readonly] {
+    background: #efefef;
+}
+
+.profile-details-modal-meta-sharing-list li {
+    cursor: pointer;
+}
+.profile-details-modal-meta-editable {
+    float: left;
+    margin: 10px 0 0 5px;
+}
+
+#profile-details-modal-meta {
+    box-shadow: 5px 0px 20px rgba(0, 0, 0, 0.15), 
+        3px 0px 19px 0px rgba(0, 0, 0, 0.2), 
+        inset -3px 0px 20px rgba(0, 0, 0, 0.12);
+    float: left;
+    height: 100%;
+    width: 30%;
+    padding: 15px 3px 10px 10px;
+    background: #f5f3f3;
+    text-align: left;
+}
+
+#profile-details-modal-meta-div {
+    float: left;
+    padding: 3px;
+}
+
+.profile-details-modal-meta-buttons {
+    position: absolute;
+    bottom: 10px;
+    width: 30%;
+    left: 0;
+    padding: 10px;
+}
+
+
+.profile-details-modal-meta-name {
+    font-size: 1.25em; 
+    margin-right: 22px;
+}
+.profile-details-modal-meta-author {
+    font-size: 0.9em;  
+    color: #777777;
+}
+.profile-details-modal-meta-author.invalid {   
+    color: #c91818;
+}
+
+
+
+/*Make content within tab scrollable*/
+
+div#catalog-panel {
+    padding: 10px 10px 0 10px;
+    bottom: calc(-60% + 42px);
+    left: 0;
+    /*overflow: scroll;*/
+    height: 60%;
+    width: 80%;
+    position: fixed;
+    z-index: 5;
+}
+
+table#status-table {
+    margin: 0px auto auto auto;
+    width: 80%;
+    max-height: 100%;
+}
+table#status-table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+table#status-table tr {
+    cursor: pointer;
+}
+
+div#catalog-tab-content {
+    padding-top: 20px;
+    background: linear-gradient(rgba(0, 0, 0, 0.3),#333), url('/StackV-web/img/background.png');
+    width: 100%;
+    height: calc(100% - 32px);
+    border-right: 1px solid white;
+    border-left: 1px solid white;
+}
+
+#profile-details-modal-meta-sharing-list {
+    max-height: 30vh;
+    overflow: auto;
+}
+.profile-details-modal-meta-buttons button {
+    margin-right: 5px;
+}
+
+.profile-license-modal-username-div p {
+    float: left;
+    margin-left: 25px;
+}
+#profile-license-modal button {
+    margin: 0px 5px;
+}
+
+#profile-alias {
+    margin-top: 10px;
+    float: left;
+    border-radius: 2px;
+    padding: 0px 5px;
+    width: 100%;
+}
+
+
+#profile-alias.invalid {
+    border: 1px solid red;
+    color: red;
+}
+
+
+.button-confirm, .button-confirm {
+    width: 50%;
+    border-radius: 0;
+}

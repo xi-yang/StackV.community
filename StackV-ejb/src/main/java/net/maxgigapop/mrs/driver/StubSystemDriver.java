@@ -116,7 +116,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             } else {
                 driverInstance.putProperty("stubModelTtl_new", "");
             }
-            DriverInstancePersistenceManager.merge(driverInstance);
+            driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception ex) {
             throw logger.throwing(method, driverInstance + " failed to commit", ex);
         }
@@ -161,7 +161,7 @@ public class StubSystemDriver implements IHandleDriverSystemCall {
             VersionItemPersistenceManager.save(vi);
             driverInstance.setHeadVersionItem(vi);
             driverInstance.putProperty("stubModelTtl_new", "");
-            DriverInstancePersistenceManager.merge(driverInstance);
+            driverInstance = (DriverInstance)DriverInstancePersistenceManager.merge(driverInstance);
         } catch (Exception e) {
             throw logger.throwing(method, driverInstance + " failed to pull model ", e);
         }

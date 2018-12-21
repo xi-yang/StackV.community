@@ -60,6 +60,10 @@ export function loadIntent(type) {
 
     intentType = type;
     $.ajax({
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+            xhr.setRequestHeader("Refresh", keycloak.refreshToken);
+        },
         type: "GET",
         url: "/StackV-web/data/xml/" + type + ".xml",
         dataType: "xml",
@@ -499,17 +503,26 @@ function renderInputs(arr, $parent) {
                         var value = this.sourceSettings[2];
                         var interval = this.sourceSettings[0];
 
-                        for (var i = -1; i < (instance.length - parseInt(interval)); i) {
-                            var $option = $("<option>");
+                        var $option;
+                        if (interval === "map") {
+                            for (var obj of instance) {
+                                $option = $("<option>");
+                                $option.text(obj[text]);
+                                $option.val(obj[value]);
 
-                            var textIndex = i + parseInt(text);
-                            $option.text(instance[textIndex]);
-                            var valueIndex = i + parseInt(value);
-                            $option.val(instance[valueIndex]);
+                                $("#" + selectName).append($option);
+                            }
+                        } else {
+                            for (var i = -1; i < (instance.length - parseInt(interval)); i) {
+                                $option = $("<option>");
+                                var textIndex = i + parseInt(text);
+                                $option.text(instance[textIndex]);
+                                var valueIndex = i + parseInt(value);
+                                $option.val(instance[valueIndex]);
 
-                            $("#" + selectName).append($option);
-
-                            i += parseInt(interval);
+                                $("#" + selectName).append($option);
+                                i += parseInt(interval);
+                            }
                         }
                     },
                     error: function (xhr, ajaxOptions, thrownError) {
