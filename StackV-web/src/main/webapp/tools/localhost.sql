@@ -354,3 +354,12 @@ ALTER TABLE `service_verification`
 --
 ALTER TABLE `service_wizard_licenses`
   ADD CONSTRAINT `service_wizard_licenses-service_wizard` FOREIGN KEY (`service_wizard_id`) REFERENCES `service_wizard` (`service_wizard_id`) ON DELETE CASCADE;
+
+DELIMITER $$
+--
+-- Events
+--
+DROP EVENT `Log cleanup job`$$
+CREATE DEFINER=`root`@`localhost` EVENT `Log cleanup job` ON SCHEDULE EVERY 1 DAY STARTS '2019-01-02 00:00:00' ON COMPLETION NOT PRESERVE ENABLE DO DELETE FROM log where referenceUUID NOT IN (SELECT referenceUUID FROM service_instance) AND TIMESTAMPDIFF(DAY, log.timestamp, now()) > 30$$
+
+DELIMITER ;
