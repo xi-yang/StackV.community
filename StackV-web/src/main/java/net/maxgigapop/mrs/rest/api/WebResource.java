@@ -1636,6 +1636,7 @@ public class WebResource {
                 logJSON.put("message", rs.getString("message"));
                 logJSON.put("event", rs.getString("event"));
                 logJSON.put("exception", rs.getString("exception"));
+                logJSON.put("targetID", rs.getString("targetID"));
 
                 logArr.add(logJSON);
             }
@@ -1757,6 +1758,7 @@ public class WebResource {
                 logJSON.put("message", rs.getString("message"));
                 logJSON.put("event", rs.getString("event"));
                 logJSON.put("exception", rs.getString("exception"));
+                logJSON.put("targetID", rs.getString("targetID"));
 
                 logArr.add(logJSON);
             }

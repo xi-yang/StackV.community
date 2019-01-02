@@ -56,12 +56,17 @@ class LoggingPanel extends React.Component {
 
         this.state.dataTable.ajax.url(newURL);
     }
+    liveClock() {
+        $("#logging-clock").text(new Date().toLocaleTimeString());
+    }
 
     render() {
         return <div className={this.props.active ? "top" : "bottom"} id="logging-panel">
             <ReactInterval timeout={this.props.refreshTimer < 1500 ? 1500 : this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.loadData} />
+            <ReactInterval timeout={1000} enabled={true} callback={this.liveClock} />
             <div id="logging-header-div">
                 Instance Logs
+                <div id="logging-clock"></div>
                 <div style={{ float: "right" }}>
                     <label htmlFor="logging-filter-level" style={{ fontWeight: "normal", marginLeft: "15px", marginRight: "5px" }}>Logging Level</label>
                     <select id="logging-filter-level" value={this.state.level} onChange={this.newLevel}>
@@ -218,6 +223,12 @@ class LoggingPanel extends React.Component {
                 retString += "<tr>" +
                     "<td>UUID:</td>" +
                     "<td>" + d.referenceUUID + "</td>" +
+                    "</tr>";
+            }
+            if (d.targetID !== "" && d.targetID !== undefined) {
+                retString += "<tr>" +
+                    "<td>Target:</td>" +
+                    "<td>" + d.targetID + "</td>" +
                     "</tr>";
             }
             retString += "<tr>" +
