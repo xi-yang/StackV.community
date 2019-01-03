@@ -2354,7 +2354,9 @@ public class WebResource {
             } else {
                 return "{}";
             }
-        } catch (IOException | SQLException ex) {
+        } catch (IOException ex) {
+            return "{}";
+        } catch (SQLException ex) {
             logger.catching("getDeltaBacked", ex);
             throw ex;
         } finally {
