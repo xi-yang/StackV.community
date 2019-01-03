@@ -114,7 +114,7 @@ class Details extends React.Component {
                 <LoggingPanel {...this.props} active={modActive[0]}></LoggingPanel>
                 <DetailsPanel active={modActive[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
                     verify={Map(this.state.verify)} load={this.load} {...this.props} />
-                <VisualizationPanel active={modActive[2]} verify={Map(this.state.verify)}></VisualizationPanel>
+                {this.state.state.sub !== "INIT" && <VisualizationPanel active={modActive[2]} verify={Map(this.state.verify)}></VisualizationPanel>}
 
                 {accessAvailable && <AccessPanel active={modActive[3]} {...this.props} />}
                 <div id="details-viz"></div>
