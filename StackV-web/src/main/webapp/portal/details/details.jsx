@@ -93,7 +93,10 @@ class Details extends React.Component {
                 break;
         }
 
-        let accessAvailable = (this.state.state.sub === "READY" && (this.state.state.super === "CREATE" || this.state.state.super === "REINSTATE"));
+        let modAllowed = [true, true, true, true];
+        modAllowed[2] = (this.state.state.sub !== "INIT");
+        modAllowed[3] = (this.state.state.sub === "READY" && (this.state.state.super === "CREATE" || this.state.state.super === "REINSTATE"));
+
         let pageClasses = "page page-details";
         if (this.state.loading) {
             pageClasses = "page page-details loading";
@@ -109,14 +112,14 @@ class Details extends React.Component {
                 loading={this.state.loading}
             />
             <div className={pageClasses}>
-                <DetailsDots view={this.state.view} setView={this.setView} access={accessAvailable}></DetailsDots>
+                <DetailsDots view={this.state.view} setView={this.setView} allowed={modAllowed}></DetailsDots>
 
                 <LoggingPanel {...this.props} active={modActive[0]}></LoggingPanel>
                 <DetailsPanel active={modActive[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
                     verify={Map(this.state.verify)} load={this.load} {...this.props} />
-                {this.state.state.sub !== "INIT" && <VisualizationPanel active={modActive[2]} verify={Map(this.state.verify)}></VisualizationPanel>}
+                {modAllowed[2] && <VisualizationPanel active={modActive[2]} verify={Map(this.state.verify)}></VisualizationPanel>}
 
-                {accessAvailable && <AccessPanel active={modActive[3]} {...this.props} />}
+                {modAllowed[3] && <AccessPanel active={modActive[3]} {...this.props} />}
                 <div id="details-viz"></div>
             </div>
         </div>;
