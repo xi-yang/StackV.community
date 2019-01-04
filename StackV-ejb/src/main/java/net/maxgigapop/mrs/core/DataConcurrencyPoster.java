@@ -25,6 +25,8 @@ package net.maxgigapop.mrs.core;
 
 import com.hp.hpl.jena.ontology.OntModel;
 import javax.ejb.LocalBean;
+import javax.ejb.Lock;
+import javax.ejb.LockType;
 import javax.ejb.Singleton;
 import javax.ejb.Startup;
 import net.maxgigapop.mrs.bean.ModelBase;
@@ -38,6 +40,7 @@ import net.maxgigapop.mrs.bean.persist.GlobalPropertyPersistenceManager;
 @Singleton
 @LocalBean
 @Startup
+@Lock(LockType.READ)
 public class DataConcurrencyPoster {
     // per-node singleton to hold the cachedOntModel from SystemModelCoordinator for lock-free access
     VersionGroup SystemModelCoordinator_cachedVersionGroup = null;

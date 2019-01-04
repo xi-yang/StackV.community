@@ -981,7 +981,9 @@ public class HandleServiceCall {
         if (serviceInstance != null && serviceInstance.getServiceDeltas() != null && !serviceInstance.getServiceDeltas().isEmpty()) {
             serviceDelta = serviceInstance.getServiceDeltas().get(serviceInstance.getServiceDeltas().size() - 1);
         } else {
-            throw logger.error_throwing(method, "ref:ServiceInstance has no ServiceDelta to retrieve");
+            //throw logger.error_throwing(method, "ref:ServiceInstance has no ServiceDelta to retrieve");
+            logger.warning(method, "ref:ServiceInstance has no ServiceDelta to retrieve");
+            return;
         }
         logger.targetid(serviceDelta.getId());
         logger.trace_start(method);

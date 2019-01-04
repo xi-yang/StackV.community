@@ -54,7 +54,7 @@ class DetailsPanel extends React.Component {
                     <tr>
                         <td>Operation Status</td>
                         <td>
-                            <p style={{ display: "inline" }} id="instance-substate">{this.props.state.get("sub")}</p><small id="instance-laststate"> (after {this.props.state.get("last")})</small>
+                            <p style={{ display: "inline" }} id="instance-substate">{this.props.state.get("sub")}</p>{this.props.state.get("sub") === "FAILED" && <small id="instance-laststate"> (after {this.props.state.get("last")})</small>}
                         </td>
                     </tr>
                     <tr className="instruction-row">

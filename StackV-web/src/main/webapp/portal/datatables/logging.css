@@ -38,3 +38,11 @@
 .user-row.permitted {
     background-color: #c2f5c2 !important;
 }
+
+/* Logging Panel */
+#logging-clock {
+    margin-left: 5px;
+    display: inline;
+    border-left: 1px solid white;
+    padding-left: 10px;
+}

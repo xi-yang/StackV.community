@@ -3,7 +3,6 @@ import PropTypes from "prop-types";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
 import ReactInterval from "react-interval";
-import { css } from "emotion";
 
 import iziModal from "izimodal";
 $.fn.iziModal = iziModal;
