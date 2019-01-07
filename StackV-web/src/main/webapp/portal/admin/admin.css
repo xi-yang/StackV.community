@@ -29,7 +29,7 @@ div#API-panel {
 
 /* */
 
-div#API-panel, div#logging-panel {
+div#API-panel, div#settings-panel, div#logging-panel {
     padding: 30px 7% 30px 7%;
     margin-top: 20px;
     height: calc(100% - 40px);
@@ -39,6 +39,10 @@ div#API-panel, div#logging-panel {
 }
 div#API-panel{
     overflow-y: hidden;
+}
+div#settings-panel {
+    width: 70%;
+    left: 15%;
 }
 div#logging-panel {
     text-align: left;
@@ -283,4 +287,25 @@ table.management-table > tr > td:last-child {
 }
 table.management-table > tr > td button {
     margin-right: 5px;
+}
+
+/* */
+#settings-header-div {
+    background: url(/StackV-web/img/noise-diagonal.png), linear-gradient(#46586d, #364454);
+    box-shadow: inset 0 1px 0 #a2b1c3;
+    color: #fff;
+    padding: 10px 15px;
+    position: relative;
+    text-shadow: 0 1px 0 #000;
+    outline: 1px solid black;
+    height: 40px;
+}
+#settings-body-div {
+    padding: 15px;
+    background: white;
+}
+
+#settings-body-div label {
+    width: 45%;
+    margin: 0 2.5%;
 }

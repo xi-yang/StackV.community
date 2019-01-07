@@ -35,7 +35,7 @@ class DetailsDots extends React.Component {
     render() {
         return <div className={override}>
             <div onClick={() => { this.props.setView("logging"); }}>
-                <FontAwesomeIcon className={dots} icon={this.props.view === "logging" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
+                <FontAwesomeIcon className={dots} onMouseEnter={(e) => { this.hover(e); }} icon={this.props.view === "logging" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
                 <span className={text} style={this.props.view === "logging" ? {} : { fontSize: 0 }}>Logging</span>
             </div>
             <div onClick={() => { this.props.setView("details"); }}>
@@ -51,6 +51,10 @@ class DetailsDots extends React.Component {
                 <span className={text} style={this.props.view === "access" ? {} : { fontSize: 0 }}>Resources</span>
             </div>}
         </div>;
+    }
+
+    hover(e) {
+        console.log($(e.target).parent().next().text());
     }
 }
 DetailsDots.propTypes = {

@@ -7,6 +7,7 @@ import "./admin.css";
 import AdminDots from "./components/admin_dots";
 import LoggingPanel from "../datatables/logging_panel";
 import APIPanel from "./components/admin_api";
+import SettingsPanel from "./components/admin_settings";
 
 class Admin extends React.Component {
     constructor(props) {
@@ -19,7 +20,7 @@ class Admin extends React.Component {
         Mousetrap.bind("right", function () { page.viewShift("right"); });
         this.setView = this.setView.bind(this);
         this.state = {
-            view: "logging",
+            view: "settings",
         };
 
     }
@@ -34,10 +35,13 @@ class Admin extends React.Component {
         let modView = [];
         switch (this.state.view) {
             case "api":
-                modView = [true, false];
+                modView = [true, false, false];
+                break;
+            case "settings":
+                modView = [false, true, false];
                 break;
             case "logging":
-                modView = [false, true];
+                modView = [false, false, true];
                 break;
         }
         return <div style={{ width: "100%", height: "100%" }}>
@@ -45,7 +49,8 @@ class Admin extends React.Component {
                 <AdminDots view={this.state.view} setView={this.setView}></AdminDots>
 
                 <APIPanel {...this.props} active={modView[0]} />
-                <LoggingPanel {...this.props} active={modView[1]}></LoggingPanel>
+                <SettingsPanel {...this.props} active={modView[1]} />
+                <LoggingPanel {...this.props} active={modView[2]}></LoggingPanel>
             </div>
         </div>;
     }
@@ -55,12 +60,20 @@ class Admin extends React.Component {
         switch (this.state.view) {
             case "api":
                 if (dir === "right") {
+                    this.setState({ view: "settings" });
+                }
+                break;
+            case "settings":
+                if (dir === "left") {
+                    this.setState({ view: "api" });
+                }
+                if (dir === "right") {
                     this.setState({ view: "logging" });
                 }
                 break;
             case "logging":
                 if (dir === "left") {
-                    this.setState({ view: "api" });
+                    this.setState({ view: "settings" });
                 }
                 break;
         }
