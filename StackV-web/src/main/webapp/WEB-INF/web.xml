@@ -53,6 +53,14 @@
         <!-- OMIT auth-constraint -->
     </security-constraint>
     <security-constraint>
+        <display-name>DRIVER</display-name>
+        <web-resource-collection>
+            <web-resource-name>DRIVER</web-resource-name>
+            <url-pattern>/restapi/config/*</url-pattern>
+        </web-resource-collection>
+        <!-- OMIT auth-constraint -->
+    </security-constraint>
+    <security-constraint>
         <display-name>API</display-name>
         <web-resource-collection>
             <web-resource-name>API</web-resource-name>

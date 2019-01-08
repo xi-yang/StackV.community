@@ -137,21 +137,15 @@ public class WebResource {
         return Collections.unmodifiableMap(result);
     }
 
-    private final StackLogger logger = new StackLogger(WebResource.class.getName(), "WebResource");
-    String host = "http://127.0.0.1:8080/StackV-web/restapi";
-    String kc_url = System.getProperty("kc_url");
-    JSONParser parser = new JSONParser();
+    private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "WebResource");
+    private static String host = "http://127.0.0.1:8080/StackV-web/restapi";
+    private static JSONParser parser = new JSONParser();
+    private static String kc_url, ipaBaseServerUrl, ipaUsername, ipaPasswd, ipaCookie;
 
     private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
     private final OkHttpClient client = new OkHttpClient();
 
     private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
-
-    String ipaBaseServerUrl = System.getProperty("ipa_url");
-    String ipaUsername = System.getProperty("ipa_username");
-    String ipaPasswd = System.getProperty("ipa_passwd");
-    static String ipaCookie;
-
     private final JNDIFactory factory = new JNDIFactory();
 
     @Context
@@ -164,9 +158,33 @@ public class WebResource {
      * Creates a new instance of WebResource
      */
     public WebResource() {
+        
     }
 
+    private static void loadConfig() {
+        try {
+            URL url = new URL(String.format("%s/config/", host));
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            String ret = executeHttpMethod(url, connection, "GET", null, null);
+            Object obj = parser.parse(ret.toString());
+            JSONObject props = (JSONObject) obj;
+            
+            kc_url = (String) props.get("system.keycloak");
+            logger.status("loadConfig", "global variable loaded - kc_url:" + props.get("system.keycloak"));
+            ipaBaseServerUrl = (String) props.get("ipa.server");
+            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + props.get("ipa.server"));
+            ipaUsername = (String) props.get("ipa.username");
+            logger.status("loadConfig", "global variable loaded - ipaUsername:" + props.get("ipa.username"));
+            ipaPasswd = (String) props.get("ipa.password");
+            logger.status("loadConfig", "global variable loaded - ipaPasswd:" + props.get("ipa.password"));
+            
+        } catch (IOException | ParseException ex) {     
+            logger.throwing("loadConfig", ex);
+        }
+    }
     static {
+        WebResource.loadConfig();
+        
         TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
                 @Override
@@ -203,7 +221,14 @@ public class WebResource {
 
         }
     }
-
+    @PUT
+    @Path("/reload/")
+    public void reloadConfig() {
+        WebResource.loadConfig();
+        return;
+    }
+    
+    
     @GET
     @Path("/access/{uuid}")
     @Produces("application/json")
@@ -786,7 +811,7 @@ public class WebResource {
             // Synchronize any missing backend drivers
             for (int i = 0; i < resJSON.size(); i++) {
                 JSONObject resDriver = (JSONObject) resJSON.get(i);
-                if (!mapped.contains(resDriver.get("topologyUri"))) {                   
+                if (!mapped.contains(resDriver.get("topologyUri"))) {
                     // Translate properties into xml
                     String xml = "<driverInstance><properties>";
                     String propStr;
@@ -799,9 +824,9 @@ public class WebResource {
                         throw ex;
                     }
                     JSONObject propJSON = (JSONObject) parser.parse(propStr);
-                    for (Object key : propJSON.keySet()) {                        
+                    for (Object key : propJSON.keySet()) {
                         String keyStr = (String) key;
-                        String keyValue = (String) propJSON.get(keyStr);                        
+                        String keyValue = (String) propJSON.get(keyStr);
                         xml += "<entry><key>" + keyStr + "</key><value>" + keyValue + "</value></entry>";
                     }
                     xml += "</properties></driverInstance>";

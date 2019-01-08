@@ -41,8 +41,8 @@ div#API-panel{
     overflow-y: hidden;
 }
 div#settings-panel {
-    width: 70%;
-    left: 15%;
+    width: 80%;
+    left: 10%;
 }
 div#logging-panel {
     text-align: left;
@@ -300,12 +300,14 @@ table.management-table > tr > td button {
     outline: 1px solid black;
     height: 40px;
 }
-#settings-body-div {
+#settings-body-div, #settings-footer-div {
     padding: 15px;
     background: white;
 }
+#settings-footer-div {
+    height: 104px;
+}
 
 #settings-body-div label {
-    width: 45%;
     margin: 0 2.5%;
 }
