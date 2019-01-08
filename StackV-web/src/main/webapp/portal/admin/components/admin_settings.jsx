@@ -65,6 +65,16 @@ class SettingsPanel extends React.Component {
                     },
                     success: function (config) {
 
+                        let apiUrl = window.location.origin + "/StackV-web/restapi/app/reload";
+                        $.ajax({
+                            url: apiUrl,
+                            async: false,
+                            type: "PUT",
+                            beforeSend: function (xhr) {
+                                xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                                xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+                            }
+                        });
                     }
                 });
             }
