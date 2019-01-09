@@ -1,5 +1,6 @@
 import React from "react";
 import ReactInterval from "react-interval";
+import iziToast from "izitoast";
 
 class SettingsPanel extends React.Component {
     constructor(props) {
@@ -17,10 +18,12 @@ class SettingsPanel extends React.Component {
         return <div className={this.props.active ? "top" : "bottom"} id="settings-panel">
             <div id="settings-header-div">Global Settings</div>
             <div id="settings-body-div">
-                <label style={{ width: "95%" }}>Keycloak Server URL<input className="form-control" name="system.keycloak"></input></label>
-                <label style={{ width: "95%" }}>IPA Server URL<input className="form-control" name="ipa.server"></input></label>
-                <label style={{ width: "45%" }}>IPA Username<input className="form-control" name="ipa.username"></input></label>
-                <label style={{ width: "45%" }}>IPA Password<input className="form-control" name="ipa.password"></input></label>
+                <label style={{ width: "30%", margin: "5px 12.5% 5px 2.5%" }}>StackV Server Name<input className="form-control" name="system.name"></input></label>
+                <label style={{ width: "50%" }}>Keycloak Server URL<input className="form-control" name="system.keycloak"></input></label>
+                <hr /><h3>IPA</h3>
+                <label style={{ width: "70%" }}>Server URL<input className="form-control" name="ipa.server"></input></label>
+                <label style={{ width: "30%" }}>Username<input className="form-control" name="ipa.username"></input></label>
+                <label style={{ width: "30%" }}>Password<input className="form-control" name="ipa.password"></input></label>
             </div>
             <div id="settings-footer-div">
                 <hr />
@@ -64,7 +67,13 @@ class SettingsPanel extends React.Component {
                         xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                     },
                     success: function (config) {
-
+                        iziToast.success({
+                            timeout: 2000,
+                            title: "Success",
+                            message: "Settings saved!",
+                            position: "topRight",
+                            pauseOnHover: false
+                        });
                         let apiUrl = window.location.origin + "/StackV-web/restapi/app/reload";
                         $.ajax({
                             url: apiUrl,

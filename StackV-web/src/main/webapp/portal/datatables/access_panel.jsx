@@ -33,7 +33,7 @@ class AccessPanel extends React.Component {
 
         this.state = {
             apiUrl: window.location.origin + "/StackV-web/restapi/app/data/users/",
-            ipaUrl: window.location.origin + "/StackV-web/restapi/app/acl/ipa/request",
+            ipaUrl: window.location.origin + "/StackV-web/restapi/md2/request",
             access: { login: [], sudo: [] }
         };
 
@@ -352,7 +352,7 @@ class AccessPanel extends React.Component {
     /* INFO */
     ipaLogin() {
         let panel = this;
-        var apiUrl = window.location.origin + "/StackV-web/restapi/app/acl/ipa/login";
+        var apiUrl = window.location.origin + "/StackV-web/restapi/md2/login";
         return $.ajax({
             url: apiUrl,
             type: "POST",

@@ -39,6 +39,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
@@ -54,7 +56,10 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.PUT;
 import javax.ws.rs.QueryParam;
+import net.maxgigapop.mrs.common.IPATool;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.jboss.resteasy.spi.HttpRequest;
 
@@ -65,25 +70,13 @@ import org.jboss.resteasy.spi.HttpRequest;
  */
 @Path("md2")
 public class IPAResource {
-    private final StackLogger logger = new StackLogger(IPAResource.class.getName(), "IPAResource");
 
-    String host = "http://127.0.0.1:8080/StackV-web/restapi";
-    String kc_url = System.getProperty("kc_url");
-    JSONParser parser = new JSONParser();
+    private static final StackLogger logger = new StackLogger(IPAResource.class.getName(), "IPAResource");
+    static String host = "http://127.0.0.1:8080/StackV-web/restapi";
+    static JSONParser parser = new JSONParser();
+    static OkHttpClient client = new OkHttpClient();
 
-    private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
-    private final OkHttpClient client = new OkHttpClient();
-
-    private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
-
-    String ipaBaseServerUrl = System.getProperty("ipa_url");
-    String ipaUsername = System.getProperty("ipa_username");
-    String ipaPasswd = System.getProperty("ipa_passwd");
-    static String ipaCookie;
-
-
-    @Context
-    private HttpRequest httpRequest;
+    static String kc_url, ipaBaseServerUrl, ipaUsername, ipaPasswd, ipaCookie;
 
     @EJB
     HandleSystemCall systemCallHandler;
@@ -92,6 +85,38 @@ public class IPAResource {
      * Creates a new instance of WebResource
      */
     public IPAResource() {
+    }
+
+    static void loadConfig() {
+        try {
+            URL url = new URL(String.format("%s/config/", host));
+            Request request = new Request.Builder().url(url).build();
+            Response response = client.newCall(request).execute();
+            String responseStr = response.body().string();
+
+            Object obj = parser.parse(responseStr);
+            JSONObject props = (JSONObject) obj;
+
+            kc_url = (String) props.get("system.keycloak");
+            logger.status("loadConfig", "global variable loaded - kc_url:" + props.get("system.keycloak"));
+            ipaBaseServerUrl = (String) props.get("ipa.server");
+            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + props.get("ipa.server"));
+            ipaUsername = (String) props.get("ipa.username");
+            logger.status("loadConfig", "global variable loaded - ipaUsername:" + props.get("ipa.username"));
+            ipaPasswd = (String) props.get("ipa.password");
+            logger.status("loadConfig", "global variable loaded - ipaPasswd:" + props.get("ipa.password"));
+
+        } catch (IOException | ParseException ex) {
+            logger.throwing("loadConfig", ex);
+        }
+    }
+
+    @PUT
+    @Path("/reload/")
+    public static void reloadConfig() {
+        WebResource.loadConfig();
+        IPAResource.loadConfig();
+        return;
     }
 
     static {
@@ -131,12 +156,8 @@ public class IPAResource {
 
         }
     }
-    
+
     // >FreeIPA-based ACL
-    @POST
-    @Path("login")
-    @Produces("application/json")
-    //@RolesAllowed("F_ACL-R")
     public String ipaLogin() throws UnsupportedEncodingException {
 
         if (ipaUsername != null && ipaPasswd != null) {
@@ -146,6 +167,7 @@ public class IPAResource {
             String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
 
             try {
+
                 URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
                 HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
                 conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
@@ -154,6 +176,7 @@ public class IPAResource {
                 conn.setRequestMethod("POST");
                 conn.setDoInput(true);
                 conn.setDoOutput(true);
+//                conn.setSSLSocketFactory();
                 DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
                 wr.writeBytes(formattedLoginData);
                 wr.flush();
@@ -164,9 +187,11 @@ public class IPAResource {
                     result.put("Result", "Login Successful");
                     result.put("ResponseCode", conn.getResponseCode());
                     result.put("ResponseMessage", conn.getResponseMessage());
+                    result.put("LoginSuccess", true);
 
                     // get the ipa_session cookie from the returned header fields and assign it to ipaCookie
                     ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
+                    logger.trace("ipaLogin", "Successfully logged into IPA Server");
                 } else { // if the request fails
                     String errorStream = "";
                     try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
@@ -178,13 +203,15 @@ public class IPAResource {
                     result.put("Result", "Login Unsuccessful");
                     result.put("ResponseCode", conn.getResponseCode());
                     result.put("ResponseMessage", conn.getResponseMessage());
+                    result.put("LoginSuccess", false);
                     result.put("Error", errorStream);
+                    logger.warning("ipaLogin", "Could not login to IPA Server");
                 }
 
             } catch (MalformedURLException ex) {
-                Logger.getLogger(IPAResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+                logger.catching("ipaLogin", ex);
             } catch (IOException ex) {
-                Logger.getLogger(IPAResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+                logger.catching("ipaLogin", ex);
             }
 
             // return the JSON object as a string
@@ -192,12 +219,8 @@ public class IPAResource {
         } else {
             throw logger.error_throwing("ipaLogin()", "IPA username or password not set");
         }
-    }    
-    
-    @POST
-    @Consumes("application/json")
-    @Produces("application/json")
-    //@RolesAllowed("F_ACL-R")
+    }
+
     public String ipaRequest(String postData) {
         if (ipaBaseServerUrl != null) {
 
@@ -242,7 +265,7 @@ public class IPAResource {
                     result.put("Error", responseStr.toString());
                 }
             } catch (IOException | ParseException ex) {
-                Logger.getLogger(IPAResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+                logger.catching("ipaRequest", ex);
             }
 
             // return the JSONObject as a string
@@ -250,97 +273,92 @@ public class IPAResource {
         } else {
             throw logger.error_throwing("ipaRequest()", "IPA server url not set");
         }
-    }    
-    
-    @POST
-    @Path("/request")
-    @Consumes("application/json")
-    @Produces("application/json")
+    }
+
     public String ipaEndpoint(String postData) {
-        try { 
+        try {
             ipaLogin();
-            String response = ipaRequest(postData);
-            response = removeRPCResponseData(response);
-            return response;
+            return ipaRequest(postData);
         } catch (Exception ex) {
-            Logger.getLogger(IPAResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            logger.error("ipaEndpoint", "IPA Request Failed. Exception: " + ex);
             return null;
         }
     }
-   
-    
+
     @GET
     @Path("driver/default/{topuri}")
     @Produces("application/json")
     public String getDriverDefault(@PathParam("topuri") String topologyURI) {
-         String postData;
-         JSONObject paramsJSON = new JSONObject();
-         paramsJSON.put("topologyuri", topologyURI);
-         postData = buildIpaRequest("md2_get_driver_default", null, paramsJSON );
-         return ipaEndpoint(postData);
-    }    
-    
+        String postData;
+        JSONObject paramsJSON = new JSONObject();
+        paramsJSON.put("topologyuri", topologyURI);
+        postData = buildIpaRequest("md2_get_driver_default", null, paramsJSON);
+        return ipaEndpoint(postData);
+    }
+
     @GET
     @Path("driver/available")
     @Produces("application/json")
     public String getAvailableDrivers() {
-         String postData;
-         postData = buildIpaRequest("md2_get_available_drivers", null, null );
-         return ipaEndpoint(postData);
-    }    
-    
+        String postData;
+        postData = buildIpaRequest("md2_get_available_drivers", null, null);
+        return ipaEndpoint(postData);
+    }
+
     /*
       Takes domain URI  url encoded string
       Takes path as url encoded string  
-    */
+     */
     @GET
     @Path("directory/{domainuri}/{path}")
     @Produces("application/json")
     public String getDataByDirectory(@PathParam("domainuri") String domain, @PathParam("path") String path) {
-         String postData;
-         JSONObject paramsJSON = new JSONObject();
-         paramsJSON.put("directory", path);
-         paramsJSON.put("domaintopouri", domain);
-         postData = buildIpaRequest("md2_get_data_by_directory", null, paramsJSON );
-         return ipaEndpoint(postData);
-    }    
+        String postData;
+        JSONObject paramsJSON = new JSONObject();
+        paramsJSON.put("directory", path);
+        paramsJSON.put("domaintopouri", domain);
+        postData = buildIpaRequest("md2_get_data_by_directory", null, paramsJSON);
+        return ipaEndpoint(postData);
+    }
 
     /*
       Takes type as optional query parameter  
-    */
+     */
     @GET
     @Path("alm/pools")
     @Produces("application/json")
     public String getAlmPoolList(@QueryParam("type") String type) {
-         String postData;
-         JSONObject paramsJSON = new JSONObject();
-         paramsJSON.put("pooltype", type);
-         postData = buildIpaRequest("almpool_list", null, paramsJSON );
-         return ipaEndpoint(postData);
-    }    
+        String postData;
+        JSONObject paramsJSON = new JSONObject();
+        paramsJSON.put("pooltype", type);
+        postData = buildIpaRequest("almpool_list", null, paramsJSON);
+        return ipaEndpoint(postData);
+    }
 
     @POST
     @Path("inject")
     @Consumes("application/json")
     @Produces("application/json")
     public String injectEntry(String entryJson) {
-         JSONObject paramsJSON = new JSONObject();
-         paramsJSON.put("entryjson", entryJson);
-         String postData = buildIpaRequest("md2_add_entry", null, paramsJSON );
-         return ipaEndpoint(postData);        
+        JSONObject paramsJSON = new JSONObject();
+        paramsJSON.put("entryjson", entryJson);
+        String postData = buildIpaRequest("md2_add_entry", null, paramsJSON);
+        return ipaEndpoint(postData);
     }
-    
-    private String buildIpaRequest(String method, JSONArray arguments, JSONObject params ) {
+
+    private String buildIpaRequest(String method, JSONArray arguments, JSONObject params) {
         JSONObject requestJSON = new JSONObject();
 
         requestJSON.put("method", method);
 
         JSONArray paramsArray = new JSONArray();
-        if (arguments == null)
-           arguments = new JSONArray();
+        if (arguments == null) {
+            arguments = new JSONArray();
+        }
 
-        if (params == null)
-           params = new JSONObject();
+        if (params == null) {
+            params = new JSONObject();
+        }
 
         paramsArray.add(arguments);
         paramsArray.add(params);
@@ -348,23 +366,101 @@ public class IPAResource {
         requestJSON.put("params", paramsArray);
         requestJSON.put("id", 0);
         return requestJSON.toJSONString();
-    }    
+    }
+
     /**
-     * Removing general JSON-RPC response information 
-     * to return enclosed data 
+     * Removing general JSON-RPC response information
+     * to return enclosed data
      */
     private String removeRPCResponseData(String responseString) throws ParseException {
-       JSONObject responseObj;
-       responseObj = (JSONObject) parser.parse(responseString);
-       
-       JSONObject md2DataJSON = (JSONObject) responseObj.get("result");      
-       if (md2DataJSON != null) {
-         while (md2DataJSON.get("result") != null) {
-            md2DataJSON = (JSONObject) md2DataJSON.get("result");      
-         }
-         return md2DataJSON.toJSONString();
-       } else {
-         return responseObj.toJSONString(); 
-       }
+        JSONObject responseObj;
+        responseObj = (JSONObject) parser.parse(responseString);
+
+        JSONObject md2DataJSON = (JSONObject) responseObj.get("result");
+        if (md2DataJSON != null) {
+            while (md2DataJSON.get("result") != null) {
+                md2DataJSON = (JSONObject) md2DataJSON.get("result");
+            }
+            return md2DataJSON.toJSONString();
+        } else {
+            return responseObj.toJSONString();
+        }
+    }
+
+    // SERVICE FUNCTIONS //   
+    @DELETE
+    @Path("/servicepolicies/{serviceUUID}")
+    @Produces("application/json")
+    public String ipaDeleteAllPoliciesForService(@PathParam("serviceUUID") String uuid, String data) throws UnsupportedEncodingException {
+
+        ipaLogin(); // ensure the ipa server cookie has been refreshed in case it was expired.
+        JSONObject result = new JSONObject();
+
+        // formatting all the groups and rules names
+        String loginUg = "ug-login-" + uuid;
+        String loginHg = "hg-login-" + uuid;
+        String loginHbac = "hbac-login-" + uuid;
+        String sudoUg = "ug-sudo-" + uuid;
+        String sudoHg = "hg-sudo-" + uuid;
+        String sudoHbac = "hbac-sudo-" + uuid;
+
+        result.put("ServiceUUID", uuid);
+
+        JSONObject delLoginUsergroup = formatIpaDeleteJSON("group_del", loginUg);
+        JSONObject delLoginHostgroup = formatIpaDeleteJSON("hostgroup_del", loginHg);
+        JSONObject delLoginHbacrule = formatIpaDeleteJSON("hbacrule_del", loginHbac);
+
+        JSONObject delSudoUsergroup = formatIpaDeleteJSON("group_del", sudoUg);
+        JSONObject delSudoHostgroup = formatIpaDeleteJSON("hostgroup_del", sudoHg);
+        JSONObject delSudoHbacrule = formatIpaDeleteJSON("hbacrule_del", sudoHbac);
+
+        /**
+         * NOTE: if the groups or rules have not been created, there will an error
+         * in the resulting JSON but it is not fatal. The error will indicate
+         * the group or rule does not exist which is okay since some accesses
+         * will not be given (mainly sudo accesses).
+         */
+        result.put("loginUgDel", ipaRequest(delLoginUsergroup.toJSONString()));
+        result.put("loginHgDel", ipaRequest(delLoginHostgroup.toJSONString()));
+        result.put("loginHbacDel", ipaRequest(delLoginHbacrule.toJSONString()));
+
+        result.put("sudoUgDel", ipaRequest(delSudoUsergroup.toJSONString()));
+        result.put("sudoHgDel", ipaRequest(delSudoHostgroup.toJSONString()));
+        result.put("sudoHbacDel", ipaRequest(delSudoHbacrule.toJSONString()));
+
+        // return the JSONObject as a string
+        return result.toJSONString();
+    }
+
+    /**
+     * Create the delete JSON for deleting a user group, host group, or HBAC rule.
+     * All three have the same format.
+     *
+     * var ipaRequestData = {
+     * "method": method,
+     * "params":[
+     * rule/group name,
+     * {}
+     * ],
+     * "id":0
+     * };
+     * @param method
+     * @param name
+     * @return
+     */
+    private JSONObject formatIpaDeleteJSON(String method, String name) {
+        JSONObject deleteJSON = new JSONObject();
+
+        deleteJSON.put("method", method);
+
+        JSONArray paramsArray = new JSONArray();
+        JSONArray nameParam = new JSONArray();
+        nameParam.add(name);
+        paramsArray.add(nameParam);
+        paramsArray.add(new JSONObject());
+
+        deleteJSON.put("params", paramsArray);
+        deleteJSON.put("id", 0);
+        return deleteJSON;
     }
 }

@@ -140,12 +140,12 @@ public class WebResource {
     private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "WebResource");
     private static String host = "http://127.0.0.1:8080/StackV-web/restapi";
     private static JSONParser parser = new JSONParser();
-    private static String kc_url, ipaBaseServerUrl, ipaUsername, ipaPasswd, ipaCookie;
+
+    private static String kc_url;
 
     private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
-    private final OkHttpClient client = new OkHttpClient();
+    private static final OkHttpClient client = new OkHttpClient();
 
-    private final String keycloakStackVClientID = "5c0fab65-4577-4747-ad42-59e34061390b";
     private final JNDIFactory factory = new JNDIFactory();
 
     @Context
@@ -158,33 +158,36 @@ public class WebResource {
      * Creates a new instance of WebResource
      */
     public WebResource() {
-        
     }
 
-    private static void loadConfig() {
+    static void loadConfig() {
         try {
             URL url = new URL(String.format("%s/config/", host));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            String ret = executeHttpMethod(url, connection, "GET", null, null);
-            Object obj = parser.parse(ret.toString());
+            Request request = new Request.Builder().url(url).build();
+            Response response = client.newCall(request).execute();
+            String responseStr = response.body().string();
+
+            Object obj = parser.parse(responseStr);
             JSONObject props = (JSONObject) obj;
-            
+
             kc_url = (String) props.get("system.keycloak");
             logger.status("loadConfig", "global variable loaded - kc_url:" + props.get("system.keycloak"));
-            ipaBaseServerUrl = (String) props.get("ipa.server");
-            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + props.get("ipa.server"));
-            ipaUsername = (String) props.get("ipa.username");
-            logger.status("loadConfig", "global variable loaded - ipaUsername:" + props.get("ipa.username"));
-            ipaPasswd = (String) props.get("ipa.password");
-            logger.status("loadConfig", "global variable loaded - ipaPasswd:" + props.get("ipa.password"));
-            
-        } catch (IOException | ParseException ex) {     
+        } catch (IOException | ParseException ex) {
             logger.throwing("loadConfig", ex);
         }
     }
+
+    @PUT
+    @Path("/reload/")
+    public static void reloadConfigs() {
+        WebResource.loadConfig();
+        IPAResource.loadConfig();
+        return;
+    }
+
     static {
         WebResource.loadConfig();
-        
+
         TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
                 @Override
@@ -221,14 +224,7 @@ public class WebResource {
 
         }
     }
-    @PUT
-    @Path("/reload/")
-    public void reloadConfig() {
-        WebResource.loadConfig();
-        return;
-    }
-    
-    
+
     @GET
     @Path("/access/{uuid}")
     @Produces("application/json")
@@ -394,169 +390,6 @@ public class WebResource {
         return retJSON.toJSONString();
     }
 
-    // >FreeIPA-based ACL
-    @POST
-    @Path("/acl/ipa/login")
-    @Produces("application/json")
-    //@RolesAllowed("F_ACL-R")
-    public String ipaLogin() throws UnsupportedEncodingException {
-        JSONObject result = new JSONObject();
-        if (ipaUsername != null && ipaPasswd != null) {
-            String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
-
-            try {
-                URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
-                HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-                conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
-                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                conn.setRequestProperty("Accept", "text/plain");
-                conn.setRequestMethod("POST");
-                conn.setDoInput(true);
-                conn.setDoOutput(true);
-                DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
-                wr.writeBytes(formattedLoginData);
-                wr.flush();
-                conn.connect();
-
-                // if the request is successful
-                if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
-                    result.put("Result", "Login Successful");
-                    result.put("ResponseCode", conn.getResponseCode());
-                    result.put("ResponseMessage", conn.getResponseMessage());
-
-                    // get the ipa_session cookie from the returned header fields and assign it to ipaCookie
-                    ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
-                } else { // if the request fails
-                    String errorStream = "";
-                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                        String inputLine;
-                        while ((inputLine = in.readLine()) != null) {
-                            errorStream += inputLine;
-                        }
-                    }
-                    result.put("Result", "Login Unsuccessful");
-                    result.put("ResponseCode", conn.getResponseCode());
-                    result.put("ResponseMessage", conn.getResponseMessage());
-                    result.put("Error", errorStream);
-                }
-
-            } catch (MalformedURLException ex) {
-                Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            }
-
-            // return the JSON object as a string
-            return result.toJSONString();
-        } else {
-            logger.error("ipaLogin", "IPA username or password not set");
-            return result.toJSONString();
-        }
-    }
-
-    @POST
-    @Path("/acl/ipa/request")
-    @Consumes("application/json")
-    @Produces("application/json")
-    //@RolesAllowed("F_ACL-R")
-    public String ipaRequest(String postData) {
-        JSONObject result = new JSONObject();
-        if (ipaBaseServerUrl != null) {
-            try {
-                URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
-                HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-                conn.setRequestProperty("referer", ipaBaseServerUrl + "/ipa");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("Cookie", ipaCookie);
-                conn.setRequestMethod("POST");
-                conn.setDoInput(true);
-                conn.setDoOutput(true);
-
-                //JSONObject postDataJson = (JSONObject) parser.parse(postData);
-                DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
-                wr.writeBytes(postData);
-                wr.flush();
-                conn.connect();
-
-                StringBuilder responseStr;
-                // if the request is successful
-                if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
-                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                        String inputLine;
-                        responseStr = new StringBuilder();
-                        while ((inputLine = in.readLine()) != null) {
-                            responseStr.append(inputLine);
-                        }
-                    }
-                    ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
-                    result = (JSONObject) parser.parse(responseStr.toString());
-                } else { // if the request fails
-                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                        String inputLine;
-                        responseStr = new StringBuilder();
-                        while ((inputLine = in.readLine()) != null) {
-                            responseStr.append(inputLine);
-                        }
-                    }
-                    result.put("Error", responseStr.toString());
-                }
-            } catch (IOException | ParseException ex) {
-                Logger.getLogger(WebResource.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-            }
-
-            // return the JSONObject as a string
-            return result.toJSONString();
-        } else {
-            logger.error("ipaRequest", "IPA username or password not set");
-            return result.toJSONString();
-        }
-    }
-
-    @DELETE
-    @Path("/acl/ipa/servicepolicies/{serviceUUID}")
-    @Produces("application/json")
-    //@RolesAllowed("F_ACL-W")
-    public String ipaDeleteAllPoliciesForService(@PathParam("serviceUUID") String uuid, String data) throws UnsupportedEncodingException {
-
-        ipaLogin(); // ensure the ipa server cookie has been refreshed in case it was expired.
-        JSONObject result = new JSONObject();
-
-        // formatting all the groups and rules names
-        String loginUg = "ug-login-" + uuid;
-        String loginHg = "hg-login-" + uuid;
-        String loginHbac = "hbac-login-" + uuid;
-        String sudoUg = "ug-sudo-" + uuid;
-        String sudoHg = "hg-sudo-" + uuid;
-        String sudoHbac = "hbac-sudo-" + uuid;
-
-        result.put("ServiceUUID", uuid);
-
-        JSONObject delLoginUsergroup = formatIpaDeleteJSON("group_del", loginUg);
-        JSONObject delLoginHostgroup = formatIpaDeleteJSON("hostgroup_del", loginHg);
-        JSONObject delLoginHbacrule = formatIpaDeleteJSON("hbacrule_del", loginHbac);
-
-        JSONObject delSudoUsergroup = formatIpaDeleteJSON("group_del", sudoUg);
-        JSONObject delSudoHostgroup = formatIpaDeleteJSON("hostgroup_del", sudoHg);
-        JSONObject delSudoHbacrule = formatIpaDeleteJSON("hbacrule_del", sudoHbac);
-
-        /**
-         * NOTE: if the groups or rules have not been created, there will an error
-         * in the resulting JSON but it is not fatal. The error will indicate
-         * the group or rule does not exist which is okay since some accesses
-         * will not be given (mainly sudo accesses).
-         */
-        result.put("loginUgDel", ipaRequest(delLoginUsergroup.toJSONString()));
-        result.put("loginHgDel", ipaRequest(delLoginHostgroup.toJSONString()));
-        result.put("loginHbacDel", ipaRequest(delLoginHbacrule.toJSONString()));
-
-        result.put("sudoUgDel", ipaRequest(delSudoUsergroup.toJSONString()));
-        result.put("sudoHgDel", ipaRequest(delSudoHostgroup.toJSONString()));
-        result.put("sudoHbacDel", ipaRequest(delSudoHbacrule.toJSONString()));
-
-        // return the JSONObject as a string
-        return result.toJSONString();
-    }
 
     // >Clipbook
     /**
@@ -3307,38 +3140,6 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching("commonsClose", ex);
         }
-    }
-
-    /**
-     * Create the delete JSON for deleting a user group, host group, or HBAC rule.
-     * All three have the same format.
-     *
-     * var ipaRequestData = {
-     * "method": method,
-     * "params":[
-     * rule/group name,
-     * {}
-     * ],
-     * "id":0
-     * };
-     * @param method
-     * @param name
-     * @return
-     */
-    private JSONObject formatIpaDeleteJSON(String method, String name) {
-        JSONObject deleteJSON = new JSONObject();
-
-        deleteJSON.put("method", method);
-
-        JSONArray paramsArray = new JSONArray();
-        JSONArray nameParam = new JSONArray();
-        nameParam.add(name);
-        paramsArray.add(nameParam);
-        paramsArray.add(new JSONObject());
-
-        deleteJSON.put("params", paramsArray);
-        deleteJSON.put("id", 0);
-        return deleteJSON;
     }
 
     private boolean verifyAccess(String category, int id) throws SQLException {
