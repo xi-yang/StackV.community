@@ -225,7 +225,7 @@ class LoggingPanel extends React.Component {
                     "<td>" + d.referenceUUID + "</td>" +
                     "</tr>";
             }
-            if (d.targetID !== "" && d.targetID !== undefined) {
+            if (d.targetID !== "" && d.targetID !== null && d.targetID !== undefined) {
                 retString += "<tr>" +
                     "<td>Target:</td>" +
                     "<td>" + d.targetID + "</td>" +

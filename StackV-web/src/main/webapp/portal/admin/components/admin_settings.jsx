@@ -18,8 +18,8 @@ class SettingsPanel extends React.Component {
         return <div className={this.props.active ? "top" : "bottom"} id="settings-panel">
             <div id="settings-header-div">Global Settings</div>
             <div id="settings-body-div">
-                <label style={{ width: "30%", margin: "5px 12.5% 5px 2.5%" }}>StackV Server Name<input className="form-control" name="system.name"></input></label>
-                <label style={{ width: "50%" }}>Keycloak Server URL<input className="form-control" name="system.keycloak"></input></label>
+                <label style={{ width: "30%", margin: "5px 2.5%" }}>StackV Server Name<input className="form-control" name="system.name"></input></label>
+                <label style={{ width: "60%" }}>Keycloak Server URL<input className="form-control" name="system.keycloak"></input></label>
                 <hr /><h3>IPA</h3>
                 <label style={{ width: "70%" }}>Server URL<input className="form-control" name="ipa.server"></input></label>
                 <label style={{ width: "30%" }}>Username<input className="form-control" name="ipa.username"></input></label>
@@ -56,6 +56,7 @@ class SettingsPanel extends React.Component {
     saveSettings() {
         let page = this;
         let apiUrl = window.location.origin + "/StackV-web/restapi/config/";
+        let fail = false;
         $("#settings-body-div input").each((i, ele) => {
             if ($(ele).val() !== "") {
                 $.ajax({
@@ -67,14 +68,6 @@ class SettingsPanel extends React.Component {
                         xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                     },
                     success: function (config) {
-                        iziToast.success({
-                            timeout: 2000,
-                            title: "Success",
-                            message: "Settings saved!",
-                            position: "topRight",
-                            pauseOnHover: false
-                        });
-
                         $.ajax({
                             url: window.location.origin + "/StackV-web/restapi/app/reload",
                             async: false,
@@ -93,10 +86,33 @@ class SettingsPanel extends React.Component {
                                 xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                             }
                         });
+                    },
+                    error: function () {
+                        fail = true;
+                        return;
                     }
                 });
             }
         });
+        if (fail) {
+            iziToast.error({
+                timeout: 3000,
+                title: "Error",
+                message: "Some settings unable to be saved. Please try again.",
+                position: "topRight",
+                displayMode: 2,
+                pauseOnHover: false
+            });
+        } else {
+            iziToast.success({
+                timeout: 2000,
+                title: "Success",
+                message: "Settings saved!",
+                position: "topRight",
+                displayMode: 2,
+                pauseOnHover: false
+            });
+        }
     }
 }
 export default SettingsPanel;

@@ -17,7 +17,7 @@ class APIPanel extends React.Component {
                     <option value="POST">POST</option>
                     <option value="DELETE">DELETE</option>
                 </select>
-                <input type="text" placeholder="URL" id="URL" />
+                <input type="text" style={{ width: "80%" }} placeholder="URL" id="URL" />
                 <button id="SEND" type="button" className="action-button">Send</button>
             </div>
             <div id="logging-body-div">

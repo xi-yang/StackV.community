@@ -237,6 +237,7 @@ public class IPAResource {
 
         requestJSON.put("params", paramsArray);
         requestJSON.put("id", 0);
+        System.out.println("BUILD: " + requestJSON.toJSONString());
         return requestJSON.toJSONString();
     }
 
@@ -281,7 +282,7 @@ public class IPAResource {
         result.put("sudoHgDel", ipa.ipaRequest(delSudoHostgroup.toJSONString()));
         result.put("sudoHbacDel", ipa.ipaRequest(delSudoHbacrule.toJSONString()));
 
-        // return the JSONObject as a string
+        // return the JSONObject as a string        
         return result.toJSONString();
     }
 
@@ -314,6 +315,7 @@ public class IPAResource {
 
         deleteJSON.put("params", paramsArray);
         deleteJSON.put("id", 0);
+        System.out.println(deleteJSON.toJSONString());
         return deleteJSON;
     }
 }
