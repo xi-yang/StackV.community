@@ -23,6 +23,9 @@
  */
 package net.maxgigapop.mrs.common;
 
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 import java.io.IOException;
 import java.net.URL;
 import org.json.simple.JSONObject;
@@ -44,7 +47,6 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-
 /**
  * IPA tool to interact with FreeIPA.
  * Derived from Antonio Heard's IPAResource.java (located in StackV-web
@@ -54,19 +56,40 @@ import javax.net.ssl.X509TrustManager;
  * @author saiarvind
  */
 public class IPATool {
+
     private final StackLogger logger = new StackLogger(IPATool.class.getName(), "IPATool");
-    
+    private final String host = "http://127.0.0.1:8080/StackV-web/restapi";
+
     JSONParser parser = new JSONParser();
- 
-    String ipaBaseServerUrl = System.getProperty("ipa_url");
-    String ipaUsername = System.getProperty("ipa_username");
-    String ipaPasswd = System.getProperty("ipa_passwd");
-    static String ipaCookie;
-    
-    
+    OkHttpClient client = new OkHttpClient();
+    String ipaBaseServerUrl, ipaUsername, ipaPasswd, ipaCookie;
+
     public IPATool() {
+        loadConfig();
     }
-    
+
+    public void loadConfig() {
+        try {
+            URL url = new URL(String.format("%s/config/", host));
+            Request request = new Request.Builder().url(url).build();
+            Response response = client.newCall(request).execute();
+            String responseStr = response.body().string();
+
+            Object obj = parser.parse(responseStr);
+            JSONObject props = (JSONObject) obj;
+
+            ipaBaseServerUrl = (String) props.get("ipa.server");
+            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + props.get("ipa.server"));
+            ipaUsername = (String) props.get("ipa.username");
+            logger.status("loadConfig", "global variable loaded - ipaUsername:" + props.get("ipa.username"));
+            ipaPasswd = (String) props.get("ipa.password");
+            logger.status("loadConfig", "global variable loaded - ipaPasswd:" + props.get("ipa.password"));
+
+        } catch (IOException | ParseException ex) {
+            logger.throwing("loadConfig", ex);
+        }
+    }
+
     static {
         TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
@@ -106,7 +129,6 @@ public class IPATool {
     }
 
     public String ipaLogin() throws UnsupportedEncodingException {
-
         if (ipaUsername != null && ipaPasswd != null) {
 
             JSONObject result = new JSONObject();
@@ -114,7 +136,7 @@ public class IPATool {
             String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
 
             try {
-                
+
                 URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
                 HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
                 conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
@@ -166,8 +188,8 @@ public class IPATool {
         } else {
             throw logger.error_throwing("ipaLogin()", "IPA username or password not set");
         }
-    }    
-    
+    }
+
     public String ipaRequest(String postData) {
         if (ipaBaseServerUrl != null) {
 
@@ -220,10 +242,10 @@ public class IPATool {
         } else {
             throw logger.error_throwing("ipaRequest()", "IPA server url not set");
         }
-    }    
-    
+    }
+
     public String ipaEndpoint(String postData) {
-        try { 
+        try {
             ipaLogin();
             return ipaRequest(postData);
         } catch (Exception ex) {
@@ -231,6 +253,6 @@ public class IPATool {
             logger.error("ipaEndpoint", "IPA Request Failed. Exception: " + ex);
             return null;
         }
-    } 
+    }
 
 }

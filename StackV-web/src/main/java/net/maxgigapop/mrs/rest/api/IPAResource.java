@@ -49,6 +49,7 @@ import java.net.MalformedURLException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -75,6 +76,7 @@ public class IPAResource {
     static String host = "http://127.0.0.1:8080/StackV-web/restapi";
     static JSONParser parser = new JSONParser();
     static OkHttpClient client = new OkHttpClient();
+    static IPATool ipa = new IPATool();
 
     static String kc_url, ipaBaseServerUrl, ipaUsername, ipaPasswd, ipaCookie;
 
@@ -87,36 +89,10 @@ public class IPAResource {
     public IPAResource() {
     }
 
-    static void loadConfig() {
-        try {
-            URL url = new URL(String.format("%s/config/", host));
-            Request request = new Request.Builder().url(url).build();
-            Response response = client.newCall(request).execute();
-            String responseStr = response.body().string();
-
-            Object obj = parser.parse(responseStr);
-            JSONObject props = (JSONObject) obj;
-
-            kc_url = (String) props.get("system.keycloak");
-            logger.status("loadConfig", "global variable loaded - kc_url:" + props.get("system.keycloak"));
-            ipaBaseServerUrl = (String) props.get("ipa.server");
-            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + props.get("ipa.server"));
-            ipaUsername = (String) props.get("ipa.username");
-            logger.status("loadConfig", "global variable loaded - ipaUsername:" + props.get("ipa.username"));
-            ipaPasswd = (String) props.get("ipa.password");
-            logger.status("loadConfig", "global variable loaded - ipaPasswd:" + props.get("ipa.password"));
-
-        } catch (IOException | ParseException ex) {
-            logger.throwing("loadConfig", ex);
-        }
-    }
-
     @PUT
     @Path("/reload/")
-    public static void reloadConfig() {
-        WebResource.loadConfig();
-        IPAResource.loadConfig();
-        return;
+    public static void reloadTool() {
+        ipa.loadConfig();
     }
 
     static {
@@ -137,13 +113,11 @@ public class IPAResource {
 
             }
         };
-
         SSLContext sc;
         try {
             sc = SSLContext.getInstance("SSL");
             sc.init(null, trustAllCerts, new java.security.SecureRandom());
             HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-
             HostnameVerifier allHostsValid = new HostnameVerifier() {
                 @Override
                 public boolean verify(String hostname, SSLSession session) {
@@ -153,138 +127,36 @@ public class IPAResource {
             // set the  allTrusting verifier
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
         } catch (KeyManagementException | NoSuchAlgorithmException ex) {
-
         }
     }
 
-    // >FreeIPA-based ACL
-    public String ipaLogin() throws UnsupportedEncodingException {
-
-        if (ipaUsername != null && ipaPasswd != null) {
-
-            JSONObject result = new JSONObject();
-
-            String formattedLoginData = "user=" + ipaUsername + "&password=" + ipaPasswd;
-
-            try {
-
-                URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/login_password");
-                HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-                conn.setRequestProperty("referrer", ipaBaseServerUrl + "/ipa");
-                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                conn.setRequestProperty("Accept", "text/plain");
-                conn.setRequestMethod("POST");
-                conn.setDoInput(true);
-                conn.setDoOutput(true);
-//                conn.setSSLSocketFactory();
-                DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
-                wr.writeBytes(formattedLoginData);
-                wr.flush();
-                conn.connect();
-
-                // if the request is successful
-                if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
-                    result.put("Result", "Login Successful");
-                    result.put("ResponseCode", conn.getResponseCode());
-                    result.put("ResponseMessage", conn.getResponseMessage());
-                    result.put("LoginSuccess", true);
-
-                    // get the ipa_session cookie from the returned header fields and assign it to ipaCookie
-                    ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
-                    logger.trace("ipaLogin", "Successfully logged into IPA Server");
-                } else { // if the request fails
-                    String errorStream = "";
-                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                        String inputLine;
-                        while ((inputLine = in.readLine()) != null) {
-                            errorStream += inputLine;
-                        }
-                    }
-                    result.put("Result", "Login Unsuccessful");
-                    result.put("ResponseCode", conn.getResponseCode());
-                    result.put("ResponseMessage", conn.getResponseMessage());
-                    result.put("LoginSuccess", false);
-                    result.put("Error", errorStream);
-                    logger.warning("ipaLogin", "Could not login to IPA Server");
-                }
-
-            } catch (MalformedURLException ex) {
-                logger.catching("ipaLogin", ex);
-            } catch (IOException ex) {
-                logger.catching("ipaLogin", ex);
-            }
-
-            // return the JSON object as a string
-            return result.toJSONString();
-        } else {
-            throw logger.error_throwing("ipaLogin()", "IPA username or password not set");
-        }
-    }
-
-    public String ipaRequest(String postData) {
-        if (ipaBaseServerUrl != null) {
-
-            JSONObject result = new JSONObject();
-            try {
-                URL ipaurl = new URL(ipaBaseServerUrl + "/ipa/session/json");
-                HttpsURLConnection conn = (HttpsURLConnection) ipaurl.openConnection();
-                conn.setRequestProperty("referer", ipaBaseServerUrl + "/ipa");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("Accept", "application/json");
-                conn.setRequestProperty("Cookie", ipaCookie);
-                conn.setRequestMethod("POST");
-                conn.setDoInput(true);
-                conn.setDoOutput(true);
-
-                //JSONObject postDataJson = (JSONObject) parser.parse(postData);
-                DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
-                wr.writeBytes(postData);
-                wr.flush();
-                conn.connect();
-
-                StringBuilder responseStr;
-                // if the request is successful
-                if (200 <= conn.getResponseCode() && conn.getResponseCode() <= 299) {
-                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
-                        String inputLine;
-                        responseStr = new StringBuilder();
-                        while ((inputLine = in.readLine()) != null) {
-                            responseStr.append(inputLine);
-                        }
-                    }
-                    ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
-                    result = (JSONObject) parser.parse(responseStr.toString());
-                } else { // if the request fails                
-                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
-                        String inputLine;
-                        responseStr = new StringBuilder();
-                        while ((inputLine = in.readLine()) != null) {
-                            responseStr.append(inputLine);
-                        }
-                    }
-                    result.put("Error", responseStr.toString());
-                }
-            } catch (IOException | ParseException ex) {
-                logger.catching("ipaRequest", ex);
-            }
-
-            // return the JSONObject as a string
-            return result.toJSONString();
-        } else {
-            throw logger.error_throwing("ipaRequest()", "IPA server url not set");
-        }
-    }
-
-    public String ipaEndpoint(String postData) {
+    // Tool endpoints
+    @POST
+    @Path("/login")
+    public String login() {
         try {
-            ipaLogin();
-            return ipaRequest(postData);
-        } catch (Exception ex) {
-            logger.error("ipaEndpoint", "IPA Request Failed. Exception: " + ex);
+            return ipa.ipaLogin();
+        } catch (UnsupportedEncodingException ex) {
+            logger.catching("login", ex);
             return null;
         }
     }
 
+    @POST
+    @Path("/request")
+    @Consumes("application/json")
+    @Produces("application/json")
+    public String request(String postData) {
+        try {
+            ipa.ipaLogin();
+            return ipa.ipaRequest(postData);
+        } catch (UnsupportedEncodingException ex) {
+            logger.catching("request", ex);
+            return null;
+        }
+    }
+
+    // Old API endpoints
     @GET
     @Path("driver/default/{topuri}")
     @Produces("application/json")
@@ -293,7 +165,7 @@ public class IPAResource {
         JSONObject paramsJSON = new JSONObject();
         paramsJSON.put("topologyuri", topologyURI);
         postData = buildIpaRequest("md2_get_driver_default", null, paramsJSON);
-        return ipaEndpoint(postData);
+        return ipa.ipaEndpoint(postData);
     }
 
     @GET
@@ -302,7 +174,7 @@ public class IPAResource {
     public String getAvailableDrivers() {
         String postData;
         postData = buildIpaRequest("md2_get_available_drivers", null, null);
-        return ipaEndpoint(postData);
+        return ipa.ipaEndpoint(postData);
     }
 
     /*
@@ -318,7 +190,7 @@ public class IPAResource {
         paramsJSON.put("directory", path);
         paramsJSON.put("domaintopouri", domain);
         postData = buildIpaRequest("md2_get_data_by_directory", null, paramsJSON);
-        return ipaEndpoint(postData);
+        return ipa.ipaEndpoint(postData);
     }
 
     /*
@@ -332,7 +204,7 @@ public class IPAResource {
         JSONObject paramsJSON = new JSONObject();
         paramsJSON.put("pooltype", type);
         postData = buildIpaRequest("almpool_list", null, paramsJSON);
-        return ipaEndpoint(postData);
+        return ipa.ipaEndpoint(postData);
     }
 
     @POST
@@ -343,7 +215,7 @@ public class IPAResource {
         JSONObject paramsJSON = new JSONObject();
         paramsJSON.put("entryjson", entryJson);
         String postData = buildIpaRequest("md2_add_entry", null, paramsJSON);
-        return ipaEndpoint(postData);
+        return ipa.ipaEndpoint(postData);
     }
 
     private String buildIpaRequest(String method, JSONArray arguments, JSONObject params) {
@@ -368,32 +240,13 @@ public class IPAResource {
         return requestJSON.toJSONString();
     }
 
-    /**
-     * Removing general JSON-RPC response information
-     * to return enclosed data
-     */
-    private String removeRPCResponseData(String responseString) throws ParseException {
-        JSONObject responseObj;
-        responseObj = (JSONObject) parser.parse(responseString);
-
-        JSONObject md2DataJSON = (JSONObject) responseObj.get("result");
-        if (md2DataJSON != null) {
-            while (md2DataJSON.get("result") != null) {
-                md2DataJSON = (JSONObject) md2DataJSON.get("result");
-            }
-            return md2DataJSON.toJSONString();
-        } else {
-            return responseObj.toJSONString();
-        }
-    }
-
     // SERVICE FUNCTIONS //   
     @DELETE
     @Path("/servicepolicies/{serviceUUID}")
     @Produces("application/json")
     public String ipaDeleteAllPoliciesForService(@PathParam("serviceUUID") String uuid, String data) throws UnsupportedEncodingException {
 
-        ipaLogin(); // ensure the ipa server cookie has been refreshed in case it was expired.
+        ipa.ipaLogin(); // ensure the ipa server cookie has been refreshed in case it was expired.
         JSONObject result = new JSONObject();
 
         // formatting all the groups and rules names
@@ -420,13 +273,13 @@ public class IPAResource {
          * the group or rule does not exist which is okay since some accesses
          * will not be given (mainly sudo accesses).
          */
-        result.put("loginUgDel", ipaRequest(delLoginUsergroup.toJSONString()));
-        result.put("loginHgDel", ipaRequest(delLoginHostgroup.toJSONString()));
-        result.put("loginHbacDel", ipaRequest(delLoginHbacrule.toJSONString()));
+        result.put("loginUgDel", ipa.ipaRequest(delLoginUsergroup.toJSONString()));
+        result.put("loginHgDel", ipa.ipaRequest(delLoginHostgroup.toJSONString()));
+        result.put("loginHbacDel", ipa.ipaRequest(delLoginHbacrule.toJSONString()));
 
-        result.put("sudoUgDel", ipaRequest(delSudoUsergroup.toJSONString()));
-        result.put("sudoHgDel", ipaRequest(delSudoHostgroup.toJSONString()));
-        result.put("sudoHbacDel", ipaRequest(delSudoHbacrule.toJSONString()));
+        result.put("sudoUgDel", ipa.ipaRequest(delSudoUsergroup.toJSONString()));
+        result.put("sudoHgDel", ipa.ipaRequest(delSudoHostgroup.toJSONString()));
+        result.put("sudoHbacDel", ipa.ipaRequest(delSudoHbacrule.toJSONString()));
 
         // return the JSONObject as a string
         return result.toJSONString();

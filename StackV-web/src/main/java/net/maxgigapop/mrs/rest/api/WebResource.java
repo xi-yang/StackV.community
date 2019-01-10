@@ -181,8 +181,6 @@ public class WebResource {
     @Path("/reload/")
     public static void reloadConfigs() {
         WebResource.loadConfig();
-        IPAResource.loadConfig();
-        return;
     }
 
     static {
