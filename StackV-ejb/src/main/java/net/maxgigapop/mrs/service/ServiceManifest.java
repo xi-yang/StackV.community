@@ -267,7 +267,7 @@ public class ServiceManifest {
             String varMapped = (String) varMap.get(var);
             varMapped = varMapped.replaceAll("\"", "'");
             if (varMapped.contains("^^http")) {
-                varMapped = varMapped.split("^^http")[0];
+                varMapped = varMapped.split("\\^\\^http")[0];
             }
             text = text.replaceAll("\\?" + var + "\\?", varMapped);
         }
