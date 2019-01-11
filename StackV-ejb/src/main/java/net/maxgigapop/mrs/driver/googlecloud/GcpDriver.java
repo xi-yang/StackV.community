@@ -71,7 +71,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         
         OntModel model = driverInstance.getHeadVersionItem().getModelRef().getOntModel();
@@ -99,7 +99,7 @@ public class GcpDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {

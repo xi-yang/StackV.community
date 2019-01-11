@@ -94,7 +94,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         String access_key_id = driverInstance.getProperty("aws_access_key_id");
         String secret_access_key = driverInstance.getProperty("aws_secret_access_key");
@@ -120,7 +120,7 @@ public class AwsDirectConnectDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getId());
+        logger.targetid(aDelta.getReferenceUUID());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
