@@ -66,7 +66,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getReferenceUUID());
+        logger.targetid(aDelta.getId());
         logger.start(method);
         String username = driverInstance.getProperty("username");
         String password = driverInstance.getProperty("password");
@@ -104,7 +104,7 @@ public class OpenStackDriver implements IHandleDriverSystemCall {
         if (aDelta.getSystemDelta() != null && aDelta.getSystemDelta().getServiceDelta() != null && aDelta.getSystemDelta().getServiceDelta().getServiceInstance() != null) {
             logger.refuuid(aDelta.getSystemDelta().getServiceDelta().getServiceInstance().getReferenceUUID());
         }
-        logger.targetid(aDelta.getReferenceUUID());
+        logger.targetid(aDelta.getId());
         logger.start(method);
         DriverInstance driverInstance = aDelta.getDriverInstance();
         if (driverInstance == null) {
