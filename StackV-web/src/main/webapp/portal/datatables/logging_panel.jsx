@@ -35,7 +35,8 @@ class LoggingPanel extends React.Component {
 
     newLevel() {
         sessionStorage.setItem("LoggingPanel_level", $("#logging-filter-level").val());
-        this.setState({ level: $("#logging-filter-level").val() });
+        this.setState({ level: $("#logging-filter-level").val() }, this.props.resumeRefresh());
+        this.props.frameLoad(2500);
     }
     filterLogs() {
         let curr = this.state.dataTable.ajax.url();
@@ -118,10 +119,11 @@ class LoggingPanel extends React.Component {
     initTable() {
         let apiUrl;
         if (this.props.uuid) {
-            apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?refUUID=" + this.props.uuid;
+            apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?refUUID=" + this.props.uuid + "&level=" + this.state.level;
         } else {
-            apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside";
+            apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?level=" + this.state.level;
         }
+
         let panel = this;
         let dataTable = $("#loggingData").DataTable({
             "ajax": {

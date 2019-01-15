@@ -53,6 +53,7 @@ class Portal extends React.Component {
             keycloak: keycloak,
             visualMode: "new",
             page: "catalog",
+            loading: false,
             refreshTimer: 500,
             refreshEnabled: false,
         };
@@ -65,6 +66,7 @@ class Portal extends React.Component {
         this.setRefresh = this.setRefresh.bind(this);
         this.healthCheck = this.healthCheck.bind(this);
         this.tokenCheck = this.tokenCheck.bind(this);
+        this.frameLoad = this.frameLoad.bind(this);
 
         Mousetrap.bind("shift+left", () => { this.viewShift("left"); });
         Mousetrap.bind("shift+right", () => { this.viewShift("right"); });
@@ -186,6 +188,13 @@ class Portal extends React.Component {
     }
 
     /* */
+    frameLoad(time) {
+        let page = this;
+        this.setState({ loading: true });
+        setTimeout(function () {
+            page.setState({ loading: false });
+        }, time);
+    }
     pauseRefresh() {
         this.setState({ refreshEnabled: false });
     }
@@ -202,11 +211,11 @@ class Portal extends React.Component {
             case "catalog":
                 return <Catalog {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "details":
-                return <Details {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
+                return <Details {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} frameLoad={this.frameLoad} />;
             case "drivers":
                 return <Drivers {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "admin":
-                return <Admin {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
+                return <Admin {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} frameLoad={this.frameLoad} />;
             default:
                 return <div></div>;
         }
