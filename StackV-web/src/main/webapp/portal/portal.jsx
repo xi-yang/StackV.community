@@ -207,7 +207,7 @@ class Portal extends React.Component {
     loadPage() {
         switch (this.state.page) {
             case "visualization":
-                return <Visualization visualMode={this.state.visualMode} keycloak={this.state.keycloak} />;
+                return <Visualization {...this.state} visualMode={this.state.visualMode} keycloak={this.state.keycloak} />;
             case "catalog":
                 return <Catalog {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "details":
