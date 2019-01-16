@@ -237,7 +237,6 @@ public class IPAResource {
 
         requestJSON.put("params", paramsArray);
         requestJSON.put("id", 0);
-        System.out.println("BUILD: " + requestJSON.toJSONString());
         return requestJSON.toJSONString();
     }
 
