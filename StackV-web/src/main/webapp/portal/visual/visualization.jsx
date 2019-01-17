@@ -59,11 +59,11 @@ class Visualization extends React.Component {
         let page = this;
         this.fetchDomains();
         for (let domain of Object.keys(window.domainData)) {
+            let apiURL = window.location.origin + "/StackV-web/restapi/model/refresh/" + encodeURIComponent(domain);
             $.ajax({
-                url: window.location.origin + "/StackV-web/restapi/model/refresh/" + encodeURIComponent(domain),
+                url: apiURL,
                 type: "GET",
                 async: false,
-                data: JSON.stringify(window.domainData),
                 contentType: "application/json; charset=utf-8",
                 dataType: "json",
                 beforeSend: function (xhr) {
@@ -71,8 +71,7 @@ class Visualization extends React.Component {
                     xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                 },
                 success: function (result) {
-                    console.log(domain + " :: " + result);
-                    window.domainData[domain] = result;
+                    window.domainData[domain] = result[domain];
                 },
             });
         }

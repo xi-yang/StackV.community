@@ -54,7 +54,7 @@ class Portal extends React.Component {
             visualMode: "new",
             page: "catalog",
             loading: false,
-            refreshTimer: 500,
+            refreshTimer: 1000,
             refreshEnabled: false,
         };
 
