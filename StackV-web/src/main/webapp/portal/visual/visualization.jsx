@@ -76,7 +76,7 @@ class Visualization extends React.Component {
             });
         }
         window.view._dataModel._provideRawServerData(window.domainData);
-        window.view.restart();
+        //window.view.restart();
     }
 
     render() {
