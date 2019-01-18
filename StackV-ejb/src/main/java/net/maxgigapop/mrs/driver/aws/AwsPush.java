@@ -64,9 +64,11 @@ import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import net.maxgigapop.mrs.common.Dck;
+import net.maxgigapop.mrs.common.Eas;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.ResourceTool;
 import net.maxgigapop.mrs.common.StackLogger;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 /**
@@ -828,6 +830,7 @@ public class AwsPush {
                 //requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro ") 
                 //requests+=String.format("InstanceNetworkInterfaceSpecification %s %d",id,index)
                 String[] parameters = request.split("\\s+");
+                System.out.println("**RunInstancesRequest - parameters: " + parameters);
 
                 RunInstancesRequest runInstance = new RunInstancesRequest();
                 runInstance.withImageId(parameters[1]);
@@ -839,12 +842,12 @@ public class AwsPush {
                 
                 // update 12/18
                 // creating a dck server entry
-                Dck dckOps = new Dck();
-                JSONObject vmContainerAttrs = new JSONObject();
-                vmContainerAttrs.put("fqdn",System.getProperty("ipa_url"));
-                JSONObject vmAttrs = new JSONObject();
-                
-                // dckOps.addDCKVMEntry(cn, "urn:ogf:network:aws.amazon.com:aws-cloud", vmContainerAttrs, vmAttrs); // move to create instance
+                //Dck dckOps = new Dck();
+                //JSONObject vmContainerAttrs = new JSONObject();
+                //vmContainerAttrs.put("fqdn",System.getProperty("ipa_url"));
+                //JSONObject vmAttrs = new JSONObject();
+                //dckOps.addDCKVMEntry(cn, topologyUri, vmContainerAttrs, vmAttrs);
+                //dckOps.addDCKVMEntry(cn, "urn:ogf:network:aws.amazon.com:aws-cloud", vmContainerAttrs, vmAttrs);
                 
                 //integrate the root device
                 if (!parameters[7].equalsIgnoreCase("any")) {
@@ -1174,55 +1177,64 @@ public class AwsPush {
                 + "     ?naPublic mrs:value ?public. } "
                 + "}";
         ResultSet r = executeQuery(query, model, modelAdd);
-        Dck dckOps = new Dck();
+        
         JSONObject vmContainerAttrs = new JSONObject();
-        vmContainerAttrs.put("fqdn",System.getProperty("ipa_url"));
+        vmContainerAttrs.put("fqdn", System.getProperty("ipa_url"));
         JSONObject vmAttrs = new JSONObject();
-        String cn = "";
+        JSONObject easJSON = new JSONObject();
+        String vmCN = "";
         while (r.hasNext()) {
             QuerySolution q = r.next();
             System.out.println("***AWS PUSH - globusConnectRequest - QuerySolution q: " + q.toString());
             JSONObject o = new JSONObject();
             requests.add(o);
             o.put("request", "GlobusConnectRequest");
+            
             if (creation == true) {
                 o.put("status", "create");
             } else {
                 o.put("status", "delete");
             }
+            
             String vmUri = q.getResource("vm").getURI();
             System.out.println("***AWS PUSH - globusConnectRequests - vmURI:  " + vmUri);
             String serverName = ResourceTool.getResourceName(vmUri, awsPrefix.vpc());
             System.out.println("***AWS PUSH - globusConnectRequests - serverName:  " + serverName);
-            cn = serverName;
-            // String serverName = "";
             o.put("server name", serverName);
             String shortName = q.get("shortname").toString();
-            o.put("shortname", shortName);
+            o.put("shortname", shortName); // request
+            vmCN = "globus_connect:" + shortName; // vm container cn
+            vmAttrs.put("short_name", shortName); // vm attribute cn:value
+            easJSON.put("cn", shortName + "_globus"); // eas task cn
+            
             String userName = "";
             if (q.contains("username")) {
                 userName = q.get("username").toString();
                 vmAttrs.put("username", userName);
             }
             o.put("username", userName);
+            
             String userPass = "";
             if (q.contains("password")) {
                 userPass = q.get("password").toString();
-                vmAttrs.put("password", userPass);
+                 vmAttrs.put("password", userPass);
             }
             o.put("password", userPass);
+            
             String defaultDir = "";
             if (q.contains("directory")) {
                 defaultDir = q.get("directory").toString();
-                vmAttrs.put("directory", defaultDir);
+                 vmAttrs.put("default_directory", defaultDir);
             }
             o.put("directory", defaultDir);
+            
             String dataInterface = "";
             if (q.contains("interface")) {
                 dataInterface = q.get("interface").toString();
-                vmAttrs.put("interface", dataInterface);
+                 vmAttrs.put("data_interface_ip", dataInterface);
             }
             o.put("interface", dataInterface);
+            
             String isPublic = "False";
             if (q.contains("public")) {
                 if (q.get("public").toString().toLowerCase().equals("true")) {
@@ -1230,17 +1242,48 @@ public class AwsPush {
                 }
             }
             o.put("public", isPublic);
+            
             String endpointUri = q.getResource("ep").getURI();
             o.put("uri", endpointUri);
         }
-        System.out.println("**AWS PUSH - globusConnectRequests - vmContainerAttrs: " + vmContainerAttrs.toString());
-        System.out.println("**AWS PUSH - globusConnectRequests - vmAttrs: " + vmAttrs.toString());
-        // dckOps.addDCKVMEntry(cn, topologyUri, vmContainerAttrs, vmAttrs);
-        //dckOps.addDCKVMEntry(cn, "urn:ogf:network:aws.amazon.com:aws-cloud", vmContainerAttrs, vmAttrs); // move to run instance
+ 
         // 1) create vm entry in run instance requests, 2) create VF in globus requests
         
-        // create virtual function
+        Dck dckOps = new Dck();
+        String dn = dckOps.addDCKVMEntry(vmCN, "demo:top:uri", vmContainerAttrs, vmAttrs);
+        // String dn = dckOps.addDCKVMEntry(vmCN, topologyUri, vmContainerAttrs, vmAttrs);
+        System.out.println("**AWS PUSH - globusConnectRequests - dn result of dck add vm: "+ dn);
         
+        // create eas task and virtual function here
+        Eas easOps = new Eas();
+        easJSON.put("eastaskaction", "create");
+        easJSON.put("eastasklockedby", "user"); // currently required non-empty by the EAS plugin
+        easJSON.put("eastasklockexpires", "1"); // currently required non-empty by the EAS plugin
+        easJSON.put("eastaskresourcerefdn", "cn=refdn");
+        easJSON.put("eastaskstatus", "INIT");
+        
+        JSONArray triggers = new JSONArray();
+        JSONObject triggersObj = new JSONObject();
+        triggersObj.put("exists", "true");
+        triggersObj.put("type", "ldap-query");
+        triggersObj.put("dn", vmCN + "," + dn);
+        triggers.add(triggersObj);
+        easJSON.put("eastasktriggers", triggers.toJSONString());
+        
+        easJSON.put("eastasktype", "vfs-provision");
+        
+        JSONObject easTaskOptions = new JSONObject();
+        easTaskOptions.put("ServiceType", "globus_connect");
+        easTaskOptions.put("ServiceNumber", "1"); // always 1???
+        easTaskOptions.put("DispatchGroup", "group-dispatch");
+        easTaskOptions.put("ServiceCN", vmCN);
+        easJSON.put("eastaskoptions", easTaskOptions.toJSONString());
+        
+        System.out.println("**AWS PUSH - globusConnectRequests - easJSON: " + easJSON.toString());
+        
+        String result = easOps.createEasTaskForVF(easJSON);
+        
+        System.out.println("**AWS PUSH - globusConnectRequests - eas task creation result: " + result);
     }
 
     /**

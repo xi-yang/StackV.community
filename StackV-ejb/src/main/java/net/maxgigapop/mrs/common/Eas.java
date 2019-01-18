@@ -44,6 +44,7 @@ public class Eas {
     }
     
     public String createEasTaskForVF(JSONObject params) {
+        System.out.print("Eas - createEaskTaskForVF: " + params.toJSONString());
         String result = "";
         
         if (params == null || params.isEmpty()) {
@@ -123,10 +124,7 @@ public class Eas {
         paramsArrArgs.put("eastasklockedby", params.get("eastasklockedby"));
         paramsArrArgs.put("eastasklockexpires", params.get("eastasklockexpires"));
         paramsArrArgs.put("eastaskresourcerefdn", params.get("eastaskresourcerefdn"));
-        
-        JSONObject taskOptions = new JSONObject();
-        taskOptions.put("DispatchGroup", "group");
-        paramsArrArgs.put("eastaskoptions", taskOptions.toJSONString());
+        paramsArrArgs.put("eastaskoptions", params.get("eastaskoptions"));
         
        
         paramsArr.add(paramsArrArgs);
