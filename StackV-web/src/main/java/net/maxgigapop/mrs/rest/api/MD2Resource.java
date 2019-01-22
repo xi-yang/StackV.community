@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.net.URL;
 import javax.ejb.EJB;
 import javax.ws.rs.Path;
-import javax.ws.rs.GET;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -37,6 +36,7 @@ import com.squareup.okhttp.Response;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.util.HashMap;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -45,15 +45,11 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.jboss.resteasy.spi.HttpRequest;
-import javax.naming.NamingException;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import net.maxgigapop.mrs.common.MD2Connect;
 
-/**
- * REST Web Service
- *
- * @author arheard
- */
 @Path("md2")
 public class MD2Resource {
     private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "MD2Resource");
@@ -61,6 +57,7 @@ public class MD2Resource {
     private static JSONParser parser = new JSONParser();    
     private static String host = "http://127.0.0.1:8080/StackV-web/restapi";    
     private static final OkHttpClient client = new OkHttpClient();
+    private static String serverName;
     private static String ipaBaseServerUrl, ipaUsername, ipaPass;
 
     @javax.ws.rs.core.Context
@@ -72,8 +69,7 @@ public class MD2Resource {
     /**
      * Creates a new instance of WebResource
      */
-    public MD2Resource() {      
-        loadConfig();
+    public MD2Resource() {              
     }
 
     static void loadConfig() {
@@ -87,11 +83,13 @@ public class MD2Resource {
             JSONObject props = (JSONObject) obj;
 
             ipaBaseServerUrl = (String) props.get("ipa.server");
-            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + props.get("ipa.server"));
+            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + ipaBaseServerUrl);
             ipaUsername = (String) props.get("ipa.username");
-            logger.status("loadConfig", "global variable loaded - ipaUsername:" + props.get("ipa.username"));
+            logger.status("loadConfig", "global variable loaded - ipaUsername:" + ipaUsername);
             ipaPass = (String) props.get("ipa.password");
-            logger.status("loadConfig", "global variable loaded - ipaPasswd:" + props.get("ipa.password"));
+            logger.status("loadConfig", "global variable loaded - ipaPasswd:" + ipaPass);
+            serverName = (String) props.get("system.name");
+            logger.status("loadConfig", "global variable loaded - serverName:" + serverName);
 
             conn = new MD2Connect(ipaBaseServerUrl, ipaUsername, ipaPass);
         } catch (IOException | ParseException ex) {
@@ -99,6 +97,8 @@ public class MD2Resource {
         }
     }
     static {
+        loadConfig();
+        
         TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
                 @Override
@@ -136,14 +136,27 @@ public class MD2Resource {
         }
     }   
     @PUT
-    @Path("/reload/")
+    @Path("/reload")
     public static void reloadConfig() {
         MD2Resource.loadConfig();
     }
 
-    @GET
-    @Path("test")
-    public void test() throws NamingException {
+    @PUT
+    @Path("/register")
+    public void registerOrchestrator(final String inputString) {
+        System.out.println(serverName);
+        System.out.println("cn=" + serverName + ",cn=orchestrators,cn=stackv");
         
+        HashMap<String,String[]> map = new HashMap<>();                
+        map.put("cn", new String[]{"cn=" + serverName + ",cn=orchestrators,cn=stackv"});
+        map.put("objectclass", new String[]{"top", "dckConfig"});               
+        
+        conn.add(map);
+    }
+    
+    @DELETE
+    @Path("/register")
+    public void deregisterOrchestrator(final String inputString) {        
+        conn.remove("cn=" + serverName + ",cn=orchestrators,cn=stackv");
     }
 }

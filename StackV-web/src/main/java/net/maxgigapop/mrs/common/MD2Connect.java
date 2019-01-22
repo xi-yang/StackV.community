@@ -25,7 +25,7 @@ public class MD2Connect {
         env.put(Context.SECURITY_CREDENTIALS, credentials);
     }
 
-    Attributes get(String filter) {
+    public Attributes get(String filter) {
         try {
             // Create the initial directory context from config
             DirContext ctx = new InitialDirContext(this.env);
@@ -40,23 +40,20 @@ public class MD2Connect {
         }
     }
 
-    String add(HashMap<String, String> entry) {
+    public String add(HashMap<String, String[]> entry) {
         try {
             // Create the initial directory context from config
             DirContext ctx = new InitialDirContext(this.env);
 
             // Create attrs
             Attributes attrs = new BasicAttributes(true);
-            Attribute objclass = new BasicAttribute("objectclass");
-            objclass.add("top");
-            objclass.add("dckContainer");
-            attrs.put(objclass);
-
-            String cn = entry.get("cn");
+            String cn = entry.get("cn")[0];
             entry.remove("cn");
-            for (String entryAttr : entry.keySet()) {
-                Attribute attr = new BasicAttribute(entryAttr);
-                attr.add(entry.get(entryAttr));
+            for (String entryName : entry.keySet()) {
+                Attribute attr = new BasicAttribute(entryName);
+                for (String entryAttr : entry.get(entryName)) {
+                    attr.add(entryAttr);
+                }
                 attrs.put(attr);
             }
 
@@ -70,7 +67,7 @@ public class MD2Connect {
         }
     }
 
-    String remove(String filter) {
+    public String remove(String filter) {
         try {
             // Create the initial directory context from config
             DirContext ctx = new InitialDirContext(this.env);
