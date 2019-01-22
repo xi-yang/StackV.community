@@ -102,14 +102,10 @@ class APIPanel extends React.Component {
                     xhr.setRequestHeader("Refresh", panel.props.keycloak.refreshToken);
                 },
                 success: function (result) {
-                    if (type === "POST") {
-                        $("#api_result").val(result);
-                    } else {
-                        $("#api_result").val("Success");
-                    }
+                    $("#api_result").val(result);
                 },
-                error: function () {
-                    $("#api_result").val("Failure");
+                error: function (result) {
+                    $("#api_result").val(result);
                 }
             });
         } else if (type === "DELETE") {

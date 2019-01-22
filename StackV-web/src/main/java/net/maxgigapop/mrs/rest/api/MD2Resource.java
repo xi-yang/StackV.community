@@ -46,34 +46,31 @@ import javax.net.ssl.X509TrustManager;
 import net.maxgigapop.mrs.common.StackLogger;
 import org.jboss.resteasy.spi.HttpRequest;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
+import javax.ws.rs.PathParam;
 import net.maxgigapop.mrs.common.MD2Connect;
 
 @Path("md2")
 public class MD2Resource {
+
     private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "MD2Resource");
     private static MD2Connect conn;
-    private static JSONParser parser = new JSONParser();    
-    private static String host = "http://127.0.0.1:8080/StackV-web/restapi";    
+    private static JSONParser parser = new JSONParser();
+    private static String host = "http://127.0.0.1:8080/StackV-web/restapi";
     private static final OkHttpClient client = new OkHttpClient();
     private static String serverName;
     private static String ipaBaseServerUrl, ipaUsername, ipaPass;
 
-    @javax.ws.rs.core.Context
-    private HttpRequest httpRequest;
-
     @EJB
     HandleSystemCall systemCallHandler;
 
-    /**
-     * Creates a new instance of WebResource
-     */
-    public MD2Resource() {              
+    public MD2Resource() {
     }
 
     static void loadConfig() {
-         try {
+        try {
             URL url = new URL(String.format("%s/config/", host));
             Request request = new Request.Builder().url(url).build();
             Response response = client.newCall(request).execute();
@@ -96,9 +93,10 @@ public class MD2Resource {
             throw logger.throwing("loadConfig", ex);
         }
     }
+
     static {
         loadConfig();
-        
+
         TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
                 @Override
@@ -134,29 +132,95 @@ public class MD2Resource {
         } catch (KeyManagementException | NoSuchAlgorithmException ex) {
 
         }
-    }   
+    }
+
     @PUT
     @Path("/reload")
     public static void reloadConfig() {
         MD2Resource.loadConfig();
     }
 
-    @PUT
+    //
+    // Registration
+    //
+    @POST
     @Path("/register")
-    public void registerOrchestrator(final String inputString) {
-        System.out.println(serverName);
-        System.out.println("cn=" + serverName + ",cn=orchestrators,cn=stackv");
-        
-        HashMap<String,String[]> map = new HashMap<>();                
+    public String registerOrchestrator() {
+        // Orchestrator entry
+        HashMap<String, String[]> map = new HashMap<>();
         map.put("cn", new String[]{"cn=" + serverName + ",cn=orchestrators,cn=stackv"});
-        map.put("objectclass", new String[]{"top", "dckConfig"});               
-        
+        map.put("objectclass", new String[]{"top", "dckContainer"});
         conn.add(map);
+        // Services subentry
+        map.put("cn", new String[]{"cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv"});
+        conn.add(map);
+        
+        return "cn=" + serverName + ",cn=orchestrators,cn=stackv";
     }
-    
+
     @DELETE
     @Path("/register")
-    public void deregisterOrchestrator(final String inputString) {        
+    public String deregisterOrchestrator() {
         conn.remove("cn=" + serverName + ",cn=orchestrators,cn=stackv");
+        return "cn=" + serverName + ",cn=orchestrators,cn=stackv";
+    }
+
+    // Drivers
+    @POST
+    @Path("/register/drivers/{driver}")
+    public String registerDriver(@PathParam("driver") String driver) {
+        HashMap<String, String[]> map = new HashMap<>();
+        map.put("cn", new String[]{"cn=" + driver + ",cn=domains,cn=dck,cn=stackv"});
+        map.put("objectclass", new String[]{"top", "dckConfig"});
+
+        conn.add(map);
+        return "cn=" + driver + ",cn=domains,cn=dck,cn=stackv";
+    }
+
+    @DELETE
+    @Path("/register/drivers/{driver}")
+    public String deregisterDriver(@PathParam("driver") String driver) {
+        conn.remove("cn=" + driver + ",cn=domains,cn=dck,cn=stackv");
+        return "cn=" + driver + ",cn=domains,cn=dck,cn=stackv";
+    }
+
+    // Services
+    @POST
+    @Path("/register/services/{service}")
+    public String registerService( @PathParam("service") String service) {
+        HashMap<String, String[]> map = new HashMap<>();
+        map.put("cn", new String[]{"cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv"});
+        map.put("objectclass", new String[]{"top", "dckConfig"});
+
+        conn.add(map);
+        return "cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv";
+    }
+
+    @DELETE
+    @Path("/register/services/{service}")
+    public String deregisterService(@PathParam("service") String service) {
+        conn.remove("cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv");
+        return "cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv";
+    }
+
+    //
+    // Queries
+    // 
+    @GET
+    @Path("/query/drivers")
+    public String driverQuery() {
+        return conn.search("cn=domains,cn=dck,cn=stackv");
+    }
+
+    @GET
+    @Path("/query/services/{domain}")
+    public String serviceQuery(@PathParam("domain") String domain) {
+        return conn.search("cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv");
+    }
+
+    @GET
+    @Path("/query/direct/{dn}")
+    public String directQuery(@PathParam("dn") String filter) {
+        return conn.search(filter);
     }
 }

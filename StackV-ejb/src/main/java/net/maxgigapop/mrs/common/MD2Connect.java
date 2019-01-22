@@ -1,5 +1,7 @@
 package net.maxgigapop.mrs.common;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import javax.naming.Context;
 import javax.naming.directory.InitialDirContext;
 
@@ -12,8 +14,12 @@ import javax.naming.NamingException;
 
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
+import javax.naming.NameClassPair;
+import javax.naming.NamingEnumeration;
 
 public class MD2Connect {
+
     private final Hashtable<String, String> env = new Hashtable<>(11);
 
     public MD2Connect(String url, String principal, String credentials) {
@@ -34,6 +40,26 @@ public class MD2Connect {
             Attributes attrs = ctx.getAttributes(filter);
             ctx.close();
             return attrs;
+        } catch (NamingException e) {
+            System.err.println("Problem getting attribute: " + e);
+            return null;
+        }
+    }
+
+    public String search(String filter) {
+        try {
+            List<String> ret = new ArrayList<>();
+            // Create the initial directory context from config
+            DirContext ctx = new InitialDirContext(this.env);
+
+            // List names and return
+            NamingEnumeration<NameClassPair> list = ctx.list(filter);
+            while (list.hasMore()) {
+                NameClassPair nc = (NameClassPair) list.next();
+                ret.add(nc.getName());
+            }
+
+            return Arrays.toString((String[]) ret.toArray(new String[0]));
         } catch (NamingException e) {
             System.err.println("Problem getting attribute: " + e);
             return null;
