@@ -20,7 +20,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-
 package net.maxgigapop.mrs.rest.api;
 
 import java.util.Set;
@@ -42,17 +41,19 @@ public class ApplicationConfig extends Application {
         return resources;
     }
 
-
     private void addExceptionMapperClasses(Set<Class<?>> resources) {
         resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
     }
 
     private void addRestResourceClasses(Set<Class<?>> resources) {
+        resources.add(io.swagger.jaxrs.listing.AcceptHeaderApiListingResource.class);
+        resources.add(io.swagger.jaxrs.listing.ApiListingResource.class);
+        resources.add(io.swagger.jaxrs.listing.SwaggerSerializers.class);
         resources.add(net.maxgigapop.mrs.rest.api.CORSResponseFilter.class);
         resources.add(net.maxgigapop.mrs.rest.api.ConfigResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
-        resources.add(net.maxgigapop.mrs.rest.api.IPAResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.MD2Resource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.SecurityInterceptor.class);
         resources.add(net.maxgigapop.mrs.rest.api.SenseDiscoveryApi.class);
