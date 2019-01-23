@@ -20,7 +20,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-
 package net.maxgigapop.mrs.rest.api;
 
 import java.util.Set;
@@ -42,17 +41,19 @@ public class ApplicationConfig extends Application {
         return resources;
     }
 
-
     private void addExceptionMapperClasses(Set<Class<?>> resources) {
         resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
     }
 
     private void addRestResourceClasses(Set<Class<?>> resources) {
+        resources.add(io.swagger.jaxrs.listing.AcceptHeaderApiListingResource.class);
+        resources.add(io.swagger.jaxrs.listing.ApiListingResource.class);
+        resources.add(io.swagger.jaxrs.listing.SwaggerSerializers.class);
         resources.add(net.maxgigapop.mrs.rest.api.CORSResponseFilter.class);
         resources.add(net.maxgigapop.mrs.rest.api.ConfigResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
-        resources.add(net.maxgigapop.mrs.rest.api.IPAResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.MD2Resource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.SecurityInterceptor.class);
         resources.add(net.maxgigapop.mrs.rest.api.SenseDiscoveryApi.class);
@@ -62,6 +63,25 @@ public class ApplicationConfig extends Application {
         resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.IOExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.ParseExceptionMapper.class);
-        resources.add(net.maxgigapop.mrs.rest.api.exception.SQLExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.SQLExceptionMapper.class);       
+        resources.add(org.jboss.resteasy.client.exception.mapper.ApacheHttpClient4ExceptionMapper.class);
+        resources.add(org.jboss.resteasy.core.AcceptHeaderByFileSuffixFilter.class);                
+        resources.add(org.jboss.resteasy.plugins.interceptors.encoding.AcceptEncodingGZIPFilter.class);
+        resources.add(org.jboss.resteasy.plugins.interceptors.encoding.AcceptEncodingGZIPInterceptor.class);
+        resources.add(org.jboss.resteasy.plugins.interceptors.encoding.GZIPDecodingInterceptor.class);
+        resources.add(org.jboss.resteasy.plugins.interceptors.encoding.GZIPEncodingInterceptor.class);
+        resources.add(org.jboss.resteasy.plugins.providers.DataSourceProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.DefaultNumberWriter.class);
+        resources.add(org.jboss.resteasy.plugins.providers.DefaultTextPlain.class);
+        resources.add(org.jboss.resteasy.plugins.providers.DocumentProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.FileProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.FormUrlEncodedProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.IIOImageProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.InputStreamProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.JaxrsFormProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.ReaderProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.SerializableProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.SourceProvider.class);
+        resources.add(org.jboss.resteasy.plugins.providers.StringTextStar.class);
     }
 }

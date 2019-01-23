@@ -2,10 +2,10 @@
 <Configuration status="info" package="net.maxgigapop.mrs.rest.api" name="StackV-Logging">
     <Appenders>
         <Console name="InterceptorOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="%logger{1}: %X{username}:%X{method}>%X{role} %X{objectid} [%marker] - %X{event} : %msg - %X{severity}%n" />
+            <PatternLayout pattern="%X{username}:%X{method}>%X{role} %X{objectid} [%marker] - %X{event} : %msg - %X{severity}%n" />
         </Console>
         <Console name="APIOut" target="SYSTEM_OUT">
-            <PatternLayout pattern="%logger{1}: %X{module}.%X{method} %X{refuuid}: %X{objectid} [%marker] - %X{event} : %msg - %X{severity}: %ex{5}%n" />
+            <PatternLayout pattern="%X{module}.%X{method} %X{refuuid}: %X{objectid} [%marker] - %X{event} : %msg - %X{severity}: %ex{5}%n" />
         </Console>
         
         <JDBC name="MySQL" tableName="frontend.log">
