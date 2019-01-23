@@ -15,6 +15,7 @@ import javax.naming.NamingException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import javax.naming.ContextNotEmptyException;
 import javax.naming.NameClassPair;
 import javax.naming.NamingEnumeration;
 
@@ -94,17 +95,38 @@ public class MD2Connect {
     }
 
     public String remove(String filter) {
+        DirContext ctx = null;
         try {
             // Create the initial directory context from config
-            DirContext ctx = new InitialDirContext(this.env);
+            ctx = new InitialDirContext(this.env);
 
-            // Retrieve all attr and return;
+            // Attempt clean removal
             ctx.destroySubcontext(filter);
             ctx.close();
             return "success";
+        } catch (ContextNotEmptyException e) {
+            // Trim Leaves
+            try {
+                removeRecur(filter, ctx);
+
+                ctx.close();
+            } catch (NamingException ex) {
+                System.err.println("Problem recursively removing entry: " + ex);
+                return "failure";
+            }
+            return "pending";
         } catch (NamingException e) {
             System.err.println("Problem removing entry: " + e);
             return "failure";
         }
+    }
+
+    private void removeRecur(String filter, DirContext ctx) throws NamingException {
+        NamingEnumeration<NameClassPair> list = ctx.list(filter);
+        while (list.hasMore()) {
+            String newFilter = list.next().getName() + "," + filter;
+            removeRecur(newFilter, ctx);
+        }
+        ctx.destroySubcontext(filter);
     }
 }
