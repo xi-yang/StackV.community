@@ -261,7 +261,7 @@ final class ServiceParser {
         return paraMap;
     }
 
-    private HashMap<String, String> parseFlow(JSONObject dataJSON, String refUuid) {
+    HashMap<String, String> parseFlow(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
 

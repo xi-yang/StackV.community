@@ -22,6 +22,7 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,6 +43,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
 
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+
+import org.jboss.resteasy.spi.HttpRequest;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -55,12 +60,15 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
  */
 @Path("driver")
 public class DriverResource {
-
-    private final StackLogger logger = new StackLogger(WebResource.class.getName(), "DriverResource");
-    private final JNDIFactory factory = new JNDIFactory();
+    private static String host = "http://127.0.0.1:8080/StackV-web/restapi";
+    private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "DriverResource");
+    private static final JNDIFactory factory = new JNDIFactory();
+    private static final OkHttpClient client = new OkHttpClient();
 
     @Context
     private UriInfo context;
+    @Context
+    private HttpRequest httpRequest;
 
     @EJB
     HandleSystemCall systemCallHandler;
@@ -205,6 +213,12 @@ public class DriverResource {
                 return Response.status(Status.CONFLICT).entity(retList.toString()).build();
             }
             systemCallHandler.unplugDriverInstance(topoUri);
+
+            // DEREGISTER
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(String.format("%s/md2/register/drivers/%s/", host, topoUri));
+            Request request = new Request.Builder().url(url).delete().header("Authorization", auth).build();
+            client.newCall(request).execute();
         } catch (Exception e) {
             throw logger.throwing(method, e);
         }
@@ -218,12 +232,14 @@ public class DriverResource {
         String method = "plug";
         try {
             logger.targetid(di.getTopologyUri());
-        } catch (Exception ex) {
-            throw logger.throwing(method, ex);
-        }
-        logger.trace_start(method);
-        try {
+            logger.trace_start(method);
             systemCallHandler.plugDriverInstance(di.getProperties());
+
+            // REGISTER
+            final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
+            URL url = new URL(String.format("%s/md2/register/drivers/%s/", host, di.getTopologyUri()));
+            Request request = new Request.Builder().url(url).post(null).header("Authorization", auth).build();
+            client.newCall(request).execute();
         } catch (Exception e) {
             throw logger.throwing(method, e);
         }

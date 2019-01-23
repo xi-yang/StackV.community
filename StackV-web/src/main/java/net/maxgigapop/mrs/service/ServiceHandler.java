@@ -37,6 +37,9 @@ import java.sql.Timestamp;
 
 import javax.ejb.EJBException;
 
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -51,6 +54,7 @@ public class ServiceHandler {
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceHandler");
     private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
     private final JNDIFactory factory = new JNDIFactory();
+    private static final OkHttpClient client = new OkHttpClient();
     JSONParser parser = new JSONParser();
 
     TokenHandler token;
@@ -82,9 +86,6 @@ public class ServiceHandler {
             throws EJBException, SQLException, IOException, InterruptedException, ParseException {
         String method = "createInstance";
         logger.refuuid(refUUID);
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         try {
             logger.start(method);
 
@@ -119,59 +120,61 @@ public class ServiceHandler {
                 logger.catching(method, ex);
             }
 
-            front_conn = factory.getConnection("frontend");
+            try (Connection front_conn = factory.getConnection("frontend");) {
 
-            // Initialize service parameters.
-            Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
+                // Initialize service parameters.
+                Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
-            // Install Instance into DB.
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`, `intent`, `service_wizard_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            prep.setString(1, type);
-            prep.setString(2, owner);
-            prep.setTimestamp(3, timeStamp);
-            prep.setString(4, refUUID);
-            prep.setString(5, alias);
-            prep.setString(6, "CREATE");
-            prep.setString(7, lastState);
-            prep.setString(8, cleanIntent);
-            prep.setString(9, profileID);
-            prep.executeUpdate();
+                // Install Instance into DB.
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "INSERT INTO frontend.service_instance (`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`, `intent`, `service_wizard_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");) {
+                    prep.setString(1, type);
+                    prep.setString(2, owner);
+                    prep.setTimestamp(3, timeStamp);
+                    prep.setString(4, refUUID);
+                    prep.setString(5, alias);
+                    prep.setString(6, "CREATE");
+                    prep.setString(7, lastState);
+                    prep.setString(8, cleanIntent);
+                    prep.setString(9, profileID);
+                    prep.executeUpdate();
+                }
+                superState = SuperState.CREATE;
 
-            superState = SuperState.CREATE;
+                int instanceID;
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");) {
+                    prep.setString(1, refUUID);
+                    try (ResultSet rs = prep.executeQuery();) {
+                        rs.next();
+                        instanceID = rs.getInt("service_instance_id");
+                    }
+                }
 
-            prep = front_conn
-                    .prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
-            prep.setString(1, refUUID);
-            rs = prep.executeQuery();
-            rs.next();
-            int instanceID = rs.getInt("service_instance_id");
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?,?) ON DUPLICATE KEY UPDATE `instanceUUID`=?,`state`=\"INIT\"");) {
+                    prep.setInt(1, instanceID);
+                    prep.setString(2, refUUID);
+                    prep.setString(3, refUUID);
+                    prep.executeUpdate();
+                }
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) " + "VALUES (?, '0', ?)");) {
+                    prep.setString(1, owner);
+                    prep.setString(2, refUUID);
+                    prep.executeUpdate();
+                }
 
-            prep = front_conn.prepareStatement(
-                    "INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?,?) ON DUPLICATE KEY UPDATE `instanceUUID`=?,`state`=\"INIT\"");
-            prep.setInt(1, instanceID);
-            prep.setString(2, refUUID);
-            prep.setString(3, refUUID);
-            prep.executeUpdate();
+                logger.init();
 
-            prep = front_conn.prepareStatement(
-                    "INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) " + "VALUES (?, '0', ?)");
-            prep.setString(1, owner);
-            prep.setString(2, refUUID);
-            prep.executeUpdate();
+                // Execute service creation.
+                ServiceEngine.orchestrateInstance(refUUID, inputJSON, deltaUUID, token, autoProceed);
 
-            logger.init();
-
-            // Execute service creation.
-            ServiceEngine.orchestrateInstance(refUUID, inputJSON, deltaUUID, token, autoProceed);
-
-            logger.end(method);
+                logger.end(method);
+            }
         } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);
             throw ex;
-        } finally {
-            logger.trace(method, "Connection closing!");
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -341,6 +344,12 @@ public class ServiceHandler {
         executeHttpMethod(url, delete, "DELETE", null, token.auth());
 
         String result = delete(refUuid, token.auth());
+
+        // REGISTER
+        URL regURL = new URL(String.format("%s/md2/register/services/%s/", HOST, refUuid));
+        Request request = new Request.Builder().url(regURL).delete().header("Authorization", token.auth()).build();
+        client.newCall(request).execute();
+
         if (result.equalsIgnoreCase("Successfully terminated")) {
             return 0;
         } else {
