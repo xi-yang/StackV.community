@@ -26,10 +26,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.JNDIFactory;
-import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 
 /**
  *
@@ -37,7 +37,8 @@ import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
  */
 public class VerificationHandler {
 
-    private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "VerificationHandler");
+    private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource",
+            "VerificationHandler");
     private final TokenHandler token;
     private final JNDIFactory factory = new JNDIFactory();
     Connection conn;
@@ -93,8 +94,8 @@ public class VerificationHandler {
     public void clearVerification() {
         try {
             int instanceID = -1;
-            prep = conn.prepareStatement("SELECT service_instance_id FROM service_verification "
-                    + "WHERE instanceUUID = ?");
+            prep = conn.prepareStatement(
+                    "SELECT service_instance_id FROM service_verification " + "WHERE instanceUUID = ?");
             prep.setString(1, instanceUUID);
             rs = prep.executeQuery();
             if (rs.next()) {
@@ -121,8 +122,8 @@ public class VerificationHandler {
         updateState();
         try {
             if (state != null && state.equals("RUNNING")) {
-                prep = conn.prepareStatement("UPDATE service_verification SET pending_action = ? "
-                        + "WHERE instanceUUID = ?");
+                prep = conn.prepareStatement(
+                        "UPDATE service_verification SET pending_action = ? " + "WHERE instanceUUID = ?");
                 prep.setString(1, action);
                 prep.setString(2, instanceUUID);
                 prep.executeUpdate();
@@ -137,8 +138,7 @@ public class VerificationHandler {
     private void updateState() {
         String method = "updateState";
         try {
-            prep = conn.prepareStatement("SELECT state FROM service_verification "
-                    + "WHERE instanceUUID = ?");
+            prep = conn.prepareStatement("SELECT state FROM service_verification " + "WHERE instanceUUID = ?");
             prep.setString(1, instanceUUID);
             rs = prep.executeQuery();
             if (rs.next()) {

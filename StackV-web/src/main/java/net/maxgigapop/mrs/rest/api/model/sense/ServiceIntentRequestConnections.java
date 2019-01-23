@@ -2,20 +2,16 @@ package net.maxgigapop.mrs.rest.api.model.sense;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.maxgigapop.mrs.rest.api.model.sense.BandwidthProfile;
-import net.maxgigapop.mrs.rest.api.model.sense.Schedule;
-import net.maxgigapop.mrs.rest.api.model.sense.ServiceTerminationPoint;
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class ServiceIntentRequestConnections   {
-  
+public class ServiceIntentRequestConnections {
+
   private @Valid String name = null;
   private @Valid BandwidthProfile bandwidth = null;
   private @Valid Schedule schedule = null;
@@ -28,12 +24,12 @@ public class ServiceIntentRequestConnections   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("name")
   public String getName() {
     return name;
   }
+
   public void setName(String name) {
     this.name = name;
   }
@@ -45,12 +41,12 @@ public class ServiceIntentRequestConnections   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("bandwidth")
   public BandwidthProfile getBandwidth() {
     return bandwidth;
   }
+
   public void setBandwidth(BandwidthProfile bandwidth) {
     this.bandwidth = bandwidth;
   }
@@ -62,12 +58,12 @@ public class ServiceIntentRequestConnections   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("schedule")
   public Schedule getSchedule() {
     return schedule;
   }
+
   public void setSchedule(Schedule schedule) {
     this.schedule = schedule;
   }
@@ -79,16 +75,15 @@ public class ServiceIntentRequestConnections   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("terminals")
   public List<ServiceTerminationPoint> getTerminals() {
     return terminals;
   }
+
   public void setTerminals(List<ServiceTerminationPoint> terminals) {
     this.terminals = terminals;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -99,10 +94,10 @@ public class ServiceIntentRequestConnections   {
       return false;
     }
     ServiceIntentRequestConnections serviceIntentRequestConnections = (ServiceIntentRequestConnections) o;
-    return Objects.equals(name, serviceIntentRequestConnections.name) &&
-        Objects.equals(bandwidth, serviceIntentRequestConnections.bandwidth) &&
-        Objects.equals(schedule, serviceIntentRequestConnections.schedule) &&
-        Objects.equals(terminals, serviceIntentRequestConnections.terminals);
+    return Objects.equals(name, serviceIntentRequestConnections.name)
+        && Objects.equals(bandwidth, serviceIntentRequestConnections.bandwidth)
+        && Objects.equals(schedule, serviceIntentRequestConnections.schedule)
+        && Objects.equals(terminals, serviceIntentRequestConnections.terminals);
   }
 
   @Override
@@ -114,7 +109,7 @@ public class ServiceIntentRequestConnections   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ServiceIntentRequestConnections {\n");
-    
+
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    bandwidth: ").append(toIndentedString(bandwidth)).append("\n");
     sb.append("    schedule: ").append(toIndentedString(schedule)).append("\n");
@@ -134,4 +129,3 @@ public class ServiceIntentRequestConnections   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

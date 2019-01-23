@@ -26,9 +26,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+
 import javax.ejb.EJB;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -42,12 +41,13 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import net.maxgigapop.mrs.common.StackLogger;
-import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
 import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
 import net.maxgigapop.mrs.system.HandleSystemCall;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
 
 /**
  *
@@ -69,17 +69,13 @@ public class DriverResource {
     }
 
     @GET
-    @Produces({"application/json"})
+    @Produces({ "application/json" })
     public Response pullAll() {
         String method = "pullAll";
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet ret = null;
-        try {
+        try (Connection front_conn = factory.getConnection("rainsdb");
+                PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_instance");
+                ResultSet ret = prep.executeQuery();) {
             JSONArray jsonArrayRet = new JSONArray();
-            front_conn = factory.getConnection("rainsdb");
-            prep = front_conn.prepareStatement("SELECT * FROM driver_instance");
-            ret = prep.executeQuery();
             while (ret.next()) {
                 JSONObject jsonRet = new JSONObject();
                 jsonArrayRet.add(jsonRet);
@@ -88,39 +84,43 @@ public class DriverResource {
                 String driverId = ret.getString("id");
                 jsonRet.put("id", driverId);
                 // add additional properties
-                prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ? AND property = ?");
-                prep.setString(1, driverId);
-                prep.setString(2, "disabled");
-                ResultSet ret2 = prep.executeQuery();
+                PreparedStatement prep2 = front_conn.prepareStatement(
+                        "SELECT * FROM driver_instance_property WHERE driverInstanceId = ? AND property = ?");
+                prep2.setString(1, driverId);
+                prep2.setString(2, "disabled");
+                ResultSet ret2 = prep2.executeQuery();
                 if (ret2.next()) {
                     jsonRet.put("disabled", ret2.getString("value"));
                 } else {
                     jsonRet.put("disabled", "false");
                 }
-                prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ? AND property = ?");
-                prep.setString(1, driverId);
-                prep.setString(2, "contErrors");
-                ResultSet ret3 = prep.executeQuery();
+                ret2.close();
+                prep2.close();
+
+                PreparedStatement prep3 = front_conn.prepareStatement(
+                        "SELECT * FROM driver_instance_property WHERE driverInstanceId = ? AND property = ?");
+                prep3.setString(1, driverId);
+                prep3.setString(2, "contErrors");
+                ResultSet ret3 = prep3.executeQuery();
                 if (ret3.next()) {
                     jsonRet.put("contErrors", ret3.getString("value"));
                 } else {
                     jsonRet.put("contErrors", "0");
                 }
+                ret3.close();
+                prep3.close();
             }
             return Response.status(200).entity(jsonArrayRet).build();
         } catch (SQLException ex) {
             logger.catching(method, ex);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("SQLException: "+ex).build();
-        } finally {
-            commonsClose(front_conn, prep, ret, logger);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("SQLException: " + ex).build();
         }
     }
 
     @GET
-    @Produces({"application/json"})
+    @Produces({ "application/json" })
     @Path("/{driverId}")
     public Response pull(@PathParam("driverId") String driverId) throws SQLException {
-        String method = "pull";
         JSONObject jsonRet = new JSONObject();
         logger.targetid(driverId);
 
@@ -133,7 +133,7 @@ public class DriverResource {
             if (ret.next()) {
                 driverId = ret.getString("id");
             } else {
-                return Response.status(Response.Status.NOT_FOUND).entity("no driver instance for "+driverId).build();
+                return Response.status(Response.Status.NOT_FOUND).entity("no driver instance for " + driverId).build();
             }
         }
         prep = front_conn.prepareStatement("SELECT * FROM driver_instance_property WHERE driverInstanceId = ?");
@@ -146,12 +146,12 @@ public class DriverResource {
         return Response.status(200).entity(jsonRet).build();
     }
 
-
     @GET
-    @Produces({"application/json"})
+    @Produces({ "application/json" })
     @Path("/{driverId}/{property}")
-    public String pullProperty(@PathParam("driverId") String driverId, @PathParam("property") String property) throws SQLException {
-        String method = "pullProperty";
+    public String pullProperty(@PathParam("driverId") String driverId, @PathParam("property") String property)
+            throws SQLException {
+        // String method = "pullProperty";
         logger.targetid(driverId);
 
         Connection front_conn = factory.getConnection("rainsdb");
@@ -166,7 +166,8 @@ public class DriverResource {
                 return null;
             }
         }
-        prep = front_conn.prepareStatement("SELECT value FROM driver_instance_property WHERE driverInstanceId = ? AND property = ?");
+        prep = front_conn.prepareStatement(
+                "SELECT value FROM driver_instance_property WHERE driverInstanceId = ? AND property = ?");
         prep.setString(1, driverId);
         prep.setString(2, property);
         ResultSet ret = prep.executeQuery();
@@ -177,11 +178,11 @@ public class DriverResource {
         return null;
     }
 
-
     @PUT
-    @Produces({"application/json"})
+    @Produces({ "application/json" })
     @Path("/{driverId}/{property}/{value}")
-    public void setProperty(@PathParam("driverId") String driverId, @PathParam("property") String property, @PathParam("value") String value) {
+    public void setProperty(@PathParam("driverId") String driverId, @PathParam("property") String property,
+            @PathParam("value") String value) {
         String method = "putProperty";
         logger.targetid(driverId);
 
@@ -191,7 +192,7 @@ public class DriverResource {
             throw logger.throwing(method, e);
         }
     }
-    
+
     @DELETE
     @Path("/{topoUri}")
     public Response unplug(@PathParam("topoUri") String topoUri) {
@@ -212,7 +213,7 @@ public class DriverResource {
     }
 
     @POST
-    @Consumes({"application/xml", "application/json"})
+    @Consumes({ "application/xml", "application/json" })
     public String plug(ApiDriverInstance di) {
         String method = "plug";
         try {
@@ -229,9 +230,9 @@ public class DriverResource {
         logger.trace_end(method);
         return "plug successfully";
     }
-    
+
     @POST
-    @Produces({"application/json"})
+    @Produces({ "application/json" })
     @Path("/{driverId}")
     public void update(@PathParam("driverId") String driverId, ApiDriverInstance di) {
         String method = "putProperty";

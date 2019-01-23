@@ -238,16 +238,16 @@ class Portal extends React.Component {
     checkRegistration() {
         let portal = this;
         $.ajax({
-            url: window.location.origin + "/StackV-web/restapi/config",
+            url: window.location.origin + "/StackV-web/restapi/config/system.name",
             async: false,
             type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + portal.state.keycloak.token);
                 xhr.setRequestHeader("Refresh", portal.state.keycloak.token);
             },
-            success: function (config) {
-                if (config["system.name"]) {
-                    console.log("Orchestrator " + config["system.name"] + " online.");
+            success: function (name) {
+                if (name) {
+                    console.log("Orchestrator " + name + " online.");
                 } else {
                     iziToast.question({
                         drag: false,
