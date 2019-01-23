@@ -24,33 +24,36 @@ package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
 import java.net.URL;
-import javax.ejb.EJB;
-import javax.ws.rs.Path;
-import net.maxgigapop.mrs.system.HandleSystemCall;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
+
+import javax.ejb.EJB;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-import net.maxgigapop.mrs.common.StackLogger;
-import org.jboss.resteasy.spi.HttpRequest;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 import net.maxgigapop.mrs.common.MD2Connect;
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 @Path("md2")
 public class MD2Resource {
@@ -97,23 +100,21 @@ public class MD2Resource {
     static {
         loadConfig();
 
-        TrustManager[] trustAllCerts = new TrustManager[]{
-            new X509TrustManager() {
-                @Override
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
-
-                @Override
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                }
-
-                @Override
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                }
-
+        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+            @Override
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return null;
             }
-        };
+
+            @Override
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {
+            }
+
+        } };
 
         SSLContext sc;
         try {
@@ -127,7 +128,7 @@ public class MD2Resource {
                     return true;
                 }
             };
-            // set the  allTrusting verifier
+            // set the allTrusting verifier
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
         } catch (KeyManagementException | NoSuchAlgorithmException ex) {
 
@@ -146,22 +147,29 @@ public class MD2Resource {
     @POST
     @Path("/register")
     public String registerOrchestrator() {
+        String method = "registerOrchestrator";
+        logger.trace_start(method);
         // Orchestrator entry
         HashMap<String, String[]> map = new HashMap<>();
-        map.put("cn", new String[]{"cn=" + serverName + ",cn=orchestrators,cn=stackv"});
-        map.put("objectclass", new String[]{"top", "dckContainer"});
+        map.put("cn", new String[] { "cn=" + serverName + ",cn=orchestrators,cn=stackv" });
+        map.put("objectclass", new String[] { "top", "dckContainer" });
         conn.add(map);
         // Services subentry
-        map.put("cn", new String[]{"cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv"});
+        map.put("cn", new String[] { "cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv" });
         conn.add(map);
-        
+
+        logger.end(method);
         return "cn=" + serverName + ",cn=orchestrators,cn=stackv";
     }
 
     @DELETE
     @Path("/register")
     public String deregisterOrchestrator() {
+        String method = "deregisterOrchestrator";
+        logger.trace_start(method);
         conn.remove("cn=" + serverName + ",cn=orchestrators,cn=stackv");
+
+        logger.end(method);
         return "cn=" + serverName + ",cn=orchestrators,cn=stackv";
     }
 
@@ -169,43 +177,58 @@ public class MD2Resource {
     @POST
     @Path("/register/drivers/{driver}")
     public String registerDriver(@PathParam("driver") String driver) {
+        String method = "registerDriver";
+        logger.trace_start(method);
         HashMap<String, String[]> map = new HashMap<>();
-        map.put("cn", new String[]{"cn=" + driver + ",cn=domains,cn=dck,cn=stackv"});
-        map.put("objectclass", new String[]{"top", "dckConfig"});
+        map.put("cn", new String[] { "cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        map.put("objectclass", new String[] { "top", "dckConfig" });
 
         conn.add(map);
+        logger.end(method);
         return "cn=" + driver + ",cn=domains,cn=dck,cn=stackv";
     }
 
     @DELETE
     @Path("/register/drivers/{driver}")
     public String deregisterDriver(@PathParam("driver") String driver) {
+        String method = "deregisterDriver";
+        logger.trace_start(method);
         conn.remove("cn=" + driver + ",cn=domains,cn=dck,cn=stackv");
+
+        logger.end(method);
         return "cn=" + driver + ",cn=domains,cn=dck,cn=stackv";
     }
 
     // Services
     @POST
     @Path("/register/services/{service}")
-    public String registerService( @PathParam("service") String service) {
+    public String registerService(@PathParam("service") String service) {
+        String method = "registerService";
+        logger.trace_start(method);
         HashMap<String, String[]> map = new HashMap<>();
-        map.put("cn", new String[]{"cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv"});
-        map.put("objectclass", new String[]{"top", "dckConfig"});
+        map.put("cn",
+                new String[] { "cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv" });
+        map.put("objectclass", new String[] { "top", "dckConfig" });
 
         conn.add(map);
+        logger.end(method);
         return "cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv";
     }
 
     @DELETE
     @Path("/register/services/{service}")
     public String deregisterService(@PathParam("service") String service) {
+        String method = "deregisterService";
+        logger.trace_start(method);
         conn.remove("cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv");
+
+        logger.end(method);
         return "cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv";
     }
 
     //
     // Queries
-    // 
+    //
     @GET
     @Path("/query/drivers")
     public String driverQuery() {
