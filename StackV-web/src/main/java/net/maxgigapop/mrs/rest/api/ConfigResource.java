@@ -69,7 +69,7 @@ public class ConfigResource {
 
     @GET
     @Path("/{property}")
-    public String getProperty(@PathParam("driverId") String property) {
+    public String getProperty(@PathParam("property") String property) {
         String method = "getProperty";
         logger.targetid(property);
         logger.trace_start(method);

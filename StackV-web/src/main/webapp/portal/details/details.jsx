@@ -20,21 +20,11 @@ var intentConfig = {
     width: 750
 };
 
-const override = css`
-    display: block;
-    position: absolute;
-    margin: auto;
-    left: 50%;
-    top: 30%;
-    z-index: 100;
-`;
-
 class Details extends React.Component {
     constructor(props) {
         super(props);
 
         this.viewShift = this.viewShift.bind(this);
-        this.load = this.load.bind(this);
 
         let page = this;
         Mousetrap.bind("left", function () { page.viewShift("left"); });
@@ -44,7 +34,6 @@ class Details extends React.Component {
         this.setView = this.setView.bind(this);
         this.state = {
             view: "details",
-            loading: false,
             meta: {},
             state: {},
             verify: {},
@@ -63,14 +52,6 @@ class Details extends React.Component {
     }
     componentWillUnmount() {
         $intentModal.iziModal("destroy");
-    }
-
-    load(seconds) {
-        let page = this;
-        this.setState({ loading: true });
-        setTimeout(function () {
-            page.setState({ loading: false });
-        }, seconds * 1000);
     }
     setView(panel) {
         this.setState({ view: panel });
@@ -98,18 +79,18 @@ class Details extends React.Component {
         modAllowed[3] = (this.state.state.sub === "READY" && (this.state.state.super === "CREATE" || this.state.state.super === "REINSTATE"));
 
         let pageClasses = "page page-details";
-        if (this.state.loading) {
+        if (this.props.loading) {
             pageClasses = "page page-details loading";
         }
         return <div style={{ width: "100%", height: "100%" }}>
-            <ReactInterval timeout={this.props.refreshTimer} enabled={(this.props.refreshEnabled && !this.state.loading)} callback={this.fetchData} />
-            <ReactInterval timeout={10000} enabled={(this.props.refreshEnabled && !this.state.loading)} callback={this.loadVisualization} />
+            <ReactInterval timeout={this.props.refreshTimer} enabled={(this.props.refreshEnabled && !this.props.loading)} callback={this.fetchData} />
+            <ReactInterval timeout={10000} enabled={(this.props.refreshEnabled && !this.props.loading)} callback={this.loadVisualization} />
             <RotateLoader
-                className={override}
+                css={"display: block;position: absolute;margin: auto;left: 50%;top: 30%;z-index: 100;"}
                 sizeUnit={"px"}
                 size={15}
                 color={"#7ED321"}
-                loading={this.state.loading}
+                loading={this.props.loading}
             />
             <div className={pageClasses}>
                 <DetailsDots view={this.state.view} setView={this.setView} allowed={modAllowed}></DetailsDots>

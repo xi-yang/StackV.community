@@ -34,17 +34,17 @@ class AdminDots extends React.Component {
 
     render() {
         return <div className={override}>
-            <div onClick={() => { this.props.setView("api"); }}>
-                <FontAwesomeIcon className={dots} icon={this.props.view === "api" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
-                <span className={text} style={this.props.view === "api" ? {} : { fontSize: 0 }}>API Testing</span>
+            <div onClick={() => { this.props.setView("logging"); }}>
+                <FontAwesomeIcon className={dots} icon={this.props.view === "logging" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
+                <span className={text} style={this.props.view === "logging" ? {} : { fontSize: 0 }}>Logging</span>
             </div>
             <div onClick={() => { this.props.setView("settings"); }}>
                 <FontAwesomeIcon className={dots} icon={this.props.view === "settings" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
                 <span className={text} style={this.props.view === "settings" ? {} : { fontSize: 0 }}>Settings</span>
             </div>
-            <div onClick={() => { this.props.setView("logging"); }}>
-                <FontAwesomeIcon className={dots} icon={this.props.view === "logging" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
-                <span className={text} style={this.props.view === "logging" ? {} : { fontSize: 0 }}>Logging</span>
+            <div onClick={() => { this.props.setView("api"); }}>
+                <FontAwesomeIcon className={dots} icon={this.props.view === "api" ? ["fas", "dot-circle"] : ["far", "dot-circle"]} size="lg" />
+                <span className={text} style={this.props.view === "api" ? {} : { fontSize: 0 }}>API Testing</span>
             </div>
         </div>;
     }
