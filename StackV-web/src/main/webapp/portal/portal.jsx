@@ -113,7 +113,7 @@ class Portal extends React.Component {
     }
 
     switchPage(page, param) {
-        if (this.verifyPageAccess(page, param)) {
+        if (this.verifyPageAccess(page, param) && this.state.page !== page) {
             switch (page) {
                 case "details":
                     if (param && param.uuid) {

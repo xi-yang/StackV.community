@@ -28,34 +28,27 @@
         <groupId>net.maxgigapop</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-
     <groupId>net.maxgigapop</groupId>
     <artifactId>StackV-ejb</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>ejb</packaging>
-
     <name>StackV-ejb</name>
-
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <doclint>none</doclint>
     </properties>
-
-    <dependencyManagement>  
-        <dependencies>  
-            <dependency>  
-                <groupId>org.jboss.arquillian</groupId>  
-                <artifactId>arquillian-bom</artifactId>  
-                <version>1.1.5.Final</version>  
-                <scope>import</scope>  
-                <type>pom</type>  
-            </dependency>  
-        </dependencies>  
-    </dependencyManagement> 
-    
- 
-    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jboss.arquillian</groupId>
+                <artifactId>arquillian-bom</artifactId>
+                <version>1.1.5.Final</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.apache.jena</groupId>
@@ -72,7 +65,6 @@
             <artifactId>aws-java-sdk</artifactId>
             <version>1.9.0</version>
         </dependency>
-        
         <dependency>
             <groupId>com.google.api-client</groupId>
             <artifactId>google-api-client</artifactId>
@@ -83,10 +75,8 @@
             <artifactId>google-cloud</artifactId>
             <!-- Original version was 0.21.1-alpha -->
             <!-- reverted from 0.32.0-alpha -->
-            <version>0.21.1-alpha</version> 
+            <version>0.21.1-alpha</version>
         </dependency>
-        
-
         <dependency>
             <groupId>org.apache.jena</groupId>
             <artifactId>jena-arq</artifactId>
@@ -184,13 +174,13 @@
             <artifactId>jboss-as-naming</artifactId>
             <version>7.2.0.Final</version>
         </dependency>
-        <dependency>  
-            <groupId>org.jboss.arquillian</groupId>  
-            <artifactId>arquillian-bom</artifactId>  
-            <version>1.1.5.Final</version>  
-            <scope>test</scope>  
-            <type>pom</type>  
-        </dependency>  
+        <dependency>
+            <groupId>org.jboss.arquillian</groupId>
+            <artifactId>arquillian-bom</artifactId>
+            <version>1.1.5.Final</version>
+            <scope>test</scope>
+            <type>pom</type>
+        </dependency>
         <dependency>
             <groupId>org.jboss.arquillian.junit</groupId>
             <artifactId>arquillian-junit-container</artifactId>
@@ -201,11 +191,11 @@
             <artifactId>arquillian-protocol-servlet</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>  
-            <groupId>org.jboss.shrinkwrap.resolver</groupId>  
-            <artifactId>shrinkwrap-resolver-impl-maven</artifactId>  
+        <dependency>
+            <groupId>org.jboss.shrinkwrap.resolver</groupId>
+            <artifactId>shrinkwrap-resolver-impl-maven</artifactId>
             <scope>test</scope>
-        </dependency>  
+        </dependency>
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
@@ -233,7 +223,6 @@
             <version>3.3.0</version>
         </dependency>
     </dependencies>
-
     <profiles>
         <profile>
             <id>deploy-nuke</id>
@@ -244,8 +233,8 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <version>3.1</version>
                         <configuration>
-                            <source>1.7</source>
-                            <target>1.7</target>
+                            <source>1.8</source>
+                            <target>1.8</target>
                             <compilerArguments>
                                 <endorseddirs>${endorsed.dir}</endorseddirs>
                             </compilerArguments>
@@ -330,8 +319,8 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <version>3.1</version>
                         <configuration>
-                            <source>1.7</source>
-                            <target>1.7</target>
+                            <source>1.8</source>
+                            <target>1.8</target>
                             <compilerArguments>
                                 <endorseddirs>${endorsed.dir}</endorseddirs>
                             </compilerArguments>
@@ -406,5 +395,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>

@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2016 University of Maryland
+* Copyright (c) 2013-2019 University of Maryland
 * Created by: Alberto Jimenez 2015
 * Modified by: Tao-Hung Yang 2016
 * Modified by: Xi Yang 2016
