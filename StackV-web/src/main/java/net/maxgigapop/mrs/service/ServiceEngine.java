@@ -43,8 +43,8 @@ import com.squareup.okhttp.Request;
 import org.json.simple.JSONObject;
 
 import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.JNDIFactory;
+import net.maxgigapop.mrs.rest.api.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
 
 /**

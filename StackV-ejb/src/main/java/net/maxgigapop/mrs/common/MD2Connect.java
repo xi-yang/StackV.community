@@ -2,22 +2,22 @@ package net.maxgigapop.mrs.common;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import javax.naming.Context;
-import javax.naming.directory.InitialDirContext;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
 
-import javax.naming.directory.DirContext;
+import javax.naming.Context;
+import javax.naming.ContextNotEmptyException;
+import javax.naming.NameClassPair;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.BasicAttributes;
-import javax.naming.NamingException;
-
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import javax.naming.ContextNotEmptyException;
-import javax.naming.NameClassPair;
-import javax.naming.NamingEnumeration;
+import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
 
 public class MD2Connect {
 
@@ -41,6 +41,8 @@ public class MD2Connect {
             Attributes attrs = ctx.getAttributes(filter);
             ctx.close();
             return attrs;
+        } catch (NameNotFoundException e) {
+            return null;
         } catch (NamingException e) {
             System.err.println("Problem getting attribute: " + e);
             return null;

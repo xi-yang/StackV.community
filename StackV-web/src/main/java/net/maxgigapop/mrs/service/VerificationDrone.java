@@ -43,8 +43,8 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.JNDIFactory;
+import net.maxgigapop.mrs.rest.api.TokenHandler;
 import net.maxgigapop.mrs.rest.api.WebResource;
 
 /**

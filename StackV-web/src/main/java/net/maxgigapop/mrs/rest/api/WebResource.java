@@ -94,8 +94,6 @@ import org.keycloak.representations.AccessToken;
 import net.maxgigapop.mrs.common.AuditService;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.common.TokenHandler;
-import net.maxgigapop.mrs.service.ServiceEngine;
 import net.maxgigapop.mrs.service.ServiceHandler;
 import net.maxgigapop.mrs.service.VerificationHandler;
 import net.maxgigapop.mrs.system.HandleSystemCall;
@@ -381,6 +379,7 @@ public class WebResource {
             retArr.add(userJSON);
         }
         retJSON.put("data", retArr);
+        logger.trace_end(method);
         return retJSON.toJSONString();
     }
 
@@ -577,6 +576,7 @@ public class WebResource {
                 retArr.add(userJSON);
             }
             retJSON.put("data", retArr);
+            logger.trace_end(method);
             return retJSON.toJSONString();
         } catch (IOException | ParseException ex) {
             logger.catching("getUsers", ex);
@@ -1205,191 +1205,6 @@ public class WebResource {
         }
     }
 
-    // >Labels
-    /**
-     * @api {get} /app/label/:user
-     * @apiVersion 1.0.0
-     * @apiDescription Get a list of labels belonging to the specified user.
-     * @apiGroup Labels
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     *
-     ** @apiExample {curl} Example Call: TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response: TODO - Add Example Response
-     */
-    @GET
-    @Path("/label/{user}")
-    @Produces("application/json")
-    public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("SELECT * FROM label WHERE username = ?");
-            prep.setString(1, username);
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                ArrayList<String> labelList = new ArrayList<>();
-
-                labelList.add(rs.getString("identifier"));
-                labelList.add(rs.getString("label"));
-                labelList.add(rs.getString("color"));
-
-                retList.add(labelList);
-            }
-
-            return retList;
-        } catch (SQLException ex) {
-            logger.catching("getLabels", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
-    /**
-     * @api {put} /app/label Add Label
-     * @apiVersion 1.0.0
-     * @apiDescription Add a new label.
-     * @apiGroup Labels
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     * @apiParam {JSONObject} inputString TODO - Add Parameter Structure
-     *
-     ** @apiExample {curl} Example Call: TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response: TODO - Add Example Response
-     */
-    @PUT
-    @Path(value = "/label")
-    @Consumes(value = { "application/json", "application/xml" })
-    public String label(final String inputString) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "label";
-            logger.start(method);
-            JSONObject inputJSON = new JSONObject();
-            try {
-                Object obj = parser.parse(inputString);
-                inputJSON = (JSONObject) obj;
-
-            } catch (ParseException ex) {
-                logger.catching("label", ex);
-            }
-
-            String user = (String) inputJSON.get("user");
-            String identifier = (String) inputJSON.get("identifier");
-            String label = (String) inputJSON.get("label");
-            String color = (String) inputJSON.get("color");
-
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement(
-                    "INSERT INTO `frontend`.`label` (`identifier`, `username`, `label`, `color`) VALUES (?, ?, ?, ?)");
-            prep.setString(1, identifier);
-            prep.setString(2, user);
-            prep.setString(3, label);
-            prep.setString(4, color);
-            prep.executeUpdate();
-
-            logger.end(method);
-            return "Added";
-        } catch (SQLException ex) {
-            logger.catching("label", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
-    /**
-     * @api {delete} /app/label/:username/delete/:identifier Delete Label
-     * @apiVersion 1.0.0
-     * @apiDescription Delete identified label owned by specified user.
-     * @apiGroup Labels
-     * @apiUse AuthHeader
-     * @apiParam {String} username username
-     * @apiParam {String} identifier label ID
-     *
-     ** @apiExample {curl} Example Call: TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response: TODO - Add Example Response
-     */
-    @DELETE
-    @Path(value = "/label/{username}/delete/{identifier}")
-    public String deleteLabel(@PathParam(value = "username") String username,
-            @PathParam(value = "identifier") String identifier) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "deleteLabel";
-            logger.start(method);
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?");
-            prep.setString(1, username);
-            prep.setString(2, identifier);
-            prep.executeUpdate();
-
-            logger.end(method);
-            return "Deleted";
-        } catch (SQLException ex) {
-            logger.catching("deleteLabel", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
-    /**
-     * @api {delete} /app/label/:username/clearall Clear Labels
-     * @apiVersion 1.0.0
-     * @apiDescription Delete all labels owned by specified user.
-     * @apiGroup Labels
-     * @apiUse AuthHeader
-     * @apiParam {String} username username
-     *
-     ** @apiExample {curl} Example Call: TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response: TODO - Add Example Response
-     */
-    @DELETE
-    @Path(value = "/label/{username}/clearall")
-    public String clearLabels(@PathParam(value = "username") String username) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "clearLabels";
-            logger.start(method);
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("DELETE FROM `frontend`.`label` WHERE username = ? ");
-            prep.setString(1, username);
-            prep.executeUpdate();
-
-            logger.end(method);
-            return "Labels Cleared";
-        } catch (SQLException ex) {
-            logger.catching("clearLabels", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
     // >Logging
     @GET
     @Path("/logging/")
@@ -1540,13 +1355,8 @@ public class WebResource {
         int start = Integer.parseInt(queryParams.getFirst("start"));
         int length = Integer.parseInt(queryParams.getFirst("length"));
 
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         String method = "getLogsServerSide";
-        try {
-            front_conn = factory.getConnection("frontend");
-
+        try (Connection front_conn = factory.getConnection("frontend");) {
             String prepString = "SELECT * FROM log";
             // Filtering by UUID alone
             if (refUUID != null && (level == null || level.equalsIgnoreCase("TRACE"))) {
@@ -1595,58 +1405,61 @@ public class WebResource {
             }
 
             String prepStringCount = prepString.replace("SELECT *", "SELECT COUNT(*)");
-            prep = front_conn.prepareStatement(prepStringCount);
-            if (refUUID != null) {
-                prep.setString(1, refUUID);
+            int count;
+            try (PreparedStatement prep = front_conn.prepareStatement(prepStringCount);) {
+                if (refUUID != null) {
+                    prep.setString(1, refUUID);
+                }
+                try (ResultSet rs = prep.executeQuery();) {
+                    rs.next();
+                    count = rs.getInt(1);
+                }
             }
-            rs = prep.executeQuery();
-            rs.next();
-            int count = rs.getInt(1);
 
             prepString = prepString + " ORDER BY log_id DESC LIMIT ?,?";
-            prep = front_conn.prepareStatement(prepString);
-            if (refUUID != null) {
-                prep.setString(1, refUUID);
-                prep.setInt(2, start);
-                prep.setInt(3, length);
-            } else {
-                prep.setInt(1, start);
-                prep.setInt(2, length);
+            try (PreparedStatement prep = front_conn.prepareStatement(prepString);) {
+                if (refUUID != null) {
+                    prep.setString(1, refUUID);
+                    prep.setInt(2, start);
+                    prep.setInt(3, length);
+                } else {
+                    prep.setInt(1, start);
+                    prep.setInt(2, length);
+                }
+
+                try (ResultSet rs = prep.executeQuery();) {
+                    JSONObject retJSON = new JSONObject();
+                    JSONArray logArr = new JSONArray();
+                    while (rs.next()) {
+                        JSONObject logJSON = new JSONObject();
+
+                        logJSON.put("referenceUUID", rs.getString("referenceUUID"));
+                        logJSON.put("marker", rs.getString("marker"));
+                        logJSON.put("timestamp", rs.getString("timestamp"));
+                        logJSON.put("level", rs.getString("level"));
+                        logJSON.put("logger", rs.getString("logger"));
+                        logJSON.put("message", rs.getString("message"));
+                        logJSON.put("event", rs.getString("event"));
+                        logJSON.put("exception", rs.getString("exception"));
+                        logJSON.put("targetID", rs.getString("targetID"));
+
+                        logArr.add(logJSON);
+                    }
+
+                    retJSON.put("data", logArr);
+                    retJSON.put("draw", draw);
+                    retJSON.put("recordsTotal", count);
+                    retJSON.put("recordsFiltered", count);
+
+                    return retJSON.toJSONString();
+                }
             }
-
-            rs = prep.executeQuery();
-            JSONObject retJSON = new JSONObject();
-            JSONArray logArr = new JSONArray();
-            while (rs.next()) {
-                JSONObject logJSON = new JSONObject();
-
-                logJSON.put("referenceUUID", rs.getString("referenceUUID"));
-                logJSON.put("marker", rs.getString("marker"));
-                logJSON.put("timestamp", rs.getString("timestamp"));
-                logJSON.put("level", rs.getString("level"));
-                logJSON.put("logger", rs.getString("logger"));
-                logJSON.put("message", rs.getString("message"));
-                logJSON.put("event", rs.getString("event"));
-                logJSON.put("exception", rs.getString("exception"));
-                logJSON.put("targetID", rs.getString("targetID"));
-
-                logArr.add(logJSON);
-            }
-
-            retJSON.put("data", logArr);
-            retJSON.put("draw", draw);
-            retJSON.put("recordsTotal", count);
-            retJSON.put("recordsFiltered", count);
-
-            return retJSON.toJSONString();
         } catch (UnhandledException ex) {
             logger.trace(method, "Logging connection lost?");
             return null;
         } catch (SQLException ex) {
             logger.catching(method, ex);
             throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1731,10 +1544,10 @@ public class WebResource {
      * @apiUse AuthHeader
      * @apiParam {String} svcUUID instance UUID
      *
-     ** @apiExample {curl} Example Call: TODO - Add Example Call
+     ** @apiExample {curl} Example Call:
      *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response: TODO - Add Example Response
+     * @apiSuccess Object return
+     * @apiSuccessExample {json} Example Response:
      */
     @GET
     @Path("/manifest/{svcUUID}")
@@ -2161,7 +1974,6 @@ public class WebResource {
         ResultSet rs = null;
         logger.refuuid(serviceUUID);
         try {
-            HashMap<String, String> retMap = new HashMap<>();
             front_conn = factory.getConnection("frontend");
 
             prep = front_conn.prepareStatement(
@@ -2246,7 +2058,6 @@ public class WebResource {
     @Path("/access/{category}/{uuid}")
     public String verifyPanel(@PathParam("category") String category, @PathParam("uuid") String uuid)
             throws SQLException {
-        String method = "verifyPanel";
         return Boolean.toString(verifyAccess(category, uuid));
     }
 
@@ -2272,49 +2083,48 @@ public class WebResource {
     @Path("/profile/{wizardID}")
     @Produces("application/json")
     public String getProfile(@PathParam("wizardID") int wizardID) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         try {
             if (verifyAccess("profiles", wizardID)) {
-                String method = "getProfile";
-                front_conn = factory.getConnection("frontend");
-                JSONObject profJSON = new JSONObject();
+                try (Connection front_conn = factory.getConnection("frontend");) {
+                    JSONObject profJSON = new JSONObject();
+                    try (PreparedStatement prep = front_conn
+                            .prepareStatement("SELECT * FROM service_wizard WHERE service_wizard_id = ?");) {
+                        prep.setInt(1, wizardID);
+                        try (ResultSet rs = prep.executeQuery();) {
+                            while (rs.next()) {
+                                profJSON.put("name", rs.getString("name"));
+                                profJSON.put("wizard_json", rs.getString("wizard_json"));
+                                profJSON.put("owner", rs.getString("owner"));
+                                profJSON.put("editable", rs.getString("editable"));
+                                profJSON.put("authorized", rs.getString("authorized"));
+                                profJSON.put("description", rs.getString("description"));
+                            }
+                        }
+                    }
 
-                prep = front_conn.prepareStatement("SELECT * FROM service_wizard WHERE service_wizard_id = ?");
-                prep.setInt(1, wizardID);
-                rs = prep.executeQuery();
-                while (rs.next()) {
-                    profJSON.put("name", rs.getString("name"));
-                    profJSON.put("wizard_json", rs.getString("wizard_json"));
-                    profJSON.put("owner", rs.getString("owner"));
-                    profJSON.put("editable", rs.getString("editable"));
-                    profJSON.put("authorized", rs.getString("authorized"));
-                    profJSON.put("description", rs.getString("description"));
+                    try (PreparedStatement prep = front_conn.prepareStatement(
+                            "SELECT DISTINCT * FROM service_wizard_licenses WHERE service_wizard_id = ?");) {
+                        prep.setInt(1, wizardID);
+                        try (ResultSet rs = prep.executeQuery();) {
+                            JSONArray licenseJSON = new JSONArray();
+                            while (rs.next()) {
+                                JSONObject obj = new JSONObject();
+                                obj.put("remaining", rs.getInt("remaining"));
+                                obj.put("type", rs.getString("type"));
+                                obj.put("username", rs.getString("username"));
+                                licenseJSON.add(obj);
+                            }
+                            profJSON.put("licenses", licenseJSON);
+
+                            return profJSON.toJSONString();
+                        }
+                    }
                 }
-
-                prep = front_conn
-                        .prepareStatement("SELECT DISTINCT * FROM service_wizard_licenses WHERE service_wizard_id = ?");
-                prep.setInt(1, wizardID);
-                rs = prep.executeQuery();
-                JSONArray licenseJSON = new JSONArray();
-                while (rs.next()) {
-                    JSONObject obj = new JSONObject();
-                    obj.put("remaining", rs.getInt("remaining"));
-                    obj.put("type", rs.getString("type"));
-                    obj.put("username", rs.getString("username"));
-                    licenseJSON.add(obj);
-                }
-                profJSON.put("licenses", licenseJSON);
-
-                return profJSON.toJSONString();
             }
             return "";
         } catch (SQLException ex) {
             logger.catching("getProfile", ex);
             throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2354,7 +2164,6 @@ public class WebResource {
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
-                // TODO: Sanitize the input!
                 prep = front_conn.prepareStatement(
                         "UPDATE service_wizard SET wizard_json = ?, editable = ?, last_edited = ? WHERE service_wizard_id = ? ");
                 prep.setString(1, (String) inputJSON.get("data"));
@@ -2402,7 +2211,6 @@ public class WebResource {
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
-                // TODO: Sanitize the input!
                 prep = front_conn.prepareStatement(
                         "UPDATE service_wizard SET name = ?, description = ? WHERE service_wizard_id = ? ");
                 prep.setString(1, (String) inputJSON.get("name"));
@@ -2586,67 +2394,66 @@ public class WebResource {
     @Path("/profile/new")
     @RolesAllowed("F_Profiles-W")
     public String newProfile(final String inputString) throws SQLException, ParseException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         try {
             String method = "newProfile";
             logger.start(method);
+            try (Connection front_conn = factory.getConnection("frontend");) {
+                Object obj = parser.parse(inputString);
+                JSONObject inputJSON = (JSONObject) obj;
 
-            front_conn = factory.getConnection("frontend");
-            Object obj = parser.parse(inputString);
-            JSONObject inputJSON = (JSONObject) obj;
+                String name = (String) inputJSON.get("name");
+                String description = (String) inputJSON.get("description");
+                String username = (String) inputJSON.get("username");
+                JSONArray licenseArr = (JSONArray) inputJSON.get("licenses");
 
-            String name = (String) inputJSON.get("name");
-            String description = (String) inputJSON.get("description");
-            String username = (String) inputJSON.get("username");
-            JSONArray licenseArr = (JSONArray) inputJSON.get("licenses");
+                JSONObject inputData = (JSONObject) inputJSON.get("data");
+                inputData.remove("uuid");
+                if (inputData.containsKey("options") && ((JSONArray) inputData.get("options")).isEmpty()) {
+                    inputData.remove("options");
+                }
+                String inputDataString = inputData.toJSONString();
 
-            JSONObject inputData = (JSONObject) inputJSON.get("data");
-            inputData.remove("uuid");
-            if (inputData.containsKey("options") && ((JSONArray) inputData.get("options")).isEmpty()) {
-                inputData.remove("options");
-            }
-            String inputDataString = inputData.toJSONString();
-
-            int authorized = (verifyUserRole("A_Admin")) ? 1 : 0;
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
-                    + "(owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");
-            prep.setString(1, username);
-            prep.setString(2, name);
-            prep.setString(3, inputDataString);
-            prep.setString(4, description);
-            prep.setInt(5, 0);
-            prep.setInt(6, authorized);
-            prep.executeUpdate();
-
-            prep = front_conn
-                    .prepareStatement("SELECT service_wizard_id FROM service_wizard WHERE owner = ? AND name = ?");
-            prep.setString(1, username);
-            prep.setString(2, name);
-            rs = prep.executeQuery();
-            rs.next();
-            int wizardID = rs.getInt("service_wizard_id");
-
-            if (licenseArr != null) {
-                for (Object obj2 : licenseArr) {
-                    JSONObject licenseObj = (JSONObject) obj2;
-                    prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard_licenses` "
-                            + "(service_wizard_id, username, remaining) VALUES (?, ?, ?)");
-                    prep.setInt(1, wizardID);
-                    prep.setString(2, (String) licenseObj.get("username"));
-                    prep.setInt(3, (Integer) licenseObj.get("remaining"));
+                int authorized = (verifyUserRole("A_Admin")) ? 1 : 0;
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "INSERT INTO `frontend`.`service_wizard` (owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");) {
+                    prep.setString(1, username);
+                    prep.setString(2, name);
+                    prep.setString(3, inputDataString);
+                    prep.setString(4, description);
+                    prep.setInt(5, 0);
+                    prep.setInt(6, authorized);
                     prep.executeUpdate();
                 }
-            }
 
-            logger.end(method);
-            return null;
+                int wizardID;
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "SELECT service_wizard_id FROM service_wizard WHERE owner = ? AND name = ?");) {
+                    prep.setString(1, username);
+                    prep.setString(2, name);
+                    try (ResultSet rs = prep.executeQuery();) {
+                        rs.next();
+                        wizardID = rs.getInt("service_wizard_id");
+                    }
+                }
+                if (licenseArr != null) {
+                    for (Object obj2 : licenseArr) {
+                        JSONObject licenseObj = (JSONObject) obj2;
+                        try (PreparedStatement prep = front_conn.prepareStatement(
+                                "INSERT INTO `frontend`.`service_wizard_licenses` (service_wizard_id, username, remaining) VALUES (?, ?, ?)");) {
+                            prep.setInt(1, wizardID);
+                            prep.setString(2, (String) licenseObj.get("username"));
+                            prep.setInt(3, (Integer) licenseObj.get("remaining"));
+                            prep.executeUpdate();
+                        }
+                    }
+                }
+
+                logger.end(method);
+                return null;
+            }
         } catch (SQLException | ParseException ex) {
             logger.catching("newProfile", ex);
             throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2812,7 +2619,6 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/substatus")
     public String subStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
-        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
 
@@ -3054,19 +2860,7 @@ public class WebResource {
         inputJSON.put("intent", inputJSON.toJSONString());
         inputJSON.put("data", retString);
 
-        ServiceHandler instance = new ServiceHandler(inputJSON, token, refUUID, autoProceed);
-    }
-
-    private void negotiateService(JSONObject inputJSON, TokenHandler token, String refUUID)
-            throws EJBException, SQLException, IOException, InterruptedException {
-        TemplateEngine template = new TemplateEngine();
-
-        // System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
-        String retString = template.apply(inputJSON);
-        retString = retString.replace("&lt;", "<").replace("&gt;", ">");
-        // System.out.println("\n\n\nResult:\n" + retString);
-        inputJSON.put("data", retString);
-        ServiceEngine.orchestrateInstance(refUUID, inputJSON, (String) inputJSON.get("uuid"), token, false);
+        new ServiceHandler(inputJSON, token, refUUID, autoProceed);
     }
 
     private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action,
@@ -3108,7 +2902,7 @@ public class WebResource {
             }
         }
 
-        int responseCode = conn.getResponseCode();
+        conn.getResponseCode();
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             String inputLine;
@@ -3140,32 +2934,6 @@ public class WebResource {
         }
     }
 
-    private String authUsername(String subject) {
-        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
-                .getAttribute(KeycloakSecurityContext.class.getName());
-        AccessToken accessToken = securityContext.getToken();
-        if (accessToken.getSubject().equals(subject)) {
-            return accessToken.getPreferredUsername();
-        } else {
-            return null;
-        }
-    }
-
-    private String JSONtoxml(JSONObject JSONdata, String drivertype) {
-        String xmldata = "<driverInstance><properties>\n";
-        xmldata += "\t<entry><key>topologyUri</key><value>" + JSONdata.get("TOPURI") + "</value></entry>\n";
-        xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + drivertype + "</value></entry>\n";
-
-        Set<String> key = new HashSet<>(JSONdata.keySet());
-        for (String i : key) {
-            if (!(i.equals("TOPURI")) && !(i.equals("drivertype"))) {
-                xmldata += "\t<entry><key>" + i + "</key><value>" + JSONdata.get(i) + "</value></entry>\n";
-            }
-        }
-        xmldata += "</properties></driverInstance>";
-        return xmldata;
-    }
-
     private boolean verifyUserRole(String role) {
         KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
                 .getAttribute(KeycloakSecurityContext.class.getName());
@@ -3188,40 +2956,38 @@ public class WebResource {
     }
 
     private boolean verifyAccess(String category, int id) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         String method = "verifyAccess";
-        try {
-            front_conn = factory.getConnection("frontend");
-
+        try (Connection front_conn = factory.getConnection("frontend");) {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
                     .getAttribute(KeycloakSecurityContext.class.getName());
             final AccessToken accessToken = securityContext.getToken();
-            Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
 
             boolean result = false;
             switch (category) {
             case "profiles":
                 HashSet<String> nameSet = new HashSet<>();
-                prep = front_conn
-                        .prepareStatement("SELECT DISTINCT owner FROM service_wizard WHERE service_wizard_id = ?");
-                prep.setInt(1, id);
-                rs = prep.executeQuery();
-                while (rs.next()) {
-                    nameSet.add(rs.getString("owner"));
+                try (PreparedStatement prep = front_conn
+                        .prepareStatement("SELECT DISTINCT owner FROM service_wizard WHERE service_wizard_id = ?");) {
+                    prep.setInt(1, id);
+                    try (ResultSet rs = prep.executeQuery();) {
+                        while (rs.next()) {
+                            nameSet.add(rs.getString("owner"));
+                        }
+                    }
                 }
-                prep = front_conn.prepareStatement(
-                        "SELECT DISTINCT username FROM service_wizard_licenses WHERE service_wizard_id = ?");
-                prep.setInt(1, id);
-                rs = prep.executeQuery();
-                while (rs.next()) {
-                    nameSet.add(rs.getString("username"));
-                }
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "SELECT DISTINCT username FROM service_wizard_licenses WHERE service_wizard_id = ?");) {
+                    prep.setInt(1, id);
+                    try (ResultSet rs = prep.executeQuery();) {
+                        while (rs.next()) {
+                            nameSet.add(rs.getString("username"));
+                        }
 
-                result = nameSet.contains(username);
-                break;
+                        result = nameSet.contains(username);
+                        break;
+                    }
+                }
             }
 
             if (result) {
@@ -3234,8 +3000,6 @@ public class WebResource {
         } catch (SQLException ex) {
             logger.catching(method, ex);
             throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -3250,7 +3014,6 @@ public class WebResource {
             KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
                     .getAttribute(KeycloakSecurityContext.class.getName());
             final AccessToken accessToken = securityContext.getToken();
-            Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
 
             boolean result = false;

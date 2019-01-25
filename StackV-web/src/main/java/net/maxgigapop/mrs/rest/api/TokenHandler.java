@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-package net.maxgigapop.mrs.common;
+package net.maxgigapop.mrs.rest.api;
 
 import java.io.IOException;
 import java.security.cert.CertificateException;
@@ -41,6 +41,8 @@ import com.squareup.okhttp.ResponseBody;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *

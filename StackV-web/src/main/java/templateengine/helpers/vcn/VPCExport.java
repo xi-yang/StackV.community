@@ -1,14 +1,16 @@
 package templateengine.helpers.vcn;
 
 import java.util.ArrayList;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+
 import templateengine.helpers.Helper;
 
-public class VPCExport implements Helper {    
+public class VPCExport implements Helper {
 
     @Override
-    public String apply(ArrayList<Object> obj) {        
+    public String apply(ArrayList<Object> obj) {
         String retString = "spa:exportTo ";
         JSONObject vpc = (JSONObject) obj.get(0);
         JSONArray subnets = (JSONArray) vpc.get("subnets");
@@ -23,14 +25,12 @@ public class VPCExport implements Helper {
                 }
             }
         }
-        
+
         if (((String) vpc.get("parent")).contains("amazon")) {
             retString += "&lt;x-policy-annotation:data:vpc-aws-export&gt;,\n\t";
         }
 
-        for (int i = 0;
-                i < names.size();
-                i++) {
+        for (int i = 0; i < names.size(); i++) {
             String name = names.get(i).replace(" ", "_");
             retString += "&lt;x-policy-annotation:data:vpc-subnet-" + name + "-criteria&gt;";
             if (i < names.size() - 1) {
@@ -41,9 +41,5 @@ public class VPCExport implements Helper {
         }
 
         return retString;
-    }
-    
-    private boolean contains(JSONArray jsonArray, String key) {
-        return jsonArray.toString().contains("\"" + key + "\"");
     }
 }

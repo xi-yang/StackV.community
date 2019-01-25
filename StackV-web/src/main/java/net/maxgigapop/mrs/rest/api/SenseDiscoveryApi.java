@@ -26,7 +26,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.model.sense.DiscoveryDescription;
 import net.maxgigapop.mrs.rest.api.model.sense.DomainDescription;
 import net.maxgigapop.mrs.rest.api.model.sense.DomainDescriptionEdgePoints;
@@ -67,7 +66,6 @@ public class SenseDiscoveryApi {
                 + "	\"required\": \"true\"\n" + "}";
         String responseStr;
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/service/manifest", restapi));
@@ -91,7 +89,7 @@ public class SenseDiscoveryApi {
             }
             if (jo.containsKey("edge_points")) {
                 JSONArray ja = (JSONArray) jo.get("edge_points");
-                List<DomainDescriptionEdgePoints> edgePoints = new ArrayList();
+                List<DomainDescriptionEdgePoints> edgePoints = new ArrayList<>();
                 response.setEdgePoints(edgePoints);
                 for (Object obj : ja) {
                     DomainDescriptionEdgePoints ep = new DomainDescriptionEdgePoints();
@@ -131,7 +129,6 @@ public class SenseDiscoveryApi {
                 + "		}\n" + "    ]\n" + "}";
         String responseStr;
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/service/manifest", restapi));
@@ -143,7 +140,7 @@ public class SenseDiscoveryApi {
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         }
-        List<DomainDescription> response = new ArrayList();
+        List<DomainDescription> response = new ArrayList<>();
         try {
             JSONObject jo = (JSONObject) parser.parse(responseStr);
             jo = (JSONObject) parser.parse((String) jo.get("jsonTemplate"));
@@ -166,7 +163,7 @@ public class SenseDiscoveryApi {
                     }
                     if (domainInList == null) {
                         domainInList = new DomainDescription().uri(peerDomainUri).name(peerDomainName)
-                                .edgePoints(new ArrayList());
+                                .edgePoints(new ArrayList<DomainDescriptionEdgePoints>());
                         response.add(domainInList);
                     }
                     DomainDescriptionEdgePoints ep = new DomainDescriptionEdgePoints()
@@ -200,7 +197,6 @@ public class SenseDiscoveryApi {
                 + "	\"required\": \"true\"\n" + "       }\n" + "    ]\n" + "}";
         String responseStr;
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/service/manifest", restapi));
@@ -212,7 +208,7 @@ public class SenseDiscoveryApi {
         } catch (IOException ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex).build();
         }
-        List<DomainDescription> response = new ArrayList();
+        List<DomainDescription> response = new ArrayList<>();
         try {
             JSONObject jo = (JSONObject) parser.parse(responseStr);
             jo = (JSONObject) parser.parse((String) jo.get("jsonTemplate"));
@@ -226,7 +222,7 @@ public class SenseDiscoveryApi {
                         domainName = null;
                     }
                     DomainDescription domainDesc = new DomainDescription().uri(domainUri).name(domainName)
-                            .edgePoints(new ArrayList());
+                            .edgePoints(new ArrayList<DomainDescriptionEdgePoints>());
                     response.add(domainDesc);
                     if (joDomain.containsKey("edge_points")) {
                         JSONArray jaEp = (JSONArray) joDomain.get("edge_points");

@@ -1,22 +1,22 @@
-import React from "react";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { far } from "@fortawesome/free-regular-svg-icons";
+import { fas } from "@fortawesome/free-solid-svg-icons";
+import "bootstrap";
 //import Keycloak from "keycloak-js";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
-import "bootstrap";
+import React from "react";
 import ReactInterval from "react-interval";
-
-import "./global.css";
-
-import Navbar from "./nav/navbar";
-import Visualization from "./visual/visualization";
+import Admin from "./admin/admin";
 import Catalog from "./catalog/catalog";
 import Details from "./details/details";
 import Drivers from "./drivers/drivers";
-import Admin from "./admin/admin";
+import "./global.css";
+import Navbar from "./nav/navbar";
+import Visualization from "./visual/visualization";
 
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { fas } from "@fortawesome/free-solid-svg-icons";
-import { far } from "@fortawesome/free-regular-svg-icons";
+
+
 
 library.add(far, fas);
 

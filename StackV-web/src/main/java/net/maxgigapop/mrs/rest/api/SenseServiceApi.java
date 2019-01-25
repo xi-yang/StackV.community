@@ -29,7 +29,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequest;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestConnections;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestIpRanges;
@@ -143,7 +142,6 @@ public class SenseServiceApi {
         SenseServiceQuery.preQueries(jsonData, body.getQueries());
         String svcUUID;
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/app/service" + (siUUID == null ? "" : "/" + siUUID), restapi));
@@ -187,7 +185,6 @@ public class SenseServiceApi {
             @ApiResponse(code = 404, message = "Resource unfound", response = Void.class),
             @ApiResponse(code = 500, message = "Server internal error", response = Void.class) })
     public Response serviceSiUUIDDelete(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID) {
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         try {
@@ -255,7 +252,6 @@ public class SenseServiceApi {
                     .build();
         }
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/service/%s/" + operation, restapi, siUUID));
@@ -295,7 +291,6 @@ public class SenseServiceApi {
                     .build();
         }
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/app/service/%s/" + operation, restapi, siUUID));
@@ -329,7 +324,6 @@ public class SenseServiceApi {
 
                 if (status.startsWith("CREATE - COMMITTED") && !verifyStarted) {
                     try {
-                        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
                         final TokenHandler token = new TokenHandler(refresh);
                         URL url = new URL(String.format("%s/app/service/%s/verify", restapi, siUUID));
@@ -378,7 +372,6 @@ public class SenseServiceApi {
     public Response serviceSiUUIDStatusGet(@PathParam("siUUID") @ApiParam("service instance UUID") String siUUID) {
         String status;
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/app/service/%s/status", restapi, siUUID));
@@ -420,7 +413,6 @@ public class SenseServiceApi {
             return Response.status(Response.Status.NOT_ACCEPTABLE).entity("Request unacceptable under status:" + status)
                     .build();
         }
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         try {
@@ -467,7 +459,6 @@ public class SenseServiceApi {
                     .build();
         }
         try {
-            String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
             final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
             final TokenHandler token = new TokenHandler(refresh);
             URL url = new URL(String.format("%s/app/service/%s/" + operation, restapi, siUUID));
@@ -500,7 +491,6 @@ public class SenseServiceApi {
 
                 if (status.startsWith("CANCEL - COMMITTED") && !verifyStarted) {
                     try {
-                        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
                         final TokenHandler token = new TokenHandler(refresh);
                         URL url = new URL(String.format("%s/app/service/%s/verify", restapi, siUUID));

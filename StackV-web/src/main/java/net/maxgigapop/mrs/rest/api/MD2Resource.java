@@ -144,6 +144,12 @@ public class MD2Resource {
     //
     // Registration
     //
+    @GET
+    @Path("/register")
+    public String checkOrchestrator() {
+        return (conn.get("cn=" + serverName + ",cn=orchestrators,cn=stackv") == null ? "false" : "true");
+    }
+
     @POST
     @Path("/register")
     public String registerOrchestrator() {

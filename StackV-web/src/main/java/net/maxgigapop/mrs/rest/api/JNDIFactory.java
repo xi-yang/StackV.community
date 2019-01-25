@@ -75,6 +75,12 @@ public class JNDIFactory {
                     }
                 } catch (InterruptedException | NamingException ex3) {
                     throw logger.throwing(method, ex);
+                } finally {
+                    try {
+                        result.close();
+                    } catch (SQLException ex4) {
+                        throw logger.throwing(method, ex4);
+                    }
                 }
             }
         } catch (NamingException ex) {

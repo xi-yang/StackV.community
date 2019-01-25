@@ -16,7 +16,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentRequestQueries;
 import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentResponseQueries;
 
@@ -26,12 +25,10 @@ import net.maxgigapop.mrs.rest.api.model.sense.ServiceIntentResponseQueries;
  */
 
 public class SenseServiceQuery {
-    private final String restapi = "http://127.0.0.1:8080/StackV-web/restapi";
-
     public static void preQueries(JSONObject jsonRequest, List<ServiceIntentRequestQueries> queries) {
         for (ServiceIntentRequestQueries queryRequest : queries) {
             String query = queryRequest.getAsk();
-            ServiceIntentResponseQueries queryResponse = new ServiceIntentResponseQueries().asked(query);
+            new ServiceIntentResponseQueries().asked(query);
             handlePreQuery(query, queryRequest.getOptions(), jsonRequest);
         }
     }
@@ -52,7 +49,7 @@ public class SenseServiceQuery {
         // @TODO break up clauses into seprate methods
         if (query.equalsIgnoreCase("maximum-bandwidth")) {
             for (Object obj : options) {
-                Map option = (Map) obj;
+                Map<String, String> option = (Map<String, String>) obj;
                 if (option.containsKey("name")) {
                     String connName = (String) option.get("name");
                     JSONArray jsonConns = (JSONArray) jsonRequest.get("connections");
@@ -79,7 +76,8 @@ public class SenseServiceQuery {
             }
         } else if (query.equalsIgnoreCase("flexible-schedule")) {
             for (Object obj : options) {
-                Map option = (Map) obj;
+                Map<String, String> option = (Map<String, String>) obj;
+                ;
                 if (option.containsKey("name")) {
                     String connName = (String) option.get("name");
                     JSONArray jsonConns = (JSONArray) jsonRequest.get("connections");
@@ -108,7 +106,8 @@ public class SenseServiceQuery {
             }
         } else if (query.equalsIgnoreCase("time-bandwidth-product")) {
             for (Object obj : options) {
-                Map option = (Map) obj;
+                Map<String, String> option = (Map<String, String>) obj;
+                ;
                 if (option.containsKey("name")) {
                     String connName = (String) option.get("name");
                     JSONArray jsonConns = (JSONArray) jsonRequest.get("connections");
@@ -166,7 +165,8 @@ public class SenseServiceQuery {
             }
         } else if (query.equalsIgnoreCase("total-block-maximum-bandwidth")) {
             for (Object obj : options) {
-                Map option = (Map) obj;
+                Map<String, String> option = (Map<String, String>) obj;
+                ;
                 if (option.containsKey("name")) {
                     String connName = (String) option.get("name");
                     JSONArray jsonConns = (JSONArray) jsonRequest.get("connections");
@@ -206,11 +206,12 @@ public class SenseServiceQuery {
 
     public static List<Object> handlePostQuery(String query, List<Object> options, String ttlModel,
             HttpRequest httpRequest) throws IOException, ParseException {
-        List<Object> results = new ArrayList();
+        List<Object> results = new ArrayList<>();
         // @TODO break up clauses into seprate methods
         if (query.equalsIgnoreCase("maximum-bandwidth")) {
             for (Object obj : options) {
-                Map option = (Map) obj;
+                Map<String, String> option = (Map<String, String>) obj;
+                ;
                 if (option.containsKey("name")) {
                     String connName = (String) option.get("name");
                     String tagPattern = "^l2path\\\\\\+.+:" + connName.replace(" ", "_") + "$";
@@ -222,7 +223,6 @@ public class SenseServiceQuery {
                             + "	       }\n" + "    ]\n" + "}";
 
                     String responseStr;
-                    String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                     final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
                     final TokenHandler token = new TokenHandler(refresh);
                     URL url = new URL("http://127.0.0.1:8080/StackV-web/restapi/service/manifest");
@@ -235,7 +235,7 @@ public class SenseServiceQuery {
                     JSONObject jo;
                     jo = (JSONObject) parser.parse(responseStr);
                     jo = (JSONObject) parser.parse((String) jo.get("jsonTemplate"));
-                    Map result = new LinkedHashMap();
+                    Map<String, String> result = new LinkedHashMap<>();
                     result.put("name", connName);
                     results.add(result);
                     if (jo != null && !jo.isEmpty()) {
@@ -255,7 +255,8 @@ public class SenseServiceQuery {
             }
         } else if (query.equalsIgnoreCase("flexible-schedule")) {
             for (Object obj : options) {
-                Map option = (Map) obj;
+                Map<String, String> option = (Map<String, String>) obj;
+                ;
                 if (option.containsKey("name")) {
                     String connName = (String) option.get("name");
                     String tagPattern = "^l2path\\\\\\+.+:" + connName.replace(" ", "_") + "$";
@@ -268,7 +269,6 @@ public class SenseServiceQuery {
                             + "	       }\n" + "    ]\n" + "}";
 
                     String responseStr;
-                    String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                     final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
                     final TokenHandler token = new TokenHandler(refresh);
                     URL url = new URL("http://127.0.0.1:8080/StackV-web/restapi/service/manifest");
@@ -281,7 +281,7 @@ public class SenseServiceQuery {
                     JSONObject jo;
                     jo = (JSONObject) parser.parse(responseStr);
                     jo = (JSONObject) parser.parse((String) jo.get("jsonTemplate"));
-                    Map result = new LinkedHashMap();
+                    Map<String, String> result = new LinkedHashMap<>();
                     result.put("name", connName);
                     results.add(result);
                     if (jo != null && !jo.isEmpty()) {
@@ -308,7 +308,8 @@ public class SenseServiceQuery {
             }
         } else if (query.equalsIgnoreCase("time-bandwidth-product")) {
             for (Object obj : options) {
-                Map option = (Map) obj;
+                Map<String, String> option = (Map<String, String>) obj;
+                ;
                 if (option.containsKey("name")) {
                     String connName = (String) option.get("name");
                     String tagPattern = "^l2path\\\\\\+.+:" + connName.replace(" ", "_") + "$";
@@ -321,7 +322,6 @@ public class SenseServiceQuery {
                             + "	       }\n" + "    ]\n" + "}";
 
                     String responseStr;
-                    String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                     final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
                     final TokenHandler token = new TokenHandler(refresh);
                     URL url = new URL("http://127.0.0.1:8080/StackV-web/restapi/service/manifest");
@@ -334,7 +334,7 @@ public class SenseServiceQuery {
                     JSONObject jo;
                     jo = (JSONObject) parser.parse(responseStr);
                     jo = (JSONObject) parser.parse((String) jo.get("jsonTemplate"));
-                    Map result = new LinkedHashMap();
+                    Map<String, String> result = new LinkedHashMap<>();
                     result.put("name", connName);
                     results.add(result);
                     if (jo != null && !jo.isEmpty()) {
@@ -368,7 +368,8 @@ public class SenseServiceQuery {
             }
         } else if (query.equalsIgnoreCase("total-block-maximum-bandwidth")) {
             for (Object obj : options) {
-                Map option = (Map) obj;
+                Map<String, String> option = (Map<String, String>) obj;
+                ;
                 if (option.containsKey("name")) {
                     String connName = (String) option.get("name");
                     String tagPattern = "^l2path\\\\\\+.+:" + connName.replace(" ", "_") + "$";
@@ -381,7 +382,6 @@ public class SenseServiceQuery {
                             + "	       }\n" + "    ]\n" + "}";
 
                     String responseStr;
-                    String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
                     final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
                     final TokenHandler token = new TokenHandler(refresh);
                     URL url = new URL("http://127.0.0.1:8080/StackV-web/restapi/service/manifest");
@@ -394,7 +394,7 @@ public class SenseServiceQuery {
                     JSONObject jo;
                     jo = (JSONObject) parser.parse(responseStr);
                     jo = (JSONObject) parser.parse((String) jo.get("jsonTemplate"));
-                    Map result = new LinkedHashMap();
+                    Map<String, String> result = new LinkedHashMap<>();
                     result.put("name", connName);
                     results.add(result);
                     if (jo != null && !jo.isEmpty()) {

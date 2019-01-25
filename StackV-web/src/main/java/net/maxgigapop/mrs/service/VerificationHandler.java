@@ -28,8 +28,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.common.TokenHandler;
 import net.maxgigapop.mrs.rest.api.JNDIFactory;
+import net.maxgigapop.mrs.rest.api.TokenHandler;
 
 /**
  *
