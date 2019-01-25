@@ -25,7 +25,7 @@ class SettingsPanel extends React.Component {
             <ReactInterval timeout={this.props.refreshTimer} enabled={this.props.refreshEnabled} callback={this.checkRegistration} />;
             <div id="settings-header-div">Global Settings</div>
             <div id="settings-body-div">
-                <label style={{ width: "35%", margin: "5px 2.5%", textAlign: "left" }}>StackV Orchestrator Name</label>
+                <label style={{ width: "100%", margin: "5px 0", textAlign: "left" }}>StackV Orchestrator Name</label>
                 <div className="input-group">
                     <input className="form-control" name="system.name" disabled={this.state.registered}></input>
                     <div className="input-group-btn">

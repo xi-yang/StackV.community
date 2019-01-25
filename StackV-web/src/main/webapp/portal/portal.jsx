@@ -175,11 +175,14 @@ class Portal extends React.Component {
     }
 
     /* */
-    frameLoad(time) {
+    frameLoad(time, callback) {
         let page = this;
         this.setState({ loading: true });
         setTimeout(function () {
             page.setState({ loading: false });
+            if (callback && typeof callback === "function") {
+                callback();
+            }
         }, time);
     }
     pauseRefresh() {
