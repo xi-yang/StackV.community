@@ -32,8 +32,11 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.bean.persist.PersistenceManager;
@@ -42,7 +45,7 @@ import net.maxgigapop.mrs.bean.persist.PersistenceManager;
  *
  * @author xyang
  */
-// @RunWith(Arquillian.class)
+@RunWith(Arquillian.class)
 public class HandleSystemCallTest {
 
     @Deployment
@@ -64,7 +67,7 @@ public class HandleSystemCallTest {
     /**
      * Test of createHeadVersionGroup method, of class HandleSystemCall.
      */
-    // @Test
+    @Test
     public void testCreateHeadVersionGroup() throws Exception {
         System.out.println("###createHeadVersionGroup###");
         if (PersistenceManager.getEntityManager() == null) {
