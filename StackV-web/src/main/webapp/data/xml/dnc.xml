@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="intent.xsd">
+<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="intent.xsd">
     <meta>
         <name>Dynamic Network Connection</name>
         <validation>
@@ -47,7 +45,7 @@
                 <type>text</type>
                 <valid>string</valid>
             </input>
-           <group factory="true" name="terminal">
+            <group factory="true" name="terminal">
                 <bound>
                     <name>connections-type</name>
                     <value>Multi-Path P2P VLAN</value>
@@ -59,7 +57,6 @@
                     <value>Multi-Point VLAN Bridge</value>
                     <min>3</min>
                 </bound>
-
                 <input>
                     <name>URI</name>
                     <type>text</type>

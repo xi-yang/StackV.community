@@ -24,7 +24,6 @@
 package net.maxgigapop.mrs.system;
 
 import static java.lang.Thread.sleep;
-import static junit.framework.Assert.assertFalse;
 
 import java.util.UUID;
 
@@ -75,6 +74,6 @@ public class HandleSystemCallTest {
         VersionGroup expResult = null;
         VersionGroup result = systemCallHandler.createHeadVersionGroup_API(UUID.randomUUID().toString());
         System.out.println("createHeadVersionGroup result=" + result);
-        assertFalse("createHeadVersionGroup results in null VersionGroup", expResult == null);
+        assert (expResult != null);
     }
 }

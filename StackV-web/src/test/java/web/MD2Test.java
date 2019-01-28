@@ -3,11 +3,14 @@ package web;
 import static org.testng.Assert.assertEquals;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.keycloak.authorization.client.AuthzClient;
+import org.keycloak.authorization.client.Configuration;
 import org.keycloak.representations.AccessTokenResponse;
 import org.testng.annotations.AfterGroups;
 import org.testng.annotations.Test;
@@ -15,7 +18,17 @@ import org.testng.annotations.Test;
 import net.maxgigapop.mrs.common.MD2Connect;
 
 public class MD2Test {
-    AuthzClient authzClient = AuthzClient.create();
+    Map<String, Object> cred = new HashMap<String, Object>() {
+        private static final long serialVersionUID = -2605000112217200282L;
+
+        {
+            put("secret", "ae53fbea-8812-4c13-918f-0065a1550b7c");
+        }
+    };
+    Configuration config = new Configuration("https://k152.maxgigapop.net:8543/auth", "StackV", "StackV", cred,
+            new DefaultHttpClient());
+
+    AuthzClient authzClient = AuthzClient.create(config);
     AccessTokenResponse response = authzClient.obtainAccessToken("xyang", "MAX1234!");
     MD2Connect conn = new MD2Connect("180-133.research.maxgigapop.net:389",
             "uid=admin,cn=users,cn=accounts,dc=research,dc=maxgigapop,dc=net", "MAX1234!");
