@@ -1,19 +1,18 @@
 /* global details_viz */
-import React from "react";
-import PropTypes from "prop-types";
 import { Map } from "immutable";
 import Mousetrap from "mousetrap";
-import { css } from "emotion";
-import { RotateLoader } from "react-spinners";
+import PropTypes from "prop-types";
+import React from "react";
 import ReactInterval from "react-interval";
-
+import { RotateLoader } from "react-spinners";
+import AccessPanel from "../datatables/access_panel";
+import LoggingPanel from "../datatables/logging_panel";
+import DetailsDots from "./components/details_dots";
+import DetailsPanel from "./components/details_panel";
+import VisualizationPanel from "./components/visualization_panel";
 import "./details.css";
 
-import DetailsPanel from "./components/details_panel";
-import DetailsDots from "./components/details_dots";
-import LoggingPanel from "../datatables/logging_panel";
-import VisualizationPanel from "./components/visualization_panel";
-import AccessPanel from "../datatables/access_panel";
+
 
 var $intentModal = $("#details-intent-modal");
 var intentConfig = {
@@ -84,7 +83,7 @@ class Details extends React.Component {
         }
         return <div style={{ width: "100%", height: "100%" }}>
             <ReactInterval timeout={this.props.refreshTimer} enabled={(this.props.refreshEnabled && !this.props.loading)} callback={this.fetchData} />
-            <ReactInterval timeout={10000} enabled={(this.props.refreshEnabled && !this.props.loading)} callback={this.loadVisualization} />
+            <ReactInterval timeout={10000} enabled={this.props.refreshEnabled && !this.props.loading && $(".displayPanel-active").length === 0} callback={this.loadVisualization} />
             <RotateLoader
                 css={"display: block;position: absolute;margin: auto;left: 50%;top: 30%;z-index: 100;"}
                 sizeUnit={"px"}
