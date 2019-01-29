@@ -33,7 +33,7 @@ import net.maxgigapop.mrs.rest.api.WebResource;
 
 public class AuditService {
 
-    private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "WebResource");
+    private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "AuditService");
     private static final JNDIFactory factory = new JNDIFactory();
 
     // Synchronize database instances.

@@ -1527,7 +1527,7 @@ public class WebResource {
 
             return retJSON.toJSONString();
         } catch (SQLException ex) {
-            AuditService.cleanInstances("frontend");
+            // AuditService.cleanInstances("frontend");
             logger.catching(method, ex);
             throw ex;
         } finally {

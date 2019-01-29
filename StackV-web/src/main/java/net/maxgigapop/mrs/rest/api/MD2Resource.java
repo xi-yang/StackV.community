@@ -33,6 +33,7 @@ import java.util.Map;
 
 import javax.ejb.EJB;
 import javax.naming.AuthenticationException;
+import javax.naming.InvalidNameException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -157,9 +158,9 @@ public class MD2Resource {
     //
     @GET
     @Path("/register")
-    public String checkOrchestrator() throws AuthenticationException {
+    public String checkOrchestrator() throws AuthenticationException, InvalidNameException {
         if (!online) {
-            return "Resource offline. Verify credentials";
+            return "Resource offline. Verify server URL and credentials";
         }
 
         return (conn.get("cn=" + serverName + ",cn=orchestrators,cn=stackv") == null ? "false" : "true");
@@ -167,9 +168,9 @@ public class MD2Resource {
 
     @POST
     @Path("/register")
-    public String registerOrchestrator() throws AuthenticationException {
+    public String registerOrchestrator() throws AuthenticationException, InvalidNameException {
         if (!online) {
-            return "Resource offline. Verify credentials";
+            return "Resource offline. Verify server URL and credentials";
         }
 
         String method = "registerOrchestrator";
@@ -189,9 +190,9 @@ public class MD2Resource {
 
     @DELETE
     @Path("/register")
-    public String deregisterOrchestrator() throws AuthenticationException {
+    public String deregisterOrchestrator() throws AuthenticationException, InvalidNameException {
         if (!online) {
-            return "Resource offline. Verify credentials";
+            return "Resource offline. Verify server URL and credentials";
         }
 
         String method = "deregisterOrchestrator";
@@ -205,9 +206,10 @@ public class MD2Resource {
     // Drivers
     @POST
     @Path("/register/drivers/{driver}")
-    public String registerDriver(@PathParam("driver") String driver) throws AuthenticationException {
+    public String registerDriver(@PathParam("driver") String driver)
+            throws AuthenticationException, InvalidNameException {
         if (!online) {
-            return "Resource offline. Verify credentials";
+            return "Resource offline. Verify server URL and credentials";
         }
 
         String method = "registerDriver";
@@ -223,9 +225,10 @@ public class MD2Resource {
 
     @DELETE
     @Path("/register/drivers/{driver}")
-    public String deregisterDriver(@PathParam("driver") String driver) throws AuthenticationException {
+    public String deregisterDriver(@PathParam("driver") String driver)
+            throws AuthenticationException, InvalidNameException {
         if (!online) {
-            return "Resource offline. Verify credentials";
+            return "Resource offline. Verify server URL and credentials";
         }
 
         String method = "deregisterDriver";
@@ -239,9 +242,10 @@ public class MD2Resource {
     // Services
     @POST
     @Path("/register/services/{service}")
-    public String registerService(@PathParam("service") String service) throws AuthenticationException {
+    public String registerService(@PathParam("service") String service)
+            throws AuthenticationException, InvalidNameException {
         if (!online) {
-            return "Resource offline. Verify credentials";
+            return "Resource offline. Verify server URL and credentials";
         }
 
         String method = "registerService";
@@ -258,9 +262,10 @@ public class MD2Resource {
 
     @DELETE
     @Path("/register/services/{service}")
-    public String deregisterService(@PathParam("service") String service) throws AuthenticationException {
+    public String deregisterService(@PathParam("service") String service)
+            throws AuthenticationException, InvalidNameException {
         if (!online) {
-            return "Resource offline. Verify credentials";
+            return "Resource offline. Verify server URL and credentials";
         }
 
         String method = "deregisterService";
@@ -276,19 +281,20 @@ public class MD2Resource {
     //
     @GET
     @Path("/query/drivers")
-    public String driverQuery() throws AuthenticationException {
+    public String driverQuery() throws AuthenticationException, InvalidNameException {
         return conn.search("cn=domains,cn=dck,cn=stackv");
     }
 
     @GET
     @Path("/query/services/{domain}")
-    public String serviceQuery(@PathParam("domain") String domain) throws AuthenticationException {
+    public String serviceQuery(@PathParam("domain") String domain)
+            throws AuthenticationException, InvalidNameException {
         return conn.search("cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv");
     }
 
     @GET
     @Path("/query/search/{dn}")
-    public String searchQuery(@PathParam("dn") String filter) throws AuthenticationException {
+    public String searchQuery(@PathParam("dn") String filter) throws AuthenticationException, InvalidNameException {
         return conn.search(filter);
     }
 

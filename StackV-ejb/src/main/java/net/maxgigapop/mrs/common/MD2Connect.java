@@ -9,6 +9,7 @@ import java.util.List;
 import javax.naming.AuthenticationException;
 import javax.naming.Context;
 import javax.naming.ContextNotEmptyException;
+import javax.naming.InvalidNameException;
 import javax.naming.NameClassPair;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingEnumeration;
@@ -36,19 +37,19 @@ public class MD2Connect {
     public boolean validate() {
         try {
             get("");
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException | InvalidNameException e) {
             return false;
         }
         return true;
     }
 
-    public static void main(String[] args) throws AuthenticationException {
-        MD2Connect conn = new MD2Connect("180-133.research.maxgigapop.net:389",
+    public static void main(String[] args) throws AuthenticationException, InvalidNameException {
+        MD2Connect conn = new MD2Connect("180-133.research.maxgigapop.net",
                 "uid=admin,cn=users,cn=accounts,dc=research,dc=maxgigapop,dc=net", "MAX1234!");
         System.out.println(conn.validate());
     }
 
-    public Attributes get(String filter) throws AuthenticationException {
+    public Attributes get(String filter) throws AuthenticationException, InvalidNameException {
         try {
             // Create the initial directory context from config
             DirContext ctx = new InitialDirContext(this.env);
@@ -59,7 +60,7 @@ public class MD2Connect {
             return attrs;
         } catch (NameNotFoundException e) {
             return null;
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException | InvalidNameException e) {
             throw e;
         } catch (NamingException e) {
             System.err.println("Problem getting attribute: " + e);
@@ -67,7 +68,7 @@ public class MD2Connect {
         }
     }
 
-    public String search(String filter) throws AuthenticationException {
+    public String search(String filter) throws AuthenticationException, InvalidNameException {
         try {
             List<String> ret = new ArrayList<>();
             // Create the initial directory context from config
@@ -81,7 +82,7 @@ public class MD2Connect {
             }
 
             return Arrays.toString((String[]) ret.toArray(new String[0]));
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException | InvalidNameException e) {
             throw e;
         } catch (NamingException e) {
             System.err.println("Problem getting attribute: " + e);
@@ -89,7 +90,7 @@ public class MD2Connect {
         }
     }
 
-    public String add(HashMap<String, String[]> entry) throws AuthenticationException {
+    public String add(HashMap<String, String[]> entry) throws AuthenticationException, InvalidNameException {
         try {
             // Create the initial directory context from config
             DirContext ctx = new InitialDirContext(this.env);
@@ -110,7 +111,7 @@ public class MD2Connect {
             ctx.createSubcontext(cn, attrs);
             ctx.close();
             return "success";
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException | InvalidNameException e) {
             throw e;
         } catch (NamingException e) {
             System.err.println("Problem adding entry: " + e);
@@ -118,7 +119,7 @@ public class MD2Connect {
         }
     }
 
-    public String remove(String filter) throws AuthenticationException {
+    public String remove(String filter) throws AuthenticationException, InvalidNameException {
         DirContext ctx = null;
         try {
             // Create the initial directory context from config
@@ -139,7 +140,7 @@ public class MD2Connect {
                 return "failure";
             }
             return "pending";
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException | InvalidNameException e) {
             throw e;
         } catch (NamingException e) {
             System.err.println("Problem removing entry: " + e);
