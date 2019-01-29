@@ -22,31 +22,18 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
 import javax.ejb.EJB;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriInfo;
+
 import net.maxgigapop.mrs.common.StackLogger;
-import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
-import net.maxgigapop.mrs.rest.api.model.ApiDriverInstance;
 import net.maxgigapop.mrs.system.HandleConfigCall;
-import net.maxgigapop.mrs.system.HandleSystemCall;
-import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
 
 /**
  *
@@ -56,7 +43,6 @@ import org.json.simple.JSONArray;
 public class ConfigResource {
 
     private final StackLogger logger = new StackLogger(WebResource.class.getName(), "ConfigResource");
-    private final JNDIFactory factory = new JNDIFactory();
 
     @Context
     private UriInfo context;
@@ -79,9 +65,9 @@ public class ConfigResource {
             throw logger.throwing(method, e);
         }
     }
-    
+
     @GET
-    @Produces({"application/json"})
+    @Produces({ "application/json" })
     public String getAllProperties() {
         String method = "getAllProperties";
         logger.trace_start(method);
@@ -90,8 +76,8 @@ public class ConfigResource {
         } catch (Exception e) {
             throw logger.throwing(method, e);
         }
-    } 
-    
+    }
+
     @PUT
     @Path("/{property}/{value}")
     public void setProperty(@PathParam("property") String property, @PathParam("value") String value) {
@@ -105,7 +91,7 @@ public class ConfigResource {
             throw logger.throwing(method, e);
         }
     }
-    
+
     @DELETE
     @Path("/{property}")
     public void deleteProperty(@PathParam("driverId") String property) {
@@ -118,5 +104,5 @@ public class ConfigResource {
         } catch (Exception e) {
             throw logger.throwing(method, e);
         }
-    }   
+    }
 }

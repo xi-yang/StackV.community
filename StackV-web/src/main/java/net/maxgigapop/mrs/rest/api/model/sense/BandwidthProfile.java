@@ -1,16 +1,15 @@
 package net.maxgigapop.mrs.rest.api.model.sense;
 
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class BandwidthProfile   {
-  
+public class BandwidthProfile {
+
   private @Valid String capacity = null;
   private @Valid String unit = null;
   private @Valid String qosClass = null;
@@ -22,12 +21,12 @@ public class BandwidthProfile   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("capacity")
   public String getCapacity() {
     return capacity;
   }
+
   public void setCapacity(String capacity) {
     this.capacity = capacity;
   }
@@ -39,12 +38,12 @@ public class BandwidthProfile   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("unit")
   public String getUnit() {
     return unit;
   }
+
   public void setUnit(String unit) {
     this.unit = unit;
   }
@@ -56,16 +55,15 @@ public class BandwidthProfile   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("qos_class")
   public String getQosClass() {
     return qosClass;
   }
+
   public void setQosClass(String qosClass) {
     this.qosClass = qosClass;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -76,9 +74,8 @@ public class BandwidthProfile   {
       return false;
     }
     BandwidthProfile bandwidthProfile = (BandwidthProfile) o;
-    return Objects.equals(capacity, bandwidthProfile.capacity) &&
-        Objects.equals(unit, bandwidthProfile.unit) &&
-        Objects.equals(qosClass, bandwidthProfile.qosClass);
+    return Objects.equals(capacity, bandwidthProfile.capacity) && Objects.equals(unit, bandwidthProfile.unit)
+        && Objects.equals(qosClass, bandwidthProfile.qosClass);
   }
 
   @Override
@@ -90,7 +87,7 @@ public class BandwidthProfile   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class BandwidthProfile {\n");
-    
+
     sb.append("    capacity: ").append(toIndentedString(capacity)).append("\n");
     sb.append("    unit: ").append(toIndentedString(unit)).append("\n");
     sb.append("    qosClass: ").append(toIndentedString(qosClass)).append("\n");
@@ -109,4 +106,3 @@ public class BandwidthProfile   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

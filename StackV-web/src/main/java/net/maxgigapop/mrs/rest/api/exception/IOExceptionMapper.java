@@ -23,11 +23,13 @@
 package net.maxgigapop.mrs.rest.api.exception;
 
 import java.io.IOException;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import org.json.simple.JSONObject;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -41,8 +43,8 @@ public class IOExceptionMapper implements ExceptionMapper<IOException> {
         jsonErrResponse.put("type", exception.toString());
         jsonErrResponse.put("exception", exception.getMessage());
         jsonErrResponse.put("cause", exception.getCause());
-        jsonErrResponse.put("stacktrace", ExceptionUtils.getStackTrace(exception));                
-        
+        jsonErrResponse.put("stacktrace", ExceptionUtils.getStackTrace(exception));
+
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(jsonErrResponse.toJSONString()).build();
     }
 }

@@ -22,8 +22,11 @@
  */
 package net.maxgigapop.mrs.service;
 
-import java.io.IOException;
 import static java.lang.Thread.sleep;
+import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
+import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
+
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -31,17 +34,18 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.common.TokenHandler;
-import net.maxgigapop.mrs.rest.api.JNDIFactory;
-import net.maxgigapop.mrs.rest.api.WebResource;
-import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
-import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
+
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+
 import org.json.simple.JSONObject;
+
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.rest.api.JNDIFactory;
+import net.maxgigapop.mrs.rest.api.TokenHandler;
+import net.maxgigapop.mrs.rest.api.WebResource;
 
 /**
  *
@@ -49,12 +53,15 @@ import org.json.simple.JSONObject;
  */
 public class ServiceEngine {
 
-    private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceEngine");
+    private final static StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource",
+            "ServiceEngine");
     private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
     private final static JNDIFactory factory = new JNDIFactory();
+    private static final OkHttpClient client = new OkHttpClient();
 
-    // OPERATION FUNCTIONS    
-    public static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token, boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
+    // OPERATION FUNCTIONS
+    public static void orchestrateInstance(String refUUID, JSONObject inputJSON, String deltaUUID, TokenHandler token,
+            boolean autoProceed) throws EJBException, IOException, InterruptedException, SQLException {
         String method = "orchestrateInstance";
         String result;
         String lastState = "INIT";
@@ -80,7 +87,8 @@ public class ServiceEngine {
             // Check for license deduction.
             if (inputJSON.containsKey("profileID")) {
                 front_conn = factory.getConnection("frontend");
-                prep = front_conn.prepareStatement("SELECT L.remaining, L.type FROM service_wizard W, service_wizard_licenses L WHERE W.service_wizard_id = ? AND W.service_wizard_id = L.service_wizard_id AND L.username = ?");
+                prep = front_conn.prepareStatement(
+                        "SELECT L.remaining, L.type FROM service_wizard W, service_wizard_licenses L WHERE W.service_wizard_id = ? AND W.service_wizard_id = L.service_wizard_id AND L.username = ?");
                 prep.setString(1, (String) inputJSON.get("profileID"));
                 prep.setString(2, (String) inputJSON.get("username"));
                 rs = prep.executeQuery();
@@ -88,7 +96,8 @@ public class ServiceEngine {
                     if (rs.getString("type").equals("ticket")) {
                         int remaining = rs.getInt("remaining");
                         if (remaining > 0) {
-                            prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ? WHERE username = ? AND service_wizard_id = ?");
+                            prep = front_conn.prepareStatement(
+                                    "UPDATE service_wizard_licenses SET remaining = ? WHERE username = ? AND service_wizard_id = ?");
                             prep.setInt(1, --remaining);
                             prep.setString(2, (String) inputJSON.get("username"));
                             prep.setString(3, (String) inputJSON.get("profileID"));
@@ -97,7 +106,8 @@ public class ServiceEngine {
                         }
 
                         if (remaining <= 0) {
-                            prep = front_conn.prepareStatement("DELETE FROM service_wizard_licenses WHERE username = ? AND service_wizard_id = ?");
+                            prep = front_conn.prepareStatement(
+                                    "DELETE FROM service_wizard_licenses WHERE username = ? AND service_wizard_id = ?");
                             prep.setString(1, (String) inputJSON.get("username"));
                             prep.setString(2, (String) inputJSON.get("profileID"));
                             prep.executeUpdate();
@@ -106,6 +116,12 @@ public class ServiceEngine {
                     }
                 }
             }
+
+            // REGISTER
+            URL regURL = new URL(String.format("%s/md2/register/services/%s/", HOST, refUUID));
+            Request request = new Request.Builder().url(regURL).post(null).header("Authorization", token.auth())
+                    .build();
+            client.newCall(request).execute();
 
             result = initInstance(refUUID, svcDelta, token.auth());
             lastState = "COMPILED";
@@ -131,7 +147,7 @@ public class ServiceEngine {
                 URL url = new URL(String.format("%s/service/%s/status", HOST, refUUID));
                 while (!result.equals("COMMITTED") && !result.equals("FAILED")) {
                     logger.trace(method, "Waiting on instance: " + result);
-                    sleep(5000);//wait for 5 seconds and check again later        
+                    sleep(5000);// wait for 5 seconds and check again later
                     HttpURLConnection status = (HttpURLConnection) url.openConnection();
                     result = WebResource.executeHttpMethod(url, status, "GET", null, token.auth());
                 }
@@ -152,12 +168,13 @@ public class ServiceEngine {
             throw ex;
         } finally {
             logger.trace_start("updateLastState", lastState);
-            Connection front_conn2 = null; 
+            Connection front_conn2 = null;
             PreparedStatement prep2 = null;
             try {
                 front_conn2 = factory.getConnection("frontend");
 
-                prep2 = front_conn2.prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
+                prep2 = front_conn2
+                        .prepareStatement("UPDATE service_instance SET last_state = ? WHERE referenceUUID = ?");
                 prep2.setString(1, lastState);
                 prep2.setString(2, refUUID);
                 prep2.executeUpdate();
@@ -173,25 +190,21 @@ public class ServiceEngine {
         }
     }
 
-    // UTILITY FUNCTIONS    
+    // UTILITY FUNCTIONS
     private static int cacheServiceDelta(String refUuid, String svcDelta, String deltaUUID) throws SQLException {
         String method = "cacheServiceDelta";
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-
         logger.trace_start(method);
         // Cache serviceDelta.
         int instanceID = -1;
-        try {
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("SELECT service_instance_id"
-                    + " FROM service_instance WHERE referenceUUID = ?");
+        try (Connection front_conn = factory.getConnection("frontend");) {
+            PreparedStatement prep = front_conn
+                    .prepareStatement("SELECT service_instance_id" + " FROM service_instance WHERE referenceUUID = ?");
             prep.setString(1, refUuid);
-            ResultSet rs1 = prep.executeQuery();
-            rs1.next();
-            instanceID = rs1.getInt(1);
+            ResultSet rs = prep.executeQuery();
+            rs.next();
+            instanceID = rs.getInt(1);
+            rs.close();
+            prep.close();
 
             String formatDelta = svcDelta.replaceAll("<", "&lt;");
             formatDelta = formatDelta.replaceAll(">", "&gt;");
@@ -203,11 +216,10 @@ public class ServiceEngine {
             prep.setString(2, deltaUUID);
             prep.setString(3, formatDelta);
             prep.executeUpdate();
+            prep.close();
         } catch (SQLException ex) {
             logger.catching(method, ex);
             throw ex;
-        } finally {
-            WebResource.commonsClose(front_conn, prep, rs, logger);
         }
 
         logger.end(method);
@@ -225,8 +237,7 @@ public class ServiceEngine {
             formatDelta = formatDelta.replaceAll(">", "&gt;");
 
             prep = front_conn.prepareStatement("INSERT INTO frontend.service_delta "
-                    + "(`service_instance_id`, `super_state`, `type`, `delta`) "
-                    + "VALUES (?, 'CREATE', 'System', ?)");
+                    + "(`service_instance_id`, `super_state`, `type`, `delta`) " + "VALUES (?, 'CREATE', 'System', ?)");
             prep.setInt(1, instanceID);
             prep.setString(2, formatDelta);
             prep.executeUpdate();
@@ -278,7 +289,7 @@ public class ServiceEngine {
         }
         return result;
     }
-    
+
     public static String verifyInstance(String refUUID, String auth) throws MalformedURLException, IOException {
         URL url = new URL(String.format("%s/service/verify/%s", HOST, refUUID));
         HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
@@ -287,43 +298,34 @@ public class ServiceEngine {
         return result;
     }
 
-    // -------------------------- SERVICE FUNCTIONS --------------------------------        
+    // -------------------------- SERVICE FUNCTIONS --------------------------------
     static void pushProperty(String refUUID, String key, String value, String auth) throws IOException {
         URL url = new URL(String.format("%s/service/property/%s/%s", HOST, refUUID, key));
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        String result = executeHttpMethod(url, conn, "POST", value, auth);
+        executeHttpMethod(url, conn, "POST", value, auth);
     }
-    
-    public static String getCachedSystemDelta(String refUuid)  {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            Properties front_connectionProps = new Properties();
-            front_connectionProps.put("user", "root");
-            front_connectionProps.put("password", "root");
 
-
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("SELECT service_instance_id"
-                    + " FROM service_instance WHERE referenceUUID = ?");
-            prep.setString(1, refUuid);
-            ResultSet rs1 = prep.executeQuery();
-            rs1.next();
-            int instanceID = rs1.getInt(1);
-
-            
-            prep = front_conn.prepareStatement("SELECT delta FROM frontend.service_delta "
-                    + "WHERE service_instance_id = ? AND type='System' ORDER BY service_delta_id DESC");
-            prep.setInt(1, instanceID);
-            ResultSet rs2 = prep.executeQuery();
-            rs2.next();
-            return rs2.getString(1);
+    public static String getCachedSystemDelta(String refUuid) {
+        try (Connection front_conn = factory.getConnection("frontend");) {
+            int instanceID;
+            try (PreparedStatement prep = front_conn
+                    .prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");) {
+                prep.setString(1, refUuid);
+                try (ResultSet rs = prep.executeQuery();) {
+                    rs.next();
+                    instanceID = rs.getInt(1);
+                }
+            }
+            try (PreparedStatement prep = front_conn.prepareStatement(
+                    "SELECT delta FROM frontend.service_delta WHERE service_instance_id = ? AND type='System' ORDER BY service_delta_id DESC");) {
+                prep.setInt(1, instanceID);
+                try (ResultSet rs = prep.executeQuery();) {
+                    rs.next();
+                    return rs.getString(1);
+                }
+            }
         } catch (SQLException ex) {
             logger.catching("getCachedSystemDelta", ex);
-        } finally {
-            WebResource.commonsClose(front_conn, prep, rs, logger);
         }
         return null;
     }

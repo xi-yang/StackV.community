@@ -1,8 +1,8 @@
-import React from "react";
 import PropTypes from "prop-types";
+import React from "react";
 import ReactInterval from "react-interval";
-
 import "./logging.css";
+
 
 class LoggingPanel extends React.Component {
     constructor(props) {
@@ -34,8 +34,9 @@ class LoggingPanel extends React.Component {
     }
 
     newLevel() {
+        let page = this;
         sessionStorage.setItem("LoggingPanel_level", $("#logging-filter-level").val());
-        this.setState({ level: $("#logging-filter-level").val() }, this.props.resumeRefresh());
+        this.setState({ level: $("#logging-filter-level").val() }, () => { page.state.dataTable.ajax.reload(page.filterLogs(), false); page.props.resumeRefresh(); });
         this.props.frameLoad(2500);
     }
     filterLogs() {

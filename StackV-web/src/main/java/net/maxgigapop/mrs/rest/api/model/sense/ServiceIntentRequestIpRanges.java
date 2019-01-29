@@ -1,16 +1,15 @@
 package net.maxgigapop.mrs.rest.api.model.sense;
 
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class ServiceIntentRequestIpRanges   {
-  
+public class ServiceIntentRequestIpRanges {
+
   private @Valid String start = null;
   private @Valid String end = null;
 
@@ -21,12 +20,12 @@ public class ServiceIntentRequestIpRanges   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("start")
   public String getStart() {
     return start;
   }
+
   public void setStart(String start) {
     this.start = start;
   }
@@ -38,16 +37,15 @@ public class ServiceIntentRequestIpRanges   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("end")
   public String getEnd() {
     return end;
   }
+
   public void setEnd(String end) {
     this.end = end;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -58,8 +56,8 @@ public class ServiceIntentRequestIpRanges   {
       return false;
     }
     ServiceIntentRequestIpRanges serviceIntentRequestIpRanges = (ServiceIntentRequestIpRanges) o;
-    return Objects.equals(start, serviceIntentRequestIpRanges.start) &&
-        Objects.equals(end, serviceIntentRequestIpRanges.end);
+    return Objects.equals(start, serviceIntentRequestIpRanges.start)
+        && Objects.equals(end, serviceIntentRequestIpRanges.end);
   }
 
   @Override
@@ -71,7 +69,7 @@ public class ServiceIntentRequestIpRanges   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ServiceIntentRequestIpRanges {\n");
-    
+
     sb.append("    start: ").append(toIndentedString(start)).append("\n");
     sb.append("    end: ").append(toIndentedString(end)).append("\n");
     sb.append("}");
@@ -89,4 +87,3 @@ public class ServiceIntentRequestIpRanges   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

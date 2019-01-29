@@ -52,11 +52,11 @@ button:focus {
     overflow: auto;
     border-radius: 0 0 15px 0;
     margin-bottom: 10px;
-    background: linear-gradient(to right, rgba(255,255,255,0.01) 0%,rgba(255,255,255,1) 5%,rgba(255,255,255,1) 95%,rgba(255,255,255,0.01) 100%), url('/StackV-web/img/hex-back.png');
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.01) 0%, rgba(255, 255, 255, 1) 5%, rgba(255, 255, 255, 1) 95%, rgba(255, 255, 255, 0.01) 100%), url('/StackV-web/img/hex-back.png');
 }
 
 #intent-panel-meta {
-    background: linear-gradient(150deg,hsla(0, 0%, 70%, 1) 0%,hsla(0, 0%, 70%, 1) 60%,hsla(0, 0%, 40%, .3) 75%,hsla(0, 0%, 80%, 1) 95%), url(/StackV-web/img/hex-back.png);
+    background: linear-gradient(150deg, hsla(0, 0%, 70%, 1) 0%, hsla(0, 0%, 70%, 1) 60%, hsla(0, 0%, 40%, .3) 75%, hsla(0, 0%, 80%, 1) 95%), url(/StackV-web/img/hex-back.png);
     border-radius: 0 0 0 15px;
     border-right: 1px solid black;
     border-bottom: 1px solid black;
@@ -64,10 +64,12 @@ button:focus {
     height: calc(100% - 50px);
     padding: 20px 10px;
 }
+
 #intent-panel-meta input {
     width: 25%;
     margin-left: 5px;
 }
+
 #intent-panel-meta #meta-alias {
     width: 100px;
     margin: auto;
@@ -75,12 +77,15 @@ button:focus {
     padding: 5px;
     resize: none;
 }
+
 #intent-panel-meta-block {
     height: calc(100% - 225px);
 }
+
 #intent-panel-meta-control {
     height: 100px;
 }
+
 #meta-service {
     height: 100px;
     width: 100px;
@@ -91,6 +96,7 @@ button:focus {
     text-align: center;
     /* box-shadow: 0 4px 12px 2px rgba(0, 0, 0, 0.5); */
 }
+
 #meta-title {
     padding-bottom: 5px;
 }
@@ -104,28 +110,44 @@ button:focus {
     padding-right: 10px;
     width: 100%;
 }
+
 .intent-stage-div input[type="checkbox"] {
     width: auto;
     display: block;
     margin: auto;
     margin-top: 5px;
 }
+
 .intent-group-div button[disabled] {
     opacity: .3;
     color: #eee;
     pointer-events: none;
 }
-.intent-input.invalid-input, #meta-alias.invalid-input {
+
+.intent-input.invalid-input,
+#meta-alias.invalid-input {
     border: 1px solid red;
     color: red;
 }
+
 .intent-input-message {
     font-weight: normal;
     text-align: left;
     color: darkred;
     display: none;
 }
-.intent-input.invalid-input + .intent-input-message {
+
+.intent-input-md2 {
+    position: absolute;
+    bottom: -2px;
+    right: 10px;
+    margin: 2px 5px;
+    height: 26px;
+    background: #636363;
+    color: white;
+}
+
+.intent-input.invalid-input+.intent-input-message {
     display: block;
     position: absolute;
     background: rgba(255, 255, 255, .5);
@@ -138,12 +160,14 @@ button:focus {
 .intent-group-div {
     margin-left: 15px;
 }
+
 .intent-group-div .group-header {
     text-align: left;
     border-bottom: 2px dotted #aaa;
     margin-top: 15px;
     margin-bottom: 7px;
 }
+
 .intent-stage-div select {
     display: block;
     margin: auto;
@@ -154,6 +178,7 @@ button:focus {
     float: right;
     margin: 10px;
 }
+
 .intent-button-factory {
     float: right;
 }
@@ -161,41 +186,52 @@ button:focus {
 .group-name {
     display: inline;
 }
+
 .group-name.unlabeled {
     font-size: small;
-    color: rgba(0,0,0,.6);
+    color: rgba(0, 0, 0, .6);
 }
 
 .group-collapse-toggle:after {
     /* symbol for "opening" panels */
-    font-family: 'Glyphicons Halflings';  /* essential for enabling glyphicon */
-    content: "\e114";    /* adjust as needed, taken from bootstrap.css */
-    float: right;        /* adjust as needed */
-    color: grey;         /* adjust as needed */
+    font-family: 'Glyphicons Halflings';
+    /* essential for enabling glyphicon */
+    content: "\e114";
+    /* adjust as needed, taken from bootstrap.css */
+    float: right;
+    /* adjust as needed */
+    color: grey;
+    /* adjust as needed */
     margin-left: 5px;
 }
+
 .group-collapse-toggle.collapsed:after {
     /* symbol for "collapsed" panels */
-    content: "\e080";    /* adjust as needed, taken from bootstrap.css */
+    content: "\e080";
+    /* adjust as needed, taken from bootstrap.css */
 }
 
 .intent-stage-div {
-    display: none;  
+    display: none;
     opacity: 0;
 }
+
 .intent-stage-div.conditional.conditioned:not(.active) {
     display: none !important;
 }
 
 .button-factory {
-    display: none;    
+    display: none;
 }
+
 .button-factory.active {
     display: block;
 }
+
 .button-control {
-    display: none;   
+    display: none;
 }
+
 .button-control.active {
     display: block;
 }
@@ -203,21 +239,25 @@ button:focus {
 .intent-controls {
     position: fixed;
     width: 45px;
-    cursor:pointer;    
+    cursor: pointer;
     transition: all .5s;
     border-radius: 25px;
 }
+
 .intent-controls:hover {
     box-shadow: 0 0 7px 0px white;
 }
+
 #intent-prev {
-    left: 33%;    
-    bottom: 11%;    
+    left: 33%;
+    bottom: 11%;
 }
+
 #intent-next {
-    left: 75%;    
-    bottom: 11%;    
+    left: 75%;
+    bottom: 11%;
 }
+
 .intent-controls.blocked {
     opacity: .3;
     pointer-events: none;
@@ -240,18 +280,21 @@ button:focus {
     width: 50%;
     height: 30px;
 }
-.intent-operations:hover {   
+
+.intent-operations:hover {
     background: #737373;
-    border: 1px solid rgba(0, 0, 0, 0.05);    
+    border: 1px solid rgba(0, 0, 0, 0.05);
     color: #a5a5a5;
     text-decoration: none;
     text-shadow: -1px -1px 0 #5f5f5f;
     -webkit-transition: all 250ms linear;
     transition: all 250ms linear;
 }
-.intent-controls.blocked, .intent-operations.blocked {    
+
+.intent-controls.blocked,
+.intent-operations.blocked {
     color: #afafaf;
-    pointer-events: none;    
+    pointer-events: none;
 }
 
 #intent-submit {
@@ -262,21 +305,24 @@ button:focus {
 #saveModalLabel {
     display: inline-block;
 }
-#profile-name, #profile-description {
+
+#profile-name,
+#profile-description {
     display: block;
     margin: auto;
     margin-bottom: 5px;
 }
 
-.conditional { 
-    display: none !important; 
+.conditional {
+    display: none !important;
 }
+
 .conditional.conditioned {
     display: block !important;
 }
 
 .factored {
-    display: none;  
+    display: none;
     opacity: 0;
 }
 
@@ -291,7 +337,7 @@ ol {
     color: #ededed;
     font-weight: 100;
     text-shadow: 1px 1px 4px #2a2a2a;
-    background: linear-gradient(-45deg, 
+    background: linear-gradient(-45deg,
         hsla(0, 0%, 40%, 1) 0%,
         hsla(0, 0%, 40%, 1) 30%,
         hsla(0, 0%, 30%, 1) 90%);
@@ -299,46 +345,52 @@ ol {
     transition: color 1s;
     pointer-events: none;
 }
+
 .cd-breadcrumb.triangle li a::after {
-    border-left-color: hsl(0,0%,40%);  
+    border-left-color: hsl(0, 0%, 40%);
 }
 
 .cd-breadcrumb.triangle li.active a {
     color: #3a3a3a;
     font-weight: 400;
     text-shadow: 1px 1px 6px #777;
-    background: linear-gradient(-45deg, 
+    background: linear-gradient(-45deg,
         hsla(0, 0%, 90%, 1) 0%,
         hsla(0, 0%, 90%, 1) 30%,
-        hsla(0, 0%, 60%, 1) 90%);  
+        hsla(0, 0%, 60%, 1) 90%);
 }
+
 .cd-breadcrumb.triangle li.active a::after {
-    border-left-color: hsl(0,0%,90%);  
+    border-left-color: hsl(0, 0%, 90%);
 }
 
 .cd-breadcrumb.triangle li.invalid a {
     text-shadow: 1px 1px 6px #777;
-    background: linear-gradient(-45deg, 
+    background: linear-gradient(-45deg,
         hsla(0, 90%, 60%, 1) 0%,
         hsla(0, 90%, 60%, 1) 30%,
-        hsla(0, 90%, 40%, 1) 90%);  
+        hsla(0, 90%, 40%, 1) 90%);
 }
+
 .cd-breadcrumb.triangle li.invalid a::after {
-    border-left-color: hsla(0, 90%, 60%, 1);  
+    border-left-color: hsla(0, 90%, 60%, 1);
 }
 
 .cd-breadcrumb.triangle li.invalid.active a {
     text-shadow: 1px 1px 6px #777;
-    background: linear-gradient(-45deg, 
+    background: linear-gradient(-45deg,
         hsla(0, 90%, 80%, 1) 0%,
         hsla(0, 90%, 80%, 1) 30%,
-        hsla(0, 90%, 70%, 1) 90%);  
-}
-.cd-breadcrumb.triangle li.invalid.active a::after {
-    border-left-color: hsla(0, 90%, 80%, 1);  
+        hsla(0, 90%, 70%, 1) 90%);
 }
 
-*, *::after, *::before {
+.cd-breadcrumb.triangle li.invalid.active a::after {
+    border-left-color: hsla(0, 90%, 80%, 1);
+}
+
+*,
+*::after,
+*::before {
     box-sizing: border-box;
 }
 
@@ -346,7 +398,8 @@ ol li a {
     text-decoration: none;
 }
 
-.cd-breadcrumb, .cd-multi-steps {
+.cd-breadcrumb,
+.cd-multi-steps {
     width: 90%;
     max-width: 768px;
     padding: 0.5em 1em;
@@ -354,41 +407,56 @@ ol li a {
     background-color: #edeff0;
     border-radius: .25em;
 }
-.cd-breadcrumb:after, .cd-multi-steps:after {
+
+.cd-breadcrumb:after,
+.cd-multi-steps:after {
     content: "";
     display: table;
     clear: both;
 }
-.cd-breadcrumb li, .cd-multi-steps li {
+
+.cd-breadcrumb li,
+.cd-multi-steps li {
     display: inline-block;
     float: left;
     margin: 0.5em 0;
 }
-.cd-breadcrumb li::after, .cd-multi-steps li::after {
+
+.cd-breadcrumb li::after,
+.cd-multi-steps li::after {
     /* this is the separator between items */
     display: inline-block;
     content: '\00bb';
     margin: 0 .6em;
     color: #959fa5;
 }
-.cd-breadcrumb li:last-of-type::after, .cd-multi-steps li:last-of-type::after {
+
+.cd-breadcrumb li:last-of-type::after,
+.cd-multi-steps li:last-of-type::after {
     /* hide separator after the last item */
     display: none;
 }
-.cd-breadcrumb li > *, .cd-multi-steps li > * {
+
+.cd-breadcrumb li>*,
+.cd-multi-steps li>* {
     /* single step */
     display: inline-block;
     font-size: 1.4rem;
     color: #2c3f4c;
 }
-.cd-breadcrumb li.current > *, .cd-multi-steps li.current > * {
+
+.cd-breadcrumb li.current>*,
+.cd-multi-steps li.current>* {
     /* selected step */
     color: #96c03d;
 }
-.no-touch .cd-breadcrumb a:hover, .no-touch .cd-multi-steps a:hover {
+
+.no-touch .cd-breadcrumb a:hover,
+.no-touch .cd-multi-steps a:hover {
     /* steps already visited */
     color: #96c03d;
 }
+
 .cd-breadcrumb.custom-separator li::after,
 .cd-multi-steps.custom-separator li::after {
     /* replace the default arrow separator with a custom icon */
@@ -398,8 +466,9 @@ ol li a {
     background: black no-repeat center center;
     vertical-align: middle;
 }
-.cd-breadcrumb.custom-icons li > *::before,
-.cd-multi-steps.custom-icons li > *::before {
+
+.cd-breadcrumb.custom-icons li>*::before,
+.cd-multi-steps.custom-icons li>*::before {
     /* add a custom icon before each item */
     content: '';
     display: inline-block;
@@ -410,47 +479,63 @@ ol li a {
     background: black no-repeat 0 0;
     vertical-align: middle;
 }
-.cd-breadcrumb.custom-icons li:not(.current):nth-of-type(2) > *::before,
-.cd-multi-steps.custom-icons li:not(.current):nth-of-type(2) > *::before {
+
+.cd-breadcrumb.custom-icons li:not(.current):nth-of-type(2)>*::before,
+.cd-multi-steps.custom-icons li:not(.current):nth-of-type(2)>*::before {
     /* change custom icon using image sprites */
     background-position: -20px 0;
 }
-.cd-breadcrumb.custom-icons li:not(.current):nth-of-type(3) > *::before,
-.cd-multi-steps.custom-icons li:not(.current):nth-of-type(3) > *::before {
+
+.cd-breadcrumb.custom-icons li:not(.current):nth-of-type(3)>*::before,
+.cd-multi-steps.custom-icons li:not(.current):nth-of-type(3)>*::before {
     background-position: -40px 0;
 }
-.cd-breadcrumb.custom-icons li:not(.current):nth-of-type(4) > *::before,
-.cd-multi-steps.custom-icons li:not(.current):nth-of-type(4) > *::before {
+
+.cd-breadcrumb.custom-icons li:not(.current):nth-of-type(4)>*::before,
+.cd-multi-steps.custom-icons li:not(.current):nth-of-type(4)>*::before {
     background-position: -60px 0;
 }
-.cd-breadcrumb.custom-icons li.current:first-of-type > *::before,
-.cd-multi-steps.custom-icons li.current:first-of-type > *::before {
+
+.cd-breadcrumb.custom-icons li.current:first-of-type>*::before,
+.cd-multi-steps.custom-icons li.current:first-of-type>*::before {
     /* change custom icon for the current item */
     background-position: 0 -20px;
 }
-.cd-breadcrumb.custom-icons li.current:nth-of-type(2) > *::before,
-.cd-multi-steps.custom-icons li.current:nth-of-type(2) > *::before {
+
+.cd-breadcrumb.custom-icons li.current:nth-of-type(2)>*::before,
+.cd-multi-steps.custom-icons li.current:nth-of-type(2)>*::before {
     background-position: -20px -20px;
 }
-.cd-breadcrumb.custom-icons li.current:nth-of-type(3) > *::before,
-.cd-multi-steps.custom-icons li.current:nth-of-type(3) > *::before {
+
+.cd-breadcrumb.custom-icons li.current:nth-of-type(3)>*::before,
+.cd-multi-steps.custom-icons li.current:nth-of-type(3)>*::before {
     background-position: -40px -20px;
 }
-.cd-breadcrumb.custom-icons li.current:nth-of-type(4) > *::before,
-.cd-multi-steps.custom-icons li.current:nth-of-type(4) > *::before {
+
+.cd-breadcrumb.custom-icons li.current:nth-of-type(4)>*::before,
+.cd-multi-steps.custom-icons li.current:nth-of-type(4)>*::before {
     background-position: -60px -20px;
 }
+
 @media only screen and (min-width: 768px) {
-    .cd-breadcrumb, .cd-multi-steps {
+
+    .cd-breadcrumb,
+    .cd-multi-steps {
         padding: 0 1.2em;
     }
-    .cd-breadcrumb li, .cd-multi-steps li {
+
+    .cd-breadcrumb li,
+    .cd-multi-steps li {
         margin: 1.2em 0;
     }
-    .cd-breadcrumb li::after, .cd-multi-steps li::after {
+
+    .cd-breadcrumb li::after,
+    .cd-multi-steps li::after {
         margin: 0 1em;
     }
-    .cd-breadcrumb li > *, .cd-multi-steps li > * {
+
+    .cd-breadcrumb li>*,
+    .cd-multi-steps li>* {
         font-size: 1.6rem;
     }
 }
@@ -467,15 +552,18 @@ Triangle breadcrumb
         padding: 0;
         margin: 0;
     }
+
     .cd-breadcrumb.triangle li {
         position: relative;
         padding: 0;
         margin: 0px 4px 4px 0;
     }
+
     .cd-breadcrumb.triangle li:last-of-type {
         margin-right: 0;
     }
-    .cd-breadcrumb.triangle li > * {
+
+    .cd-breadcrumb.triangle li>* {
         position: relative;
         padding: 1.25em .8em 1.25em 2.5em;
         color: #2c3f4c;
@@ -483,26 +571,32 @@ Triangle breadcrumb
         /* the border color is used to style its ::after pseudo-element */
         border-color: #edeff0;
     }
-    .cd-breadcrumb.triangle li.current > * {
+
+    .cd-breadcrumb.triangle li.current>* {
         /* selected step */
         color: #ffffff;
         background-color: #96c03d;
         border-color: #96c03d;
     }
-    .cd-breadcrumb.triangle li:first-of-type > * {
+
+    .cd-breadcrumb.triangle li:first-of-type>* {
         border-radius: 15px 0 0 0;
         padding-left: 1.6em;
     }
-    .cd-breadcrumb.triangle li:last-of-type > * {
+
+    .cd-breadcrumb.triangle li:last-of-type>* {
         padding-right: 1.6em;
     }
+
     .no-touch .cd-breadcrumb.triangle a:hover {
         /* steps already visited */
         color: #ffffff;
         background-color: #2c3f4c;
         border-color: #2c3f4c;
     }
-    .cd-breadcrumb.triangle li::after, .cd-breadcrumb.triangle li > *::after {
+
+    .cd-breadcrumb.triangle li::after,
+    .cd-breadcrumb.triangle li>*::after {
         /* 
             li > *::after is the colored triangle after each item
             li::after is the white separator between two items
@@ -519,6 +613,7 @@ Triangle breadcrumb
         border-right-width: 0;
         border-left-width: 20px;
     }
+
     .cd-breadcrumb.triangle li::after {
         /* this is the white separator between two items */
         z-index: 1;
@@ -531,29 +626,35 @@ Triangle breadcrumb
         /* reset style */
         margin: 0;
     }
-    .cd-breadcrumb.triangle li > *::after {
+
+    .cd-breadcrumb.triangle li>*::after {
         /* this is the colored triangle after each element */
         z-index: 2;
         border-left-color: inherit;
     }
+
     .cd-breadcrumb.triangle li:last-of-type::after,
-    .cd-breadcrumb.triangle li:last-of-type > *::after {
+    .cd-breadcrumb.triangle li:last-of-type>*::after {
         /* hide the triangle after the last step */
         display: none;
     }
+
     .cd-breadcrumb.triangle.custom-separator li::after {
         /* reset style */
         background-image: none;
     }
+
     .cd-breadcrumb.triangle.custom-icons li::after,
-    .cd-breadcrumb.triangle.custom-icons li > *::after {
+    .cd-breadcrumb.triangle.custom-icons li>*::after {
         /* 50px is the height of the <a> element */
         border-top-width: 25px;
         border-bottom-width: 25px;
     }
 
     @-moz-document url-prefix() {
-        .cd-breadcrumb.triangle li::after, .cd-breadcrumb.triangle li > *::after {
+
+        .cd-breadcrumb.triangle li::after,
+        .cd-breadcrumb.triangle li>*::after {
             /* fix a bug on Firefix - tooth edge on css triangle */
             border-left-style: dashed;
         }

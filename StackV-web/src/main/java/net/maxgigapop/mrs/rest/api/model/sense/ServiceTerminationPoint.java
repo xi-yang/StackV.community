@@ -1,16 +1,15 @@
 package net.maxgigapop.mrs.rest.api.model.sense;
 
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class ServiceTerminationPoint   {
-  
+public class ServiceTerminationPoint {
+
   private @Valid String type = null;
   private @Valid String uri = null;
   private @Valid String label = null;
@@ -22,12 +21,12 @@ public class ServiceTerminationPoint   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("type")
   public String getType() {
     return type;
   }
+
   public void setType(String type) {
     this.type = type;
   }
@@ -39,12 +38,12 @@ public class ServiceTerminationPoint   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("uri")
   public String getUri() {
     return uri;
   }
+
   public void setUri(String uri) {
     this.uri = uri;
   }
@@ -56,16 +55,15 @@ public class ServiceTerminationPoint   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("label")
   public String getLabel() {
     return label;
   }
+
   public void setLabel(String label) {
     this.label = label;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -76,9 +74,8 @@ public class ServiceTerminationPoint   {
       return false;
     }
     ServiceTerminationPoint serviceTerminationPoint = (ServiceTerminationPoint) o;
-    return Objects.equals(type, serviceTerminationPoint.type) &&
-        Objects.equals(uri, serviceTerminationPoint.uri) &&
-        Objects.equals(label, serviceTerminationPoint.label);
+    return Objects.equals(type, serviceTerminationPoint.type) && Objects.equals(uri, serviceTerminationPoint.uri)
+        && Objects.equals(label, serviceTerminationPoint.label);
   }
 
   @Override
@@ -90,7 +87,7 @@ public class ServiceTerminationPoint   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ServiceTerminationPoint {\n");
-    
+
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    uri: ").append(toIndentedString(uri)).append("\n");
     sb.append("    label: ").append(toIndentedString(label)).append("\n");
@@ -109,4 +106,3 @@ public class ServiceTerminationPoint   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

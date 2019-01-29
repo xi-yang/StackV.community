@@ -1,22 +1,22 @@
-import React from "react";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { far } from "@fortawesome/free-regular-svg-icons";
+import { fas } from "@fortawesome/free-solid-svg-icons";
+import "bootstrap";
 //import Keycloak from "keycloak-js";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
-import "bootstrap";
+import React from "react";
 import ReactInterval from "react-interval";
-
-import "./global.css";
-
-import Navbar from "./nav/navbar";
-import Visualization from "./visual/visualization";
+import Admin from "./admin/admin";
 import Catalog from "./catalog/catalog";
 import Details from "./details/details";
 import Drivers from "./drivers/drivers";
-import Admin from "./admin/admin";
+import "./global.css";
+import Navbar from "./nav/navbar";
+import Visualization from "./visual/visualization";
 
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { fas } from "@fortawesome/free-solid-svg-icons";
-import { far } from "@fortawesome/free-regular-svg-icons";
+
+
 
 library.add(far, fas);
 
@@ -113,7 +113,7 @@ class Portal extends React.Component {
     }
 
     switchPage(page, param) {
-        if (this.verifyPageAccess(page, param)) {
+        if (this.verifyPageAccess(page, param) && this.state.page !== page) {
             switch (page) {
                 case "details":
                     if (param && param.uuid) {
@@ -175,11 +175,14 @@ class Portal extends React.Component {
     }
 
     /* */
-    frameLoad(time) {
+    frameLoad(time, callback) {
         let page = this;
         this.setState({ loading: true });
         setTimeout(function () {
             page.setState({ loading: false });
+            if (callback && typeof callback === "function") {
+                callback();
+            }
         }, time);
     }
     pauseRefresh() {
@@ -238,16 +241,16 @@ class Portal extends React.Component {
     checkRegistration() {
         let portal = this;
         $.ajax({
-            url: window.location.origin + "/StackV-web/restapi/config",
+            url: window.location.origin + "/StackV-web/restapi/config/system.name",
             async: false,
             type: "GET",
             beforeSend: function (xhr) {
                 xhr.setRequestHeader("Authorization", "bearer " + portal.state.keycloak.token);
                 xhr.setRequestHeader("Refresh", portal.state.keycloak.token);
             },
-            success: function (config) {
-                if (config["system.name"]) {
-                    console.log("Orchestrator " + config["system.name"] + " online.");
+            success: function (name) {
+                if (name) {
+                    console.log("Orchestrator " + name + " online.");
                 } else {
                     iziToast.question({
                         drag: false,
@@ -304,9 +307,10 @@ class Portal extends React.Component {
                                                     timeout: 2000,
                                                     title: "Error",
                                                     overlay: true,
-                                                    message: "Orchestrator unable to be registered. Please refresh and try again.",
+                                                    message: "Orchestrator unable to be registered. Please check global settings.",
                                                     position: "center"
                                                 });
+                                                portal.switchPage("admin");
                                             }
                                         });
                                     },

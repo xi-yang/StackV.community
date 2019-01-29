@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013-2016 University of Maryland
+* Copyright (c) 2013-2019 University of Maryland
 * Created by: Alberto Jimenez 2015
 * Modified by: Tao-Hung Yang 2016
 * Modified by: Xi Yang 2016
@@ -24,80 +24,79 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.ExecutorService;
-import javax.ejb.EJB;
-import javax.ejb.EJBException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Path;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import net.maxgigapop.mrs.system.HandleSystemCall;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import com.hp.hpl.jena.ontology.OntModel;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.DataOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.math.BigInteger;
-import java.net.MalformedURLException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Logger;
+import java.util.concurrent.ExecutorService;
+
 import javax.annotation.security.RolesAllowed;
+import javax.ejb.EJB;
+import javax.ejb.EJBException;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import net.maxgigapop.mrs.common.AuditService;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
-import net.maxgigapop.mrs.common.ModelUtil;
-import net.maxgigapop.mrs.service.ServiceHandler;
-import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.common.TokenHandler;
-import net.maxgigapop.mrs.service.ServiceEngine;
-import net.maxgigapop.mrs.service.VerificationHandler;
+
+import com.hp.hpl.jena.ontology.OntModel;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.jboss.resteasy.spi.HttpRequest;
+import org.jboss.resteasy.spi.UnhandledException;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.jboss.resteasy.spi.UnhandledException;
+
+import net.maxgigapop.mrs.common.AuditService;
+import net.maxgigapop.mrs.common.ModelUtil;
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.service.ServiceHandler;
+import net.maxgigapop.mrs.service.VerificationHandler;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 import templateengine.TemplateEngine;
 
 /**
@@ -118,21 +117,13 @@ public class WebResource {
     private static Map<String, List<String>> createServiceMap() {
         HashMap<String, List<String>> result = new HashMap<>();
 
-        result.put("vcn", Arrays.asList(
-                "Virtual Cloud Network",
-                "Network Creation Pilot Testbed."));
+        result.put("vcn", Arrays.asList("Virtual Cloud Network", "Network Creation Pilot Testbed."));
 
-        result.put("dnc", Arrays.asList(
-                "Dynamic Network Connection",
-                "Creation of new network connections."));
+        result.put("dnc", Arrays.asList("Dynamic Network Connection", "Creation of new network connections."));
 
-        result.put("ahc", Arrays.asList(
-                "Advanced Hybrid Cloud",
-                "Advanced Hybrid Cloud Service."));
+        result.put("ahc", Arrays.asList("Advanced Hybrid Cloud", "Advanced Hybrid Cloud Service."));
 
-        result.put("ecc", Arrays.asList(
-                "EdgeCloud Connection",
-                "MAX EdgeCloud Pilot Service."));
+        result.put("ecc", Arrays.asList("EdgeCloud Connection", "MAX EdgeCloud Pilot Service."));
 
         return Collections.unmodifiableMap(result);
     }
@@ -186,23 +177,21 @@ public class WebResource {
     static {
         WebResource.loadConfig();
 
-        TrustManager[] trustAllCerts = new TrustManager[]{
-            new X509TrustManager() {
-                @Override
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
-
-                @Override
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                }
-
-                @Override
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                }
-
+        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+            @Override
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return null;
             }
-        };
+
+            @Override
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {
+            }
+
+        } };
 
         SSLContext sc;
         try {
@@ -216,7 +205,7 @@ public class WebResource {
                     return true;
                 }
             };
-            // set the  allTrusting verifier
+            // set the allTrusting verifier
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
         } catch (KeyManagementException | NoSuchAlgorithmException ex) {
 
@@ -231,7 +220,8 @@ public class WebResource {
         JSONObject retJSON = new JSONObject();
         JSONArray retArr = new JSONArray();
 
-        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                .getAttribute(KeycloakSecurityContext.class.getName());
         AccessToken accessToken = securityContext.getToken();
         String username = accessToken.getPreferredUsername();
 
@@ -288,18 +278,20 @@ public class WebResource {
 
     /**
      * @apiDefine AuthHeader
-     * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN" Keycloak authorization token header.
+     * @apiHeader {String} authorization="Authorization: bearer $KC_ACCESS_TOKEN"
+     *            Keycloak authorization token header.
      */
     // >Access
     /**
      * Gives a user access to specified instance.
+     * 
      * @param uuid
      * @param username
      * @throws SQLException
      */
     @PUT
     @Path("/access/{uuid}/{username}")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     public void addAccess(@PathParam("uuid") String uuid, @PathParam("username") String username) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -322,14 +314,16 @@ public class WebResource {
 
     /**
      * Removes a user's access to specified instance.
+     * 
      * @param uuid
      * @param username
      * @throws SQLException
      */
     @DELETE
     @Path("/access/{uuid}/{username}")
-    @Consumes(value = {"application/json"})
-    public void removeAccess(@PathParam("uuid") String uuid, @PathParam("username") String username) throws SQLException {
+    @Consumes(value = { "application/json" })
+    public void removeAccess(@PathParam("uuid") String uuid, @PathParam("username") String username)
+            throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -385,13 +379,14 @@ public class WebResource {
             retArr.add(userJSON);
         }
         retJSON.put("data", retArr);
+        logger.trace_end(method);
         return retJSON.toJSONString();
     }
-
 
     // >Clipbook
     /**
      * Gets all clips associated with user.
+     * 
      * @param username
      * @param clipObject
      * @throws SQLException
@@ -425,6 +420,7 @@ public class WebResource {
 
     /**
      * Gets all clips associated with user.
+     * 
      * @param username
      * @param clipObject
      * @throws SQLException
@@ -432,7 +428,8 @@ public class WebResource {
     @GET
     @Path("/clipbook/{user}/{name}")
     @Produces("application/json")
-    public String getClipByName(@PathParam("user") String username, @PathParam("name") String name) throws SQLException {
+    public String getClipByName(@PathParam("user") String username, @PathParam("name") String name)
+            throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -453,13 +450,14 @@ public class WebResource {
 
     /**
      * Adds a clip.
+     * 
      * @param username
      * @param clipObject
      * @throws SQLException
      */
     @POST
     @Path("/clipbook/{user}")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     public void addClip(@PathParam("user") String username, final String dataInput) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -478,7 +476,8 @@ public class WebResource {
             front_conn = factory.getConnection("frontend");
 
             // excluding the topuri if the driver type is raw
-            prep = front_conn.prepareStatement("INSERT INTO frontend.clipbook (`username`, `name`, `clip`) VALUES (?, ?, ?)");
+            prep = front_conn
+                    .prepareStatement("INSERT INTO frontend.clipbook (`username`, `name`, `clip`) VALUES (?, ?, ?)");
             prep.setString(1, username);
             prep.setString(2, name);
             prep.setString(3, clip);
@@ -493,13 +492,14 @@ public class WebResource {
 
     /**
      * Adds a clip.
+     * 
      * @param username
      * @param clipObject
      * @throws SQLException
      */
     @DELETE
     @Path("/clipbook/{user}/{name}")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     public void deleteClip(@PathParam("user") String username, @PathParam("name") String name) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
@@ -528,9 +528,9 @@ public class WebResource {
      * @apiGroup Keycloak
      * @apiUse AuthHeader
      *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/keycloak/users
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl
+     *             http://localhost:8080/StackV-web/restapi/app/keycloak/users -H
+     *             "Authorization: bearer $KC_ACCESS_TOKEN"
      *
      * @apiSuccess {JSONArray} users users JSON
      * @apiSuccess {JSONArray} users.user user JSON
@@ -540,7 +540,7 @@ public class WebResource {
      * @apiSuccess {String} users.user.time timestamp of user creation
      * @apiSuccess {String} users.user.subject user ID
      * @apiSuccessExample {json} Example Response:
-     * [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
+     *                    [["admin","",null,"1475506393070","1d183570-2798-4d69-80c3-490f926596ff"],["username","","email","1475506797561","1323ff3d-49f3-46ad-8313-53fd4c711ec6"]]
      */
     @GET
     @Path("/data/users")
@@ -576,6 +576,7 @@ public class WebResource {
                 retArr.add(userJSON);
             }
             retJSON.put("data", retArr);
+            logger.trace_end(method);
             return retJSON.toJSONString();
         } catch (IOException | ParseException ex) {
             logger.catching("getUsers", ex);
@@ -664,7 +665,8 @@ public class WebResource {
 
                     String urn = (String) resDriver.get("topologyUri");
                     String type = (String) resDriver.get("driverEjbPath");
-                    prep = front_conn.prepareStatement("INSERT INTO frontend.driver VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `type` = ?,`xml` = ?");
+                    prep = front_conn.prepareStatement(
+                            "INSERT INTO frontend.driver VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `type` = ?,`xml` = ?");
                     prep.setString(1, urn);
                     prep.setString(2, type);
                     prep.setString(3, xml);
@@ -685,12 +687,13 @@ public class WebResource {
 
     /**
      * Adds a new driver
+     * 
      * @param dataInput
      * @throws SQLException
      */
     @PUT
     @Path("/drivers/")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     @RolesAllowed("F_Drivers-W")
     public void addDriver(final String dataInput) throws SQLException {
         Connection front_conn = null;
@@ -711,7 +714,8 @@ public class WebResource {
             String xml = (String) inputJSON.get("xml");
 
             front_conn = factory.getConnection("frontend");
-            prep = front_conn.prepareStatement("INSERT INTO frontend.driver VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `type` = ?,`xml` = ?");
+            prep = front_conn.prepareStatement(
+                    "INSERT INTO frontend.driver VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `type` = ?,`xml` = ?");
             prep.setString(1, urn);
             prep.setString(2, type);
             prep.setString(3, xml);
@@ -728,12 +732,13 @@ public class WebResource {
 
     /**
      * Deletes a driver
+     * 
      * @param dataInput
      * @throws SQLException
      */
     @DELETE
     @Path("/drivers/")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     @RolesAllowed("F_Drivers-W")
     public void deleteDriver(final String dataInput) throws SQLException {
         Connection front_conn = null;
@@ -765,9 +770,10 @@ public class WebResource {
 
     @PUT
     @Path("/driver/{user}/edit/{topuri}")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     @RolesAllowed("F_Drivers-W")
-    public String editDriverProfile(@PathParam(value = "user") String username, @PathParam(value = "topuri") String oldTopUri, final String dataInput) throws SQLException, ParseException {
+    public String editDriverProfile(@PathParam(value = "user") String username,
+            @PathParam(value = "topuri") String oldTopUri, final String dataInput) throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -787,7 +793,8 @@ public class WebResource {
 
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("UPDATE driver_wizard SET TopUri = ?, data = ? WHERE username = ? AND TopUri = ?");
+            prep = front_conn.prepareStatement(
+                    "UPDATE driver_wizard SET TopUri = ?, data = ? WHERE username = ? AND TopUri = ?");
             prep.setString(1, newTopUri);
             prep.setString(2, newData);
             prep.setString(3, username);
@@ -806,16 +813,18 @@ public class WebResource {
     @DELETE
     @Path(value = "driver/{username}/delete/{topuri}")
     @RolesAllowed("F_Drivers-W")
-    public String deleteDriverProfile(@PathParam(value = "username") String username, @PathParam(value = "topuri") String topuri) throws SQLException {
+    public String deleteDriverProfile(@PathParam(value = "username") String username,
+            @PathParam(value = "topuri") String topuri) throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("DELETE FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
-            //            prep.setString(1, username);
-            //            prep.setString(2, topuri);
+            prep = front_conn.prepareStatement(
+                    "DELETE FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
+            // prep.setString(1, username);
+            // prep.setString(2, topuri);
             prep.executeUpdate();
 
             return "Deleted";
@@ -831,12 +840,14 @@ public class WebResource {
     @Path("/driver/{user}/getdetails/{topuri}")
     @Produces("application/json")
     @RolesAllowed("F_Drivers-R")
-    public JSONObject getDriverDetails(@PathParam(value = "user") String username, @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
+    public JSONObject getDriverDetails(@PathParam(value = "user") String username,
+            @PathParam(value = "topuri") String topuri) throws SQLException, ParseException {
         Connection front_conn = factory.getConnection("frontend");
 
-        PreparedStatement prep = front_conn.prepareStatement("SELECT * FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
-        //        prep.setString(1, username);
-        //        prep.setString(2, topuri);
+        PreparedStatement prep = front_conn.prepareStatement(
+                "SELECT * FROM driver_wizard WHERE username = \'" + username + "\' AND TopUri = \'" + topuri + "\'");
+        // prep.setString(1, username);
+        // prep.setString(2, topuri);
         ResultSet rs = prep.executeQuery();
 
         rs.next();
@@ -885,13 +896,14 @@ public class WebResource {
         }
     }
 
-    // >Keycloak    
-    /*Andrew's Draft for new post method for adding additional roles to groups*/
+    // >Keycloak
+    /* Andrew's Draft for new post method for adding additional roles to groups */
     @POST
     @Path("/keycloak/groups/{group}")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-W")
-    public void addGroupRole(@PathParam("group") String subject, final String inputString) throws IOException, ParseException {
+    public void addGroupRole(@PathParam("group") String subject, final String inputString)
+            throws IOException, ParseException {
         try {
             String method = "addGroupRole";
             logger.start(method);
@@ -920,12 +932,13 @@ public class WebResource {
         }
     }
 
-    /*Andrew's draft for new delete method for deleting a role from a group*/
+    /* Andrew's draft for new delete method for deleting a role from a group */
     @DELETE
     @Path("keycloak/groups/{group}")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-W")
-    public void removeGroupRole(@PathParam("group") String subject, final String inputString) throws IOException, ParseException {
+    public void removeGroupRole(@PathParam("group") String subject, final String inputString)
+            throws IOException, ParseException {
         try {
             String method = "removeGroupRole";
             logger.start(method);
@@ -956,12 +969,13 @@ public class WebResource {
         }
     }
 
-    /*Andrew's Draft for searching for the full information of a single role*/
+    /* Andrew's Draft for searching for the full information of a single role */
     @GET
     @Path("keycloak/roles/{role}")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-R")
-    public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject) throws IOException, ParseException {
+    public ArrayList<ArrayList<String>> getRoleData(@PathParam("role") String subject)
+            throws IOException, ParseException {
         String name = subject;
         try {
             String method = "getRoleData";
@@ -1062,7 +1076,8 @@ public class WebResource {
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-W")
-    public void addUserRole(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
+    public void addUserRole(@PathParam("user") String subject, final String inputString)
+            throws IOException, ParseException {
         try {
             String method = "addUserRole";
             logger.start(method);
@@ -1098,7 +1113,8 @@ public class WebResource {
     @Path("/keycloak/users/{user}/roles")
     @Produces("application/json")
     @RolesAllowed("F_Keycloak-W")
-    public void removeUserRole(@PathParam("user") String subject, final String inputString) throws IOException, ParseException {
+    public void removeUserRole(@PathParam("user") String subject, final String inputString)
+            throws IOException, ParseException {
         try {
             String method = "removeUserRole";
             logger.start(method);
@@ -1189,197 +1205,6 @@ public class WebResource {
         }
     }
 
-    // >Labels
-    /**
-     * @api {get} /app/label/:user
-     * @apiVersion 1.0.0
-     * @apiDescription Get a list of labels belonging to the specified user.
-     * @apiGroup Labels
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     *
-     ** @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
-    @GET
-    @Path("/label/{user}")
-    @Produces("application/json")
-    public ArrayList<ArrayList<String>> getLabels(@PathParam("user") String username) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            ArrayList<ArrayList<String>> retList = new ArrayList<>();
-
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("SELECT * FROM label WHERE username = ?");
-            prep.setString(1, username);
-            rs = prep.executeQuery();
-            while (rs.next()) {
-                ArrayList<String> labelList = new ArrayList<>();
-
-                labelList.add(rs.getString("identifier"));
-                labelList.add(rs.getString("label"));
-                labelList.add(rs.getString("color"));
-
-                retList.add(labelList);
-            }
-
-            return retList;
-        } catch (SQLException ex) {
-            logger.catching("getLabels", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
-    /**
-     * @api {put} /app/label Add Label
-     * @apiVersion 1.0.0
-     * @apiDescription Add a new label.
-     * @apiGroup Labels
-     * @apiUse AuthHeader
-     * @apiParam {String} user user ID
-     * @apiParam {JSONObject} inputString TODO - Add Parameter Structure
-     *
-     ** @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
-    @PUT
-    @Path(value = "/label")
-    @Consumes(value = {"application/json", "application/xml"})
-    public String label(final String inputString) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "label";
-            logger.start(method);
-            JSONObject inputJSON = new JSONObject();
-            try {
-                Object obj = parser.parse(inputString);
-                inputJSON = (JSONObject) obj;
-
-            } catch (ParseException ex) {
-                logger.catching("label", ex);
-            }
-
-            String user = (String) inputJSON.get("user");
-            String identifier = (String) inputJSON.get("identifier");
-            String label = (String) inputJSON.get("label");
-            String color = (String) inputJSON.get("color");
-
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`label` (`identifier`, `username`, `label`, `color`) VALUES (?, ?, ?, ?)");
-            prep.setString(1, identifier);
-            prep.setString(2, user);
-            prep.setString(3, label);
-            prep.setString(4, color);
-            prep.executeUpdate();
-
-            logger.end(method);
-            return "Added";
-        } catch (SQLException ex) {
-            logger.catching("label", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
-    /**
-     * @api {delete} /app/label/:username/delete/:identifier Delete Label
-     * @apiVersion 1.0.0
-     * @apiDescription Delete identified label owned by specified user.
-     * @apiGroup Labels
-     * @apiUse AuthHeader
-     * @apiParam {String} username username
-     * @apiParam {String} identifier label ID
-     *
-     ** @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
-    @DELETE
-    @Path(value = "/label/{username}/delete/{identifier}")
-    public String deleteLabel(@PathParam(value = "username") String username, @PathParam(value = "identifier") String identifier) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "deleteLabel";
-            logger.start(method);
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("DELETE FROM `frontend` .`label` WHERE username = ? AND identifier = ?");
-            prep.setString(1, username);
-            prep.setString(2, identifier);
-            prep.executeUpdate();
-
-            logger.end(method);
-            return "Deleted";
-        } catch (SQLException ex) {
-            logger.catching("deleteLabel", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
-    /**
-     * @api {delete} /app/label/:username/clearall Clear Labels
-     * @apiVersion 1.0.0
-     * @apiDescription Delete all labels owned by specified user.
-     * @apiGroup Labels
-     * @apiUse AuthHeader
-     * @apiParam {String} username username
-     *
-     ** @apiExample {curl} Example Call:
-     * TODO - Add Example Call
-     *
-     * @apiSuccess Object return TODO - Add Return
-     * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
-     */
-    @DELETE
-    @Path(value = "/label/{username}/clearall")
-    public String clearLabels(@PathParam(value = "username") String username) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
-        try {
-            String method = "clearLabels";
-            logger.start(method);
-            front_conn = factory.getConnection("frontend");
-
-            prep = front_conn.prepareStatement("DELETE FROM `frontend`.`label` WHERE username = ? ");
-            prep.setString(1, username);
-            prep.executeUpdate();
-
-            logger.end(method);
-            return "Labels Cleared";
-        } catch (SQLException ex) {
-            logger.catching("clearLabels", ex);
-            throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
-        }
-    }
-
     // >Logging
     @GET
     @Path("/logging/")
@@ -1394,26 +1219,26 @@ public class WebResource {
     public void setLogLevel(@PathParam("level") String level) {
         if (verifyUserRole("A_Admin")) {
             switch (level) {
-                case "TRACE":
-                    Configurator.setLevel(WebResource.class.getName(), Level.TRACE);
-                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.TRACE);
-                    break;
-                case "DEBUG":
-                    Configurator.setLevel(WebResource.class.getName(), Level.DEBUG);
-                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.DEBUG);
-                    break;
-                case "INFO":
-                    Configurator.setLevel(WebResource.class.getName(), Level.INFO);
-                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.INFO);
-                    break;
-                case "WARN":
-                    Configurator.setLevel(WebResource.class.getName(), Level.WARN);
-                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.WARN);
-                    break;
-                case "ERROR":
-                    Configurator.setLevel(WebResource.class.getName(), Level.ERROR);
-                    Configurator.setLevel(SecurityInterceptor.class.getName(), Level.ERROR);
-                    break;
+            case "TRACE":
+                Configurator.setLevel(WebResource.class.getName(), Level.TRACE);
+                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.TRACE);
+                break;
+            case "DEBUG":
+                Configurator.setLevel(WebResource.class.getName(), Level.DEBUG);
+                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.DEBUG);
+                break;
+            case "INFO":
+                Configurator.setLevel(WebResource.class.getName(), Level.INFO);
+                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.INFO);
+                break;
+            case "WARN":
+                Configurator.setLevel(WebResource.class.getName(), Level.WARN);
+                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.WARN);
+                break;
+            case "ERROR":
+                Configurator.setLevel(WebResource.class.getName(), Level.ERROR);
+                Configurator.setLevel(SecurityInterceptor.class.getName(), Level.ERROR);
+                break;
             }
 
             logger.status("setLogLevel", level);
@@ -1425,7 +1250,8 @@ public class WebResource {
     @GET
     @Path("/logging/logs")
     @Produces("application/json")
-    public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level) throws SQLException {
+    public String getLogs(@QueryParam("refUUID") String refUUID, @QueryParam("level") String level)
+            throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -1440,38 +1266,45 @@ public class WebResource {
             } // Filtering by level alone
             else if (refUUID == null && level != null) {
                 switch (level) {
-                    case "TRACE":
-                        prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
-                        break;
-                    case "INFO":
-                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' ORDER BY timestamp DESC");
-                        break;
-                    case "WARN":
-                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
-                        break;
-                    case "ERROR":
-                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE level = 'ERROR' ORDER BY timestamp DESC");
-                        break;
+                case "TRACE":
+                    prep = front_conn.prepareStatement("SELECT * FROM log ORDER BY timestamp DESC");
+                    break;
+                case "INFO":
+                    prep = front_conn
+                            .prepareStatement("SELECT * FROM log WHERE level != 'TRACE' ORDER BY timestamp DESC");
+                    break;
+                case "WARN":
+                    prep = front_conn.prepareStatement(
+                            "SELECT * FROM log WHERE level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
+                    break;
+                case "ERROR":
+                    prep = front_conn
+                            .prepareStatement("SELECT * FROM log WHERE level = 'ERROR' ORDER BY timestamp DESC");
+                    break;
                 }
             } // Filtering by both
             else if (refUUID != null && level != null) {
                 switch (level) {
-                    case "TRACE":
-                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
-                        prep.setString(1, refUUID);
-                        break;
-                    case "INFO":
-                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' ORDER BY timestamp DESC");
-                        prep.setString(1, refUUID);
-                        break;
-                    case "WARN":
-                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
-                        prep.setString(1, refUUID);
-                        break;
-                    case "ERROR":
-                        prep = front_conn.prepareStatement("SELECT * FROM log WHERE referenceUUID = ? AND level = 'ERROR' ORDER BY timestamp DESC");
-                        prep.setString(1, refUUID);
-                        break;
+                case "TRACE":
+                    prep = front_conn
+                            .prepareStatement("SELECT * FROM log WHERE referenceUUID = ? ORDER BY timestamp DESC");
+                    prep.setString(1, refUUID);
+                    break;
+                case "INFO":
+                    prep = front_conn.prepareStatement(
+                            "SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' ORDER BY timestamp DESC");
+                    prep.setString(1, refUUID);
+                    break;
+                case "WARN":
+                    prep = front_conn.prepareStatement(
+                            "SELECT * FROM log WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO' ORDER BY timestamp DESC");
+                    prep.setString(1, refUUID);
+                    break;
+                case "ERROR":
+                    prep = front_conn.prepareStatement(
+                            "SELECT * FROM log WHERE referenceUUID = ? AND level = 'ERROR' ORDER BY timestamp DESC");
+                    prep.setString(1, refUUID);
+                    break;
                 }
             }
 
@@ -1522,13 +1355,8 @@ public class WebResource {
         int start = Integer.parseInt(queryParams.getFirst("start"));
         int length = Integer.parseInt(queryParams.getFirst("length"));
 
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         String method = "getLogsServerSide";
-        try {
-            front_conn = factory.getConnection("frontend");
-
+        try (Connection front_conn = factory.getConnection("frontend");) {
             String prepString = "SELECT * FROM log";
             // Filtering by UUID alone
             if (refUUID != null && (level == null || level.equalsIgnoreCase("TRACE"))) {
@@ -1536,103 +1364,102 @@ public class WebResource {
             } // Filtering by level alone
             else if (refUUID == null && level != null) {
                 switch (level) {
-                    case "INFO":
-                        prepString = prepString + " WHERE level != 'TRACE'";
-                        break;
-                    case "WARN":
-                        prepString = prepString + " WHERE level != 'TRACE' AND level != 'INFO'";
-                        break;
-                    case "ERROR":
-                        prepString = prepString + " WHERE level = 'ERROR'";
-                        break;
+                case "INFO":
+                    prepString = prepString + " WHERE level != 'TRACE'";
+                    break;
+                case "WARN":
+                    prepString = prepString + " WHERE level != 'TRACE' AND level != 'INFO'";
+                    break;
+                case "ERROR":
+                    prepString = prepString + " WHERE level = 'ERROR'";
+                    break;
                 }
             } // Filtering by both
             else if (refUUID != null && level != null) {
                 switch (level) {
-                    case "TRACE":
-                        prepString = prepString + " WHERE referenceUUID = ?";
-                        break;
-                    case "INFO":
-                        prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE'";
-                        break;
-                    case "WARN":
-                        prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO'";
-                        break;
-                    case "ERROR":
-                        prepString = prepString + " WHERE referenceUUID = ? AND level = 'ERROR'";
-                        break;
+                case "TRACE":
+                    prepString = prepString + " WHERE referenceUUID = ?";
+                    break;
+                case "INFO":
+                    prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE'";
+                    break;
+                case "WARN":
+                    prepString = prepString + " WHERE referenceUUID = ? AND level != 'TRACE' AND level != 'INFO'";
+                    break;
+                case "ERROR":
+                    prepString = prepString + " WHERE referenceUUID = ? AND level = 'ERROR'";
+                    break;
                 }
             }
 
             if (!search.equals("")) {
                 if (prepString.contains("WHERE")) {
-                    prepString = prepString + " AND (logger LIKE '%" + search + "%' "
-                            + "OR module LIKE '%" + search + "%' "
-                            + "OR method LIKE '%" + search + "%' "
-                            + "OR event LIKE '%" + search + "%' "
+                    prepString = prepString + " AND (logger LIKE '%" + search + "%' " + "OR module LIKE '%" + search
+                            + "%' " + "OR method LIKE '%" + search + "%' " + "OR event LIKE '%" + search + "%' "
                             + "OR message LIKE '%" + search + "%') ";
                 } else {
-                    prepString = prepString + " WHERE (logger LIKE '%" + search + "%' "
-                            + "OR module LIKE '%" + search + "%' "
-                            + "OR method LIKE '%" + search + "%' "
-                            + "OR event LIKE '%" + search + "%' "
+                    prepString = prepString + " WHERE (logger LIKE '%" + search + "%' " + "OR module LIKE '%" + search
+                            + "%' " + "OR method LIKE '%" + search + "%' " + "OR event LIKE '%" + search + "%' "
                             + "OR message LIKE '%" + search + "%') ";
                 }
             }
 
             String prepStringCount = prepString.replace("SELECT *", "SELECT COUNT(*)");
-            prep = front_conn.prepareStatement(prepStringCount);
-            if (refUUID != null) {
-                prep.setString(1, refUUID);
+            int count;
+            try (PreparedStatement prep = front_conn.prepareStatement(prepStringCount);) {
+                if (refUUID != null) {
+                    prep.setString(1, refUUID);
+                }
+                try (ResultSet rs = prep.executeQuery();) {
+                    rs.next();
+                    count = rs.getInt(1);
+                }
             }
-            rs = prep.executeQuery();
-            rs.next();
-            int count = rs.getInt(1);
 
             prepString = prepString + " ORDER BY log_id DESC LIMIT ?,?";
-            prep = front_conn.prepareStatement(prepString);
-            if (refUUID != null) {
-                prep.setString(1, refUUID);
-                prep.setInt(2, start);
-                prep.setInt(3, length);
-            } else {
-                prep.setInt(1, start);
-                prep.setInt(2, length);
+            try (PreparedStatement prep = front_conn.prepareStatement(prepString);) {
+                if (refUUID != null) {
+                    prep.setString(1, refUUID);
+                    prep.setInt(2, start);
+                    prep.setInt(3, length);
+                } else {
+                    prep.setInt(1, start);
+                    prep.setInt(2, length);
+                }
+
+                try (ResultSet rs = prep.executeQuery();) {
+                    JSONObject retJSON = new JSONObject();
+                    JSONArray logArr = new JSONArray();
+                    while (rs.next()) {
+                        JSONObject logJSON = new JSONObject();
+
+                        logJSON.put("referenceUUID", rs.getString("referenceUUID"));
+                        logJSON.put("marker", rs.getString("marker"));
+                        logJSON.put("timestamp", rs.getString("timestamp"));
+                        logJSON.put("level", rs.getString("level"));
+                        logJSON.put("logger", rs.getString("logger"));
+                        logJSON.put("message", rs.getString("message"));
+                        logJSON.put("event", rs.getString("event"));
+                        logJSON.put("exception", rs.getString("exception"));
+                        logJSON.put("targetID", rs.getString("targetID"));
+
+                        logArr.add(logJSON);
+                    }
+
+                    retJSON.put("data", logArr);
+                    retJSON.put("draw", draw);
+                    retJSON.put("recordsTotal", count);
+                    retJSON.put("recordsFiltered", count);
+
+                    return retJSON.toJSONString();
+                }
             }
-
-            rs = prep.executeQuery();
-            JSONObject retJSON = new JSONObject();
-            JSONArray logArr = new JSONArray();
-            while (rs.next()) {
-                JSONObject logJSON = new JSONObject();
-
-                logJSON.put("referenceUUID", rs.getString("referenceUUID"));
-                logJSON.put("marker", rs.getString("marker"));
-                logJSON.put("timestamp", rs.getString("timestamp"));
-                logJSON.put("level", rs.getString("level"));
-                logJSON.put("logger", rs.getString("logger"));
-                logJSON.put("message", rs.getString("message"));
-                logJSON.put("event", rs.getString("event"));
-                logJSON.put("exception", rs.getString("exception"));
-                logJSON.put("targetID", rs.getString("targetID"));
-
-                logArr.add(logJSON);
-            }
-
-            retJSON.put("data", logArr);
-            retJSON.put("draw", draw);
-            retJSON.put("recordsTotal", count);
-            retJSON.put("recordsFiltered", count);
-
-            return retJSON.toJSONString();
         } catch (UnhandledException ex) {
             logger.trace(method, "Logging connection lost?");
             return null;
         } catch (SQLException ex) {
             logger.catching(method, ex);
             throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -1646,22 +1473,24 @@ public class WebResource {
         String method = "loadInstanceData";
         try {
             String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                    .getAttribute(KeycloakSecurityContext.class.getName());
             AccessToken accessToken = securityContext.getToken();
             String username = accessToken.getPreferredUsername();
 
             front_conn = factory.getConnection("frontend");
 
             if (verifyUserRole("A_Admin")) {
-                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
-                        + "FROM service_instance I, service_verification V "
-                        + "WHERE V.service_instance_id = I.service_instance_id "
-                        + "ORDER BY I.creation_time");
+                prep = front_conn.prepareStatement(
+                        "SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
+                                + "FROM service_instance I, service_verification V "
+                                + "WHERE V.service_instance_id = I.service_instance_id " + "ORDER BY I.creation_time");
             } else {
-                prep = front_conn.prepareStatement("SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
-                        + "FROM service_instance I, acl A, service_verification V "
-                        + "WHERE I.referenceUUID = A.object AND V.service_instance_id = I.service_instance_id AND (A.subject = ? OR I.username = ?) "
-                        + "ORDER BY I.creation_time");
+                prep = front_conn.prepareStatement(
+                        "SELECT DISTINCT I.type, I.referenceUUID, I.alias_name, I.super_state, I.creation_time, I.last_state, I.username, V.verification_state "
+                                + "FROM service_instance I, acl A, service_verification V "
+                                + "WHERE I.referenceUUID = A.object AND V.service_instance_id = I.service_instance_id AND (A.subject = ? OR I.username = ?) "
+                                + "ORDER BY I.creation_time");
                 prep.setString(1, username);
                 prep.setString(2, username);
             }
@@ -1716,11 +1545,9 @@ public class WebResource {
      * @apiParam {String} svcUUID instance UUID
      *
      ** @apiExample {curl} Example Call:
-     * TODO - Add Example Call
      *
-     * @apiSuccess Object return TODO - Add Return
+     * @apiSuccess Object return
      * @apiSuccessExample {json} Example Response:
-     * TODO - Add Example Response
      */
     @GET
     @Path("/manifest/{svcUUID}")
@@ -1758,14 +1585,14 @@ public class WebResource {
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     String result = executeHttpMethod(url, conn, "GET", null, auth);
                     switch (result) {
-                        case "ops":
-                            serviceType = "Virtual Cloud Network - OPS";
-                            break;
-                        case "aws":
-                            serviceType = "Virtual Cloud Network - AWS";
-                            break;
-                        default:
-                            throw new EJBException("cannot tell type of VCN service without 'host' property");
+                    case "ops":
+                        serviceType = "Virtual Cloud Network - OPS";
+                        break;
+                    case "aws":
+                        serviceType = "Virtual Cloud Network - AWS";
+                        break;
+                    default:
+                        throw new EJBException("cannot tell type of VCN service without 'host' property");
                     }
                 } catch (IOException | EJBException ex) {
                     throw new EJBException("cannot tell type of VCN service without 'host' property", ex);
@@ -1773,20 +1600,20 @@ public class WebResource {
             }
             String manifest = "";
             switch (serviceType) {
-                case "Dynamic Network Connection":
-                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
-                    break;
-                case "Advanced Hybrid Cloud":
-                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
-                    break;
-                case "Virtual Cloud Network - OPS":
-                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
-                    break;
-                case "Virtual Cloud Network - AWS":
-                    manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
-                    break;
-                default:
-                    throw new EJBException("cannot get manifest for service type=" + serviceType);
+            case "Dynamic Network Connection":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateDNC, auth);
+                break;
+            case "Advanced Hybrid Cloud":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAHC, auth);
+                break;
+            case "Virtual Cloud Network - OPS":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateOPS, auth);
+                break;
+            case "Virtual Cloud Network - AWS":
+                manifest = this.resolveManifest(svcUUID, ManifestTemplate.jsonTemplateAWS, auth);
+                break;
+            default:
+                throw new EJBException("cannot get manifest for service type=" + serviceType);
             }
             org.json.JSONObject obj = new org.json.JSONObject(manifest);
             if (!obj.has("jsonTemplate")) {
@@ -1820,7 +1647,8 @@ public class WebResource {
         ResultSet rs = null;
         try {
             ArrayList<ArrayList<String>> retList = new ArrayList<>();
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                    .getAttribute(KeycloakSecurityContext.class.getName());
             AccessToken accessToken = securityContext.getToken();
             String username = accessToken.getPreferredUsername();
 
@@ -1830,8 +1658,7 @@ public class WebResource {
                 prep = front_conn.prepareStatement("SELECT DISTINCT * FROM service_wizard");
             } else {
                 prep = front_conn.prepareStatement("SELECT DISTINCT W.* FROM service_wizard W "
-                        + "LEFT JOIN service_wizard_licenses L "
-                        + "ON (W.service_wizard_id = L.service_wizard_id) "
+                        + "LEFT JOIN service_wizard_licenses L " + "ON (W.service_wizard_id = L.service_wizard_id) "
                         + "WHERE W.owner = ? OR L.username = ?");
                 prep.setString(1, username);
                 prep.setString(2, username);
@@ -1917,7 +1744,8 @@ public class WebResource {
         PreparedStatement prep = null;
         ResultSet rs = null;
         try {
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class.getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                    .getAttribute(KeycloakSecurityContext.class.getName());
             AccessToken accessToken = securityContext.getToken();
             String username = accessToken.getPreferredUsername();
 
@@ -1954,7 +1782,8 @@ public class WebResource {
 
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT * FROM service_instance WHERE referenceUUID = ? ORDER BY service_instance_id DESC");
+            prep = front_conn.prepareStatement(
+                    "SELECT * FROM service_instance WHERE referenceUUID = ? ORDER BY service_instance_id DESC");
             prep.setString(1, uuid);
 
             rs = prep.executeQuery();
@@ -2023,13 +1852,14 @@ public class WebResource {
      * @apiUse AuthHeader
      * @apiParam {String} siUUID instance UUID
      *
-     * @apiExample {curl} Example Call:
-     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl -X DELETE
+     *             http://localhost:8080/StackV-web/restapi/app/service/49f3d197-de3e-464c-aaa8-d3fe5f14af0b
+     *             -H "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @GET
     @Path(value = "/details/{siUUID}/verification/drone")
-    public String hasVerifyDrone(@PathParam(value = "siUUID") final String refUUID) throws SQLException, IOException, InterruptedException {
+    public String hasVerifyDrone(@PathParam(value = "siUUID") final String refUUID)
+            throws SQLException, IOException, InterruptedException {
         String method = "hasVerifyDrone";
 
         Connection front_conn = null;
@@ -2038,8 +1868,8 @@ public class WebResource {
         try {
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT timestamp FROM service_verification "
-                    + "WHERE instanceUUID = ?");
+            prep = front_conn
+                    .prepareStatement("SELECT timestamp FROM service_verification " + "WHERE instanceUUID = ?");
             prep.setString(1, refUUID);
             rs = prep.executeQuery();
             while (rs.next()) {
@@ -2050,8 +1880,10 @@ public class WebResource {
                 }
                 Timestamp now = new Timestamp(System.currentTimeMillis());
 
-                final BigInteger firstTime = BigInteger.valueOf(time.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(time.getNanos()));
-                final BigInteger secondTime = BigInteger.valueOf(now.getTime() / 1000 * 1000).multiply(ONE_BILLION).add(BigInteger.valueOf(now.getNanos()));
+                final BigInteger firstTime = BigInteger.valueOf(time.getTime() / 1000 * 1000).multiply(ONE_BILLION)
+                        .add(BigInteger.valueOf(time.getNanos()));
+                final BigInteger secondTime = BigInteger.valueOf(now.getTime() / 1000 * 1000).multiply(ONE_BILLION)
+                        .add(BigInteger.valueOf(now.getNanos()));
                 int diff = (firstTime.subtract(secondTime)).divide(new BigInteger("1000000000000")).intValue();
 
                 if (diff < -1) {
@@ -2108,7 +1940,8 @@ public class WebResource {
         try {
             HashMap<String, String> retMap = new HashMap<>();
             front_conn = factory.getConnection("frontend");
-            prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+            prep = front_conn.prepareStatement(
+                    "SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, serviceUUID);
             rs = prep.executeQuery();
             while (rs.next()) {
@@ -2141,10 +1974,10 @@ public class WebResource {
         ResultSet rs = null;
         logger.refuuid(serviceUUID);
         try {
-            HashMap<String, String> retMap = new HashMap<>();
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
+            prep = front_conn.prepareStatement(
+                    "SELECT V.* FROM service_instance I, service_verification V WHERE I.referenceUUID = ? AND V.service_instance_id = I.service_instance_id");
             prep.setString(1, serviceUUID);
             rs = prep.executeQuery();
             String verified_addition = "";
@@ -2196,7 +2029,8 @@ public class WebResource {
         try {
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
+            prep = front_conn.prepareStatement(
+                    "SELECT COUNT(*) FROM service_delta D, service_instance I WHERE D.service_instance_id = I.service_instance_id AND I.referenceUUID = ?");
             prep.setString(1, serviceUUID);
             rs = prep.executeQuery();
             rs.next();
@@ -2222,8 +2056,8 @@ public class WebResource {
 
     @GET
     @Path("/access/{category}/{uuid}")
-    public String verifyPanel(@PathParam("category") String category, @PathParam("uuid") String uuid) throws SQLException {
-        String method = "verifyPanel";
+    public String verifyPanel(@PathParam("category") String category, @PathParam("uuid") String uuid)
+            throws SQLException {
         return Boolean.toString(verifyAccess(category, uuid));
     }
 
@@ -2236,60 +2070,61 @@ public class WebResource {
      * @apiUse AuthHeader
      * @apiParam {String} wizardID wizard ID
      *
-     * @apiExample {curl} Example Call:
-     * curl http://localhost:8080/StackV-web/restapi/app/profile/11
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl
+     *             http://localhost:8080/StackV-web/restapi/app/profile/11 -H
+     *             "Authorization: bearer $KC_ACCESS_TOKEN"
      *
      * @apiSuccess {JSONObject} wizard_json Profile JSON
-     * @apiSuccessExample {json} Example Response:
-     * {"username": "admin","type": "netcreate","alias": "VCN.OPS.1VM_Ext.233","data": {"virtual_clouds": []}}
+     * @apiSuccessExample {json} Example Response: {"username": "admin","type":
+     *                    "netcreate","alias": "VCN.OPS.1VM_Ext.233","data":
+     *                    {"virtual_clouds": []}}
      */
     @GET
     @Path("/profile/{wizardID}")
     @Produces("application/json")
     public String getProfile(@PathParam("wizardID") int wizardID) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         try {
             if (verifyAccess("profiles", wizardID)) {
-                String method = "getProfile";
-                front_conn = factory.getConnection("frontend");
-                JSONObject profJSON = new JSONObject();
+                try (Connection front_conn = factory.getConnection("frontend");) {
+                    JSONObject profJSON = new JSONObject();
+                    try (PreparedStatement prep = front_conn
+                            .prepareStatement("SELECT * FROM service_wizard WHERE service_wizard_id = ?");) {
+                        prep.setInt(1, wizardID);
+                        try (ResultSet rs = prep.executeQuery();) {
+                            while (rs.next()) {
+                                profJSON.put("name", rs.getString("name"));
+                                profJSON.put("wizard_json", rs.getString("wizard_json"));
+                                profJSON.put("owner", rs.getString("owner"));
+                                profJSON.put("editable", rs.getString("editable"));
+                                profJSON.put("authorized", rs.getString("authorized"));
+                                profJSON.put("description", rs.getString("description"));
+                            }
+                        }
+                    }
 
-                prep = front_conn.prepareStatement("SELECT * FROM service_wizard WHERE service_wizard_id = ?");
-                prep.setInt(1, wizardID);
-                rs = prep.executeQuery();
-                while (rs.next()) {
-                    profJSON.put("name", rs.getString("name"));
-                    profJSON.put("wizard_json", rs.getString("wizard_json"));
-                    profJSON.put("owner", rs.getString("owner"));
-                    profJSON.put("editable", rs.getString("editable"));
-                    profJSON.put("authorized", rs.getString("authorized"));
-                    profJSON.put("description", rs.getString("description"));
+                    try (PreparedStatement prep = front_conn.prepareStatement(
+                            "SELECT DISTINCT * FROM service_wizard_licenses WHERE service_wizard_id = ?");) {
+                        prep.setInt(1, wizardID);
+                        try (ResultSet rs = prep.executeQuery();) {
+                            JSONArray licenseJSON = new JSONArray();
+                            while (rs.next()) {
+                                JSONObject obj = new JSONObject();
+                                obj.put("remaining", rs.getInt("remaining"));
+                                obj.put("type", rs.getString("type"));
+                                obj.put("username", rs.getString("username"));
+                                licenseJSON.add(obj);
+                            }
+                            profJSON.put("licenses", licenseJSON);
+
+                            return profJSON.toJSONString();
+                        }
+                    }
                 }
-
-                prep = front_conn.prepareStatement("SELECT DISTINCT * FROM service_wizard_licenses WHERE service_wizard_id = ?");
-                prep.setInt(1, wizardID);
-                rs = prep.executeQuery();
-                JSONArray licenseJSON = new JSONArray();
-                while (rs.next()) {
-                    JSONObject obj = new JSONObject();
-                    obj.put("remaining", rs.getInt("remaining"));
-                    obj.put("type", rs.getString("type"));
-                    obj.put("username", rs.getString("username"));
-                    licenseJSON.add(obj);
-                }
-                profJSON.put("licenses", licenseJSON);
-
-                return profJSON.toJSONString();
             }
             return "";
         } catch (SQLException ex) {
             logger.catching("getProfile", ex);
             throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2302,15 +2137,16 @@ public class WebResource {
      * @apiParam {String} wizardID wizard ID
      * @apiParam {JSONObject} inputString Profile JSON
      *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl -X PUT -d @newprofile.json -H
+     *             "Content-Type: application/json"
+     *             http://localhost:8080/StackV-web/restapi/app/profile/11/edit -H
+     *             "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @PUT
     @Path("/profile/{wizardID}/edit")
     @RolesAllowed("F_Profiles-W")
-    public void editProfile(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
+    public void editProfile(@PathParam("wizardID") int wizardID, final String inputString)
+            throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2328,8 +2164,8 @@ public class WebResource {
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
-                // TODO: Sanitize the input!
-                prep = front_conn.prepareStatement("UPDATE service_wizard SET wizard_json = ?, editable = ?, last_edited = ? WHERE service_wizard_id = ? ");
+                prep = front_conn.prepareStatement(
+                        "UPDATE service_wizard SET wizard_json = ?, editable = ?, last_edited = ? WHERE service_wizard_id = ? ");
                 prep.setString(1, (String) inputJSON.get("data"));
                 prep.setString(2, editable);
                 prep.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
@@ -2354,15 +2190,16 @@ public class WebResource {
      * @apiParam {String} wizardID wizard ID
      * @apiParam {JSONObject} inputString Profile JSON
      *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl -X PUT -d @newprofile.json -H
+     *             "Content-Type: application/json"
+     *             http://localhost:8080/StackV-web/restapi/app/profile/11/edit -H
+     *             "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @PUT
     @Path("/profile/{wizardID}/meta")
     @RolesAllowed("F_Profiles-W")
-    public void editProfileMetadata(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
+    public void editProfileMetadata(@PathParam("wizardID") int wizardID, final String inputString)
+            throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2374,8 +2211,8 @@ public class WebResource {
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
-                // TODO: Sanitize the input!
-                prep = front_conn.prepareStatement("UPDATE service_wizard SET name = ?, description = ? WHERE service_wizard_id = ? ");
+                prep = front_conn.prepareStatement(
+                        "UPDATE service_wizard SET name = ?, description = ? WHERE service_wizard_id = ? ");
                 prep.setString(1, (String) inputJSON.get("name"));
                 prep.setString(2, (String) inputJSON.get("description"));
                 prep.setInt(3, wizardID);
@@ -2399,16 +2236,17 @@ public class WebResource {
      * @apiParam {String} wizardID wizard ID
      * @apiParam {JSONObject} inputString Profile JSON
      *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl -X PUT -d @newprofile.json -H
+     *             "Content-Type: application/json"
+     *             http://localhost:8080/StackV-web/restapi/app/profile/11/edit -H
+     *             "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @POST
     @Path("/profile/{wizardID}/licenses")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     @RolesAllowed("F_Profiles-W")
-    public void addProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
+    public void addProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString)
+            throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2421,7 +2259,8 @@ public class WebResource {
                 logger.trace_start(method);
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
-                prep = front_conn.prepareStatement("INSERT INTO service_wizard_licenses (service_wizard_id, type, remaining, username) VALUES (?,?,?,?)");
+                prep = front_conn.prepareStatement(
+                        "INSERT INTO service_wizard_licenses (service_wizard_id, type, remaining, username) VALUES (?,?,?,?)");
                 prep.setInt(1, wizardID);
                 prep.setString(2, (String) inputJSON.get("type"));
                 prep.setInt(3, Integer.parseInt((String) inputJSON.get("remaining")));
@@ -2446,16 +2285,17 @@ public class WebResource {
      * @apiParam {String} wizardID wizard ID
      * @apiParam {JSONObject} inputString Profile JSON
      *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl -X PUT -d @newprofile.json -H
+     *             "Content-Type: application/json"
+     *             http://localhost:8080/StackV-web/restapi/app/profile/11/edit -H
+     *             "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @PUT
     @Path("/profile/{wizardID}/licenses")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     @RolesAllowed("F_Profiles-W")
-    public void editProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString) throws SQLException, ParseException {
+    public void editProfileLicenses(@PathParam("wizardID") int wizardID, final String inputString)
+            throws SQLException, ParseException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2469,12 +2309,14 @@ public class WebResource {
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
                 if (Integer.parseInt((String) inputJSON.get("remaining")) <= 0) {
-                    prep = front_conn.prepareStatement("DELETE FROM service_wizard_licenses WHERE service_wizard_id = ? AND username = ?");
+                    prep = front_conn.prepareStatement(
+                            "DELETE FROM service_wizard_licenses WHERE service_wizard_id = ? AND username = ?");
                     prep.setInt(1, wizardID);
                     prep.setString(2, (String) inputJSON.get("username"));
                     prep.executeUpdate();
                 } else {
-                    prep = front_conn.prepareStatement("UPDATE service_wizard_licenses SET remaining = ?, type = ? WHERE service_wizard_id = ? AND username = ?");
+                    prep = front_conn.prepareStatement(
+                            "UPDATE service_wizard_licenses SET remaining = ?, type = ? WHERE service_wizard_id = ? AND username = ?");
                     prep.setInt(1, Integer.parseInt((String) inputJSON.get("remaining")));
                     prep.setString(2, (String) inputJSON.get("type"));
                     prep.setInt(3, wizardID);
@@ -2503,9 +2345,10 @@ public class WebResource {
      */
     @GET
     @Path("/profile/{wizardID}/uses/{username}")
-    @Consumes(value = {"application/json"})
+    @Consumes(value = { "application/json" })
     @RolesAllowed("F_Profiles-R")
-    public String getProfileLicenseUsage(@PathParam("wizardID") int wizardID, @PathParam("username") String username) throws SQLException {
+    public String getProfileLicenseUsage(@PathParam("wizardID") int wizardID, @PathParam("username") String username)
+            throws SQLException {
         Connection front_conn = null;
         PreparedStatement prep = null;
         ResultSet rs = null;
@@ -2515,8 +2358,8 @@ public class WebResource {
                 // Connect to the DB
                 front_conn = factory.getConnection("frontend");
 
-                prep = front_conn.prepareStatement("SELECT COUNT(*) FROM service_instance WHERE"
-                        + " service_wizard_id = ? AND username = ?");
+                prep = front_conn.prepareStatement(
+                        "SELECT COUNT(*) FROM service_instance WHERE" + " service_wizard_id = ? AND username = ?");
                 prep.setInt(1, wizardID);
                 prep.setString(2, username);
                 prep.executeQuery();
@@ -2542,75 +2385,75 @@ public class WebResource {
      * @apiUse AuthHeader
      * @apiParam {JSONObject} inputString Profile JSON
      *
-     * @apiExample {curl} Example Call:
-     * curl -X PUT -d @newprofile.json -H "Content-Type: application/json"
-     * http://localhost:8080/StackV-web/restapi/app/profile/11/edit
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl -X PUT -d @newprofile.json -H
+     *             "Content-Type: application/json"
+     *             http://localhost:8080/StackV-web/restapi/app/profile/11/edit -H
+     *             "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @PUT
     @Path("/profile/new")
     @RolesAllowed("F_Profiles-W")
     public String newProfile(final String inputString) throws SQLException, ParseException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         try {
             String method = "newProfile";
             logger.start(method);
+            try (Connection front_conn = factory.getConnection("frontend");) {
+                Object obj = parser.parse(inputString);
+                JSONObject inputJSON = (JSONObject) obj;
 
-            front_conn = factory.getConnection("frontend");
-            Object obj = parser.parse(inputString);
-            JSONObject inputJSON = (JSONObject) obj;
+                String name = (String) inputJSON.get("name");
+                String description = (String) inputJSON.get("description");
+                String username = (String) inputJSON.get("username");
+                JSONArray licenseArr = (JSONArray) inputJSON.get("licenses");
 
-            String name = (String) inputJSON.get("name");
-            String description = (String) inputJSON.get("description");
-            String username = (String) inputJSON.get("username");
-            JSONArray licenseArr = (JSONArray) inputJSON.get("licenses");
+                JSONObject inputData = (JSONObject) inputJSON.get("data");
+                inputData.remove("uuid");
+                if (inputData.containsKey("options") && ((JSONArray) inputData.get("options")).isEmpty()) {
+                    inputData.remove("options");
+                }
+                String inputDataString = inputData.toJSONString();
 
-            JSONObject inputData = (JSONObject) inputJSON.get("data");
-            inputData.remove("uuid");
-            if (inputData.containsKey("options") && ((JSONArray) inputData.get("options")).isEmpty()) {
-                inputData.remove("options");
-            }
-            String inputDataString = inputData.toJSONString();
-
-            int authorized = (verifyUserRole("A_Admin")) ? 1 : 0;
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard` "
-                    + "(owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");
-            prep.setString(1, username);
-            prep.setString(2, name);
-            prep.setString(3, inputDataString);
-            prep.setString(4, description);
-            prep.setInt(5, 0);
-            prep.setInt(6, authorized);
-            prep.executeUpdate();
-
-            prep = front_conn.prepareStatement("SELECT service_wizard_id FROM service_wizard WHERE owner = ? AND name = ?");
-            prep.setString(1, username);
-            prep.setString(2, name);
-            rs = prep.executeQuery();
-            rs.next();
-            int wizardID = rs.getInt("service_wizard_id");
-
-            if (licenseArr != null) {
-                for (Object obj2 : licenseArr) {
-                    JSONObject licenseObj = (JSONObject) obj2;
-                    prep = front_conn.prepareStatement("INSERT INTO `frontend`.`service_wizard_licenses` "
-                            + "(service_wizard_id, username, remaining) VALUES (?, ?, ?)");
-                    prep.setInt(1, wizardID);
-                    prep.setString(2, (String) licenseObj.get("username"));
-                    prep.setInt(3, (Integer) licenseObj.get("remaining"));
+                int authorized = (verifyUserRole("A_Admin")) ? 1 : 0;
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "INSERT INTO `frontend`.`service_wizard` (owner, name, wizard_json, description, editable, authorized) VALUES (?, ?, ?, ?, ?, ?)");) {
+                    prep.setString(1, username);
+                    prep.setString(2, name);
+                    prep.setString(3, inputDataString);
+                    prep.setString(4, description);
+                    prep.setInt(5, 0);
+                    prep.setInt(6, authorized);
                     prep.executeUpdate();
                 }
-            }
 
-            logger.end(method);
-            return null;
+                int wizardID;
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "SELECT service_wizard_id FROM service_wizard WHERE owner = ? AND name = ?");) {
+                    prep.setString(1, username);
+                    prep.setString(2, name);
+                    try (ResultSet rs = prep.executeQuery();) {
+                        rs.next();
+                        wizardID = rs.getInt("service_wizard_id");
+                    }
+                }
+                if (licenseArr != null) {
+                    for (Object obj2 : licenseArr) {
+                        JSONObject licenseObj = (JSONObject) obj2;
+                        try (PreparedStatement prep = front_conn.prepareStatement(
+                                "INSERT INTO `frontend`.`service_wizard_licenses` (service_wizard_id, username, remaining) VALUES (?, ?, ?)");) {
+                            prep.setInt(1, wizardID);
+                            prep.setString(2, (String) licenseObj.get("username"));
+                            prep.setInt(3, (Integer) licenseObj.get("remaining"));
+                            prep.executeUpdate();
+                        }
+                    }
+                }
+
+                logger.end(method);
+                return null;
+            }
         } catch (SQLException | ParseException ex) {
             logger.catching("newProfile", ex);
             throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -2622,9 +2465,9 @@ public class WebResource {
      * @apiUse AuthHeader
      * @apiParam {String} wizardID wizard ID
      *
-     * @apiExample {curl} Example Call:
-     * curl -X DELETE http://localhost:8080/StackV-web/restapi/app/profile/11
-     * -H "Authorization: bearer $KC_ACCESS_TOKEN"
+     * @apiExample {curl} Example Call: curl -X DELETE
+     *             http://localhost:8080/StackV-web/restapi/app/profile/11 -H
+     *             "Authorization: bearer $KC_ACCESS_TOKEN"
      */
     @DELETE
     @Path("/profile/{wizardId}")
@@ -2663,9 +2506,10 @@ public class WebResource {
      */
     @POST
     @Path(value = "/profile")
-    @Consumes(value = {"application/json", "application/xml"})
+    @Consumes(value = { "application/json", "application/xml" })
     @RolesAllowed("F_Profiles-X")
-    public javax.ws.rs.core.Response executeProfile(final String inputString) throws SQLException, IOException, ParseException, InterruptedException {
+    public javax.ws.rs.core.Response executeProfile(final String inputString)
+            throws SQLException, IOException, ParseException, InterruptedException {
         final String method = "executeProfile";
         logger.start(method);
         Connection front_conn = null;
@@ -2680,8 +2524,8 @@ public class WebResource {
             String serviceType = (String) inputJSON.get("service");
 
             // Authorize service.
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                    .getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                    .getAttribute(KeycloakSecurityContext.class.getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
@@ -2727,7 +2571,8 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, true);
-                            } catch (SQLException | EJBException | IOException | InterruptedException | ParseException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException
+                                    | ParseException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -2738,7 +2583,8 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, false);
-                            } catch (SQLException | EJBException | IOException | InterruptedException | ParseException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException
+                                    | ParseException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -2773,7 +2619,6 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/substatus")
     public String subStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
-        final String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
 
@@ -2784,15 +2629,17 @@ public class WebResource {
 
     @POST
     @Path(value = "/service")
-    @Consumes(value = {"application/json", "application/xml"})
-    public String createService(final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
+    @Consumes(value = { "application/json", "application/xml" })
+    public String createService(final String inputString)
+            throws IOException, EJBException, SQLException, InterruptedException {
         return createService(null, inputString);
     }
 
     @POST
     @Path(value = "/service/{siUUID}")
-    @Consumes(value = {"application/json", "application/xml"})
-    public String createService(@PathParam(value = "siUUID") final String siUUID, final String inputString) throws IOException, EJBException, SQLException, InterruptedException {
+    @Consumes(value = { "application/json", "application/xml" })
+    public String createService(@PathParam(value = "siUUID") final String siUUID, final String inputString)
+            throws IOException, EJBException, SQLException, InterruptedException {
         final String method = "createService";
         try {
             logger.start(method, "Thread:" + Thread.currentThread());
@@ -2804,8 +2651,8 @@ public class WebResource {
             String serviceType = (String) inputJSON.get("service");
 
             // Authorize service.
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                    .getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                    .getAttribute(KeycloakSecurityContext.class.getName());
             final AccessToken accessToken = securityContext.getToken();
             Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
@@ -2845,7 +2692,8 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, true);
-                            } catch (SQLException | EJBException | IOException | InterruptedException | ParseException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException
+                                    | ParseException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -2856,7 +2704,8 @@ public class WebResource {
                         public void run() {
                             try {
                                 doCreateService(inputJSON, token, refUUID, false);
-                            } catch (SQLException | EJBException | IOException | InterruptedException | ParseException ex) {
+                            } catch (SQLException | EJBException | IOException | InterruptedException
+                                    | ParseException ex) {
                                 logger.catching(method, ex);
                             }
                         }
@@ -2915,7 +2764,8 @@ public class WebResource {
             String stateStr = state.toUpperCase();
 
             front_conn = factory.getConnection("frontend");
-            prep = front_conn.prepareStatement("UPDATE `frontend`.`service_instance` SET `super_state` = ? WHERE `service_instance`.`referenceUUID` = ?");
+            prep = front_conn.prepareStatement(
+                    "UPDATE `frontend`.`service_instance` SET `super_state` = ? WHERE `service_instance`.`referenceUUID` = ?");
             prep.setString(1, stateStr);
             prep.setString(2, refUUID);
             prep.executeUpdate();
@@ -2932,9 +2782,8 @@ public class WebResource {
 
     @PUT
     @Path(value = "/service/{siUUID}/{action}")
-    public String operate(@PathParam(value = "siUUID")
-            final String refUuid, @PathParam(value = "action")
-            final String action) throws IOException {
+    public String operate(@PathParam(value = "siUUID") final String refUuid,
+            @PathParam(value = "action") final String action) throws IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         final String method = "operate";
@@ -2956,9 +2805,8 @@ public class WebResource {
 
     @PUT
     @Path(value = "/service/{siUUID}/{action}/sync")
-    public void operateSync(@PathParam(value = "siUUID")
-            final String refUuid, @PathParam(value = "action")
-            final String action) throws SQLException, InterruptedException, IOException {
+    public void operateSync(@PathParam(value = "siUUID") final String refUuid,
+            @PathParam(value = "action") final String action) throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         String method = "operateSync";
@@ -2969,8 +2817,8 @@ public class WebResource {
 
     @GET
     @Path(value = "/service/{siUUID}/call_verify")
-    public String callVerify(@PathParam(value = "siUUID")
-            final String refUUID) throws SQLException, InterruptedException, IOException {
+    public String callVerify(@PathParam(value = "siUUID") final String refUUID)
+            throws SQLException, InterruptedException, IOException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         String method = "callVerify";
@@ -2982,7 +2830,8 @@ public class WebResource {
 
     @DELETE
     @Path(value = "/service/{siUUID}/{action}")
-    public void delete(@PathParam(value = "siUUID") final String refUuid) throws SQLException, IOException, InterruptedException {
+    public void delete(@PathParam(value = "siUUID") final String refUuid)
+            throws SQLException, IOException, InterruptedException {
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
         String method = "operate";
@@ -2992,7 +2841,8 @@ public class WebResource {
     }
 
     // Async Methods -----------------------------------------------------------
-    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException, ParseException {
+    private void doCreateService(JSONObject inputJSON, TokenHandler token, String refUUID, boolean autoProceed)
+            throws EJBException, SQLException, IOException, InterruptedException, ParseException {
         TemplateEngine template = new TemplateEngine();
 
         String retString = template.apply(inputJSON);
@@ -3010,21 +2860,11 @@ public class WebResource {
         inputJSON.put("intent", inputJSON.toJSONString());
         inputJSON.put("data", retString);
 
-        ServiceHandler instance = new ServiceHandler(inputJSON, token, refUUID, autoProceed);
+        new ServiceHandler(inputJSON, token, refUUID, autoProceed);
     }
 
-    private void negotiateService(JSONObject inputJSON, TokenHandler token, String refUUID) throws EJBException, SQLException, IOException, InterruptedException {
-        TemplateEngine template = new TemplateEngine();
-
-        //System.out.println("\n\n\nTemplate Input:\n" + inputJSON.toString());
-        String retString = template.apply(inputJSON);
-        retString = retString.replace("&lt;", "<").replace("&gt;", ">");
-        //System.out.println("\n\n\nResult:\n" + retString);
-        inputJSON.put("data", retString);
-        ServiceEngine.orchestrateInstance(refUUID, inputJSON, (String) inputJSON.get("uuid"), token, false);
-    }
-
-    private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action, TokenHandler token) throws SQLException, IOException, InterruptedException {
+    private String doOperate(@PathParam("siUUID") String refUUID, @PathParam("action") String action,
+            TokenHandler token) throws SQLException, IOException, InterruptedException {
         ServiceHandler instance = new ServiceHandler(refUUID, token);
         instance.operate(action);
 
@@ -3035,22 +2875,23 @@ public class WebResource {
     /**
      * Executes HTTP Request.
      *
-     * @param url destination url
-     * @param conn connection object
-     * @param method request method
-     * @param body request body
+     * @param url        destination url
+     * @param conn       connection object
+     * @param method     request method
+     * @param body       request body
      * @param authHeader authorization header
      * @return response string.
      * @throws IOException
      */
-    public static String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body, String authHeader) throws IOException {
+    public static String executeHttpMethod(URL url, HttpURLConnection conn, String method, String body,
+            String authHeader) throws IOException {
         conn.setRequestMethod(method);
         conn.setRequestProperty("Content-type", "application/xml");
         conn.setRequestProperty("Accept", "application/json");
 
         if (authHeader != null) {
             conn.setRequestProperty("Authorization", authHeader);
-            //logger.log(Level.INFO, "{0} header added", authHeader);
+            // logger.log(Level.INFO, "{0} header added", authHeader);
         }
 
         if (body != null && !body.isEmpty()) {
@@ -3061,7 +2902,7 @@ public class WebResource {
             }
         }
 
-        int responseCode = conn.getResponseCode();
+        conn.getResponseCode();
         StringBuilder responseStr;
         try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             String inputLine;
@@ -3093,35 +2934,9 @@ public class WebResource {
         }
     }
 
-    private String authUsername(String subject) {
-        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                .getName());
-        AccessToken accessToken = securityContext.getToken();
-        if (accessToken.getSubject().equals(subject)) {
-            return accessToken.getPreferredUsername();
-        } else {
-            return null;
-        }
-    }
-
-    private String JSONtoxml(JSONObject JSONdata, String drivertype) {
-        String xmldata = "<driverInstance><properties>\n";
-        xmldata += "\t<entry><key>topologyUri</key><value>" + JSONdata.get("TOPURI") + "</value></entry>\n";
-        xmldata += "\t<entry><key>driverEjbPath</key><value>java:module/" + drivertype + "</value></entry>\n";
-
-        Set<String> key = new HashSet<>(JSONdata.keySet());
-        for (String i : key) {
-            if (!(i.equals("TOPURI")) && !(i.equals("drivertype"))) {
-                xmldata += "\t<entry><key>" + i + "</key><value>" + JSONdata.get(i) + "</value></entry>\n";
-            }
-        }
-        xmldata += "</properties></driverInstance>";
-        return xmldata;
-    }
-
     private boolean verifyUserRole(String role) {
-        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                .getName());
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                .getAttribute(KeycloakSecurityContext.class.getName());
         final AccessToken accessToken = securityContext.getToken();
 
         Set<String> roleSet;
@@ -3141,51 +2956,50 @@ public class WebResource {
     }
 
     private boolean verifyAccess(String category, int id) throws SQLException {
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         String method = "verifyAccess";
-        try {
-            front_conn = factory.getConnection("frontend");
-
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                    .getName());
+        try (Connection front_conn = factory.getConnection("frontend");) {
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                    .getAttribute(KeycloakSecurityContext.class.getName());
             final AccessToken accessToken = securityContext.getToken();
-            Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
 
             boolean result = false;
             switch (category) {
-                case "profiles":
-                    HashSet<String> nameSet = new HashSet<>();
-                    prep = front_conn.prepareStatement("SELECT DISTINCT owner FROM service_wizard WHERE service_wizard_id = ?");
+            case "profiles":
+                HashSet<String> nameSet = new HashSet<>();
+                try (PreparedStatement prep = front_conn
+                        .prepareStatement("SELECT DISTINCT owner FROM service_wizard WHERE service_wizard_id = ?");) {
                     prep.setInt(1, id);
-                    rs = prep.executeQuery();
-                    while (rs.next()) {
-                        nameSet.add(rs.getString("owner"));
+                    try (ResultSet rs = prep.executeQuery();) {
+                        while (rs.next()) {
+                            nameSet.add(rs.getString("owner"));
+                        }
                     }
-                    prep = front_conn.prepareStatement("SELECT DISTINCT username FROM service_wizard_licenses WHERE service_wizard_id = ?");
+                }
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "SELECT DISTINCT username FROM service_wizard_licenses WHERE service_wizard_id = ?");) {
                     prep.setInt(1, id);
-                    rs = prep.executeQuery();
-                    while (rs.next()) {
-                        nameSet.add(rs.getString("username"));
-                    }
+                    try (ResultSet rs = prep.executeQuery();) {
+                        while (rs.next()) {
+                            nameSet.add(rs.getString("username"));
+                        }
 
-                    result = nameSet.contains(username);
-                    break;
+                        result = nameSet.contains(username);
+                        break;
+                    }
+                }
             }
 
             if (result) {
                 return true;
             } else {
-                logger.warning(method, "User " + username + " refused access to resource [" + category + "], ID: " + id);
+                logger.warning(method,
+                        "User " + username + " refused access to resource [" + category + "], ID: " + id);
                 return false;
             }
         } catch (SQLException ex) {
             logger.catching(method, ex);
             throw ex;
-        } finally {
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -3197,33 +3011,33 @@ public class WebResource {
         try {
             front_conn = factory.getConnection("frontend");
 
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest.getAttribute(KeycloakSecurityContext.class
-                    .getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                    .getAttribute(KeycloakSecurityContext.class.getName());
             final AccessToken accessToken = securityContext.getToken();
-            Set<String> roleSet = accessToken.getRealmAccess().getRoles();
             String username = accessToken.getPreferredUsername();
 
             boolean result = false;
             switch (category) {
-                case "instances":
-                    prep = front_conn.prepareStatement("SELECT subject FROM acl WHERE object = ?");
-                    prep.setString(1, uuid);
-                    rs = prep.executeQuery();
+            case "instances":
+                prep = front_conn.prepareStatement("SELECT subject FROM acl WHERE object = ?");
+                prep.setString(1, uuid);
+                rs = prep.executeQuery();
 
-                    while (rs.next()) {
-                        if (rs.getString("subject").equals(username)) {
-                            result = true;
-                            break;
-                        }
+                while (rs.next()) {
+                    if (rs.getString("subject").equals(username)) {
+                        result = true;
+                        break;
                     }
-                    break;
+                }
+                break;
 
             }
 
             if (result) {
                 return true;
             } else {
-                logger.warning(method, "User " + username + " refused access to resource [" + category + "], UUID: " + uuid);
+                logger.warning(method,
+                        "User " + username + " refused access to resource [" + category + "], UUID: " + uuid);
                 return false;
             }
         } catch (SQLException ex) {

@@ -22,6 +22,9 @@
  */
 package net.maxgigapop.mrs.service;
 
+import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
+import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -31,22 +34,27 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+
 import javax.ejb.EJBException;
-import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.common.TokenHandler;
-import net.maxgigapop.mrs.rest.api.JNDIFactory;
-import static net.maxgigapop.mrs.rest.api.WebResource.executeHttpMethod;
-import static net.maxgigapop.mrs.rest.api.WebResource.SuperState;
-import static net.maxgigapop.mrs.rest.api.WebResource.commonsClose;
+
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.rest.api.JNDIFactory;
+import net.maxgigapop.mrs.rest.api.TokenHandler;
+import net.maxgigapop.mrs.rest.api.WebResource.SuperState;
 
 public class ServiceHandler {
 
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "ServiceHandler");
     private final static String HOST = "http://127.0.0.1:8080/StackV-web/restapi";
     private final JNDIFactory factory = new JNDIFactory();
+    private static final OkHttpClient client = new OkHttpClient();
     JSONParser parser = new JSONParser();
 
     TokenHandler token;
@@ -58,7 +66,8 @@ public class ServiceHandler {
     String lastState = "INIT";
     String intent;
 
-    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException, ParseException {
+    public ServiceHandler(JSONObject input, TokenHandler initToken, String refUUID, boolean autoProceed)
+            throws EJBException, SQLException, IOException, InterruptedException, ParseException {
         token = initToken;
 
         createInstance(input, refUUID, autoProceed);
@@ -73,12 +82,10 @@ public class ServiceHandler {
     }
 
     // INIT METHODS
-    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed) throws EJBException, SQLException, IOException, InterruptedException, ParseException {
+    private void createInstance(JSONObject inputJSON, String refUUID, boolean autoProceed)
+            throws EJBException, SQLException, IOException, InterruptedException, ParseException {
         String method = "createInstance";
         logger.refuuid(refUUID);
-        Connection front_conn = null;
-        PreparedStatement prep = null;
-        ResultSet rs = null;
         try {
             logger.start(method);
 
@@ -113,57 +120,61 @@ public class ServiceHandler {
                 logger.catching(method, ex);
             }
 
-            front_conn = factory.getConnection("frontend");
+            try (Connection front_conn = factory.getConnection("frontend");) {
 
-            // Initialize service parameters.
-            Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
+                // Initialize service parameters.
+                Timestamp timeStamp = new Timestamp(System.currentTimeMillis());
 
-            // Install Instance into DB.
-            prep = front_conn.prepareStatement("INSERT INTO frontend.service_instance "
-                    + "(`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`, `intent`, `service_wizard_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            prep.setString(1, type);
-            prep.setString(2, owner);
-            prep.setTimestamp(3, timeStamp);
-            prep.setString(4, refUUID);
-            prep.setString(5, alias);
-            prep.setString(6, "CREATE");
-            prep.setString(7, lastState);
-            prep.setString(8, cleanIntent);
-            prep.setString(9, profileID);
-            prep.executeUpdate();
+                // Install Instance into DB.
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "INSERT INTO frontend.service_instance (`type`, `username`, `creation_time`, `referenceUUID`, `alias_name`, `super_state`, `last_state`, `intent`, `service_wizard_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");) {
+                    prep.setString(1, type);
+                    prep.setString(2, owner);
+                    prep.setTimestamp(3, timeStamp);
+                    prep.setString(4, refUUID);
+                    prep.setString(5, alias);
+                    prep.setString(6, "CREATE");
+                    prep.setString(7, lastState);
+                    prep.setString(8, cleanIntent);
+                    prep.setString(9, profileID);
+                    prep.executeUpdate();
+                }
+                superState = SuperState.CREATE;
 
-            superState = SuperState.CREATE;
+                int instanceID;
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");) {
+                    prep.setString(1, refUUID);
+                    try (ResultSet rs = prep.executeQuery();) {
+                        rs.next();
+                        instanceID = rs.getInt("service_instance_id");
+                    }
+                }
 
-            prep = front_conn.prepareStatement("SELECT service_instance_id FROM service_instance WHERE referenceUUID = ?");
-            prep.setString(1, refUUID);
-            rs = prep.executeQuery();
-            rs.next();
-            int instanceID = rs.getInt("service_instance_id");
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?,?) ON DUPLICATE KEY UPDATE `instanceUUID`=?,`state`=\"INIT\"");) {
+                    prep.setInt(1, instanceID);
+                    prep.setString(2, refUUID);
+                    prep.setString(3, refUUID);
+                    prep.executeUpdate();
+                }
+                try (PreparedStatement prep = front_conn.prepareStatement(
+                        "INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) " + "VALUES (?, '0', ?)");) {
+                    prep.setString(1, owner);
+                    prep.setString(2, refUUID);
+                    prep.executeUpdate();
+                }
 
-            prep = front_conn.prepareStatement("INSERT INTO service_verification (`service_instance_id`, `instanceUUID`) VALUES (?,?) ON DUPLICATE KEY UPDATE `instanceUUID`=?,`state`=\"INIT\"");
-            prep.setInt(1, instanceID);
-            prep.setString(2, refUUID);
-            prep.setString(3, refUUID);
-            prep.executeUpdate();
+                logger.init();
 
-            prep = front_conn.prepareStatement("INSERT INTO `frontend`.`acl` (`subject`, `is_group`, `object`) "
-                    + "VALUES (?, '0', ?)");
-            prep.setString(1, owner);
-            prep.setString(2, refUUID);
-            prep.executeUpdate();
+                // Execute service creation.
+                ServiceEngine.orchestrateInstance(refUUID, inputJSON, deltaUUID, token, autoProceed);
 
-            logger.init();
-
-            // Execute service creation.
-            ServiceEngine.orchestrateInstance(refUUID, inputJSON, deltaUUID, token, autoProceed);
-
-            logger.end(method);
+                logger.end(method);
+            }
         } catch (EJBException | SQLException ex) {
             logger.catching(method, ex);
             throw ex;
-        } finally {
-            logger.trace(method, "Connection closing!");
-            commonsClose(front_conn, prep, rs, logger);
         }
     }
 
@@ -199,85 +210,85 @@ public class ServiceHandler {
 
         logger.refuuid(refUUID);
         logger.start(method);
-        //@TODO: evaluate the below comment-out
-        //updateLastState("INIT", refUUID);
+        // @TODO: evaluate the below comment-out
+        // updateLastState("INIT", refUUID);
         int errorCode = 0;
         VerificationHandler verify = null;
         try {
             switch (action) {
-                case "cancel":
+            case "cancel":
+                setSuperState(refUUID, SuperState.CANCEL);
+                errorCode = cancelInstance(refUUID, token);
+                if (errorCode == 2) { // failed to revert
+                    setSuperState(refUUID, SuperState.CREATE);
+                }
+                break;
+            case "force_cancel":
+                setSuperState(refUUID, SuperState.CANCEL);
+                // @TODO: this should return special errorCode upon revert error
+                forceRevertInstance(refUUID, token);
+                break;
+
+            case "release":
+                setSuperState(refUUID, SuperState.CANCEL);
+                errorCode = releaseInstance(refUUID, token);
+                if (errorCode == 2) { // failed to revert
+                    setSuperState(refUUID, SuperState.CREATE);
+                }
+                break;
+            case "force_release":
+                setSuperState(refUUID, SuperState.CANCEL);
+                // @TODO: this should return special errorCode upon revert error
+                forceReleaseInstance(refUUID, token);
+                break;
+
+            case "reinstate":
+                setSuperState(refUUID, SuperState.REINSTATE);
+                errorCode = cancelInstance(refUUID, token);
+                if (errorCode == 2) { // failed to revert
                     setSuperState(refUUID, SuperState.CANCEL);
-                    errorCode = cancelInstance(refUUID, token);
-                    if (errorCode == 2) { // failed to revert
-                        setSuperState(refUUID, SuperState.CREATE);
-                    }
-                    break;
-                case "force_cancel":
-                    setSuperState(refUUID, SuperState.CANCEL);
-                    //@TODO: this should return special errorCode upon revert error
-                    forceRevertInstance(refUUID, token);
-                    break;
+                }
+                break;
+            case "force_reinstate":
+                setSuperState(refUUID, SuperState.REINSTATE);
+                // @TODO: this should return special errorCode upon revert error
+                forceRevertInstance(refUUID, token);
+                break;
 
-                case "release":
-                    setSuperState(refUUID, SuperState.CANCEL);
-                    errorCode = releaseInstance(refUUID, token);
-                    if (errorCode == 2) { // failed to revert
-                        setSuperState(refUUID, SuperState.CREATE);
-                    }
-                    break;
-                case "force_release":
-                    setSuperState(refUUID, SuperState.CANCEL);
-                    //@TODO: this should return special errorCode upon revert error
-                    forceReleaseInstance(refUUID, token);
-                    break;
+            case "force_retry":
+                forceRetryInstance(refUUID, token);
+                break;
 
-                case "reinstate":
-                    setSuperState(refUUID, SuperState.REINSTATE);
-                    errorCode = cancelInstance(refUUID, token);
-                    if (errorCode == 2) { // failed to revert
-                        setSuperState(refUUID, SuperState.CANCEL);
-                    }
-                    break;
-                case "force_reinstate":
-                    setSuperState(refUUID, SuperState.REINSTATE);
-                     //@TODO: this should return special errorCode upon revert error
-                    forceRevertInstance(refUUID, token);
-                    break;
+            case "delete":
+            case "force_delete":
+                deleteInstance(refUUID, token);
+                break;
 
-                case "force_retry":
-                    forceRetryInstance(refUUID, token);
-                    break;
+            case "reset":
+                resetInstance(refUUID, token);
+                break;
 
-                case "delete":
-                case "force_delete":
-                    deleteInstance(refUUID, token);
-                    break;
+            case "verify":
+                verify = new VerificationHandler(refUUID, token, 30, 10, false);
+                verify.startVerification();
+                break;
+            case "unverify":
+                verify = new VerificationHandler(refUUID, token, 30, 10, false);
+                verify.stopVerification();
+                break;
 
-                case "reset":
-                    resetInstance(refUUID, token);
-                    break;
-
-                case "verify":
-                    verify = new VerificationHandler(refUUID, token, 30, 10, false);
-                    verify.startVerification();
-                    break;
-                case "unverify":
-                    verify = new VerificationHandler(refUUID, token, 30, 10, false);
-                    verify.stopVerification();
-                    break;
-
-                // Subcommands
-                case "propagate":
-                    ServiceEngine.propagateInstance(refUUID, token.auth());
-                    break;
-                case "commit":
-                    ServiceEngine.commitInstance(refUUID, token.auth());
-                    break;
-                case "revert":
-                    ServiceEngine.revertInstance(refUUID, token.auth());
-                    break;
-                default:
-                    logger.warning(method, "Invalid action");
+            // Subcommands
+            case "propagate":
+                ServiceEngine.propagateInstance(refUUID, token.auth());
+                break;
+            case "commit":
+                ServiceEngine.commitInstance(refUUID, token.auth());
+                break;
+            case "revert":
+                ServiceEngine.revertInstance(refUUID, token.auth());
+                break;
+            default:
+                logger.warning(method, "Invalid action");
             }
 
             logger.end(method);
@@ -317,7 +328,8 @@ public class ServiceHandler {
     private int deleteInstance(String refUuid, TokenHandler token) throws SQLException, IOException {
         Connection front_conn = factory.getConnection("frontend");
 
-        PreparedStatement prep = front_conn.prepareStatement("DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
+        PreparedStatement prep = front_conn.prepareStatement(
+                "DELETE FROM `frontend`.`service_instance` WHERE `service_instance`.`referenceUUID` = ?");
         prep.setString(1, refUuid);
         prep.executeUpdate();
 
@@ -332,6 +344,12 @@ public class ServiceHandler {
         executeHttpMethod(url, delete, "DELETE", null, token.auth());
 
         String result = delete(refUuid, token.auth());
+
+        // REGISTER
+        URL regURL = new URL(String.format("%s/md2/register/services/%s/", HOST, refUuid));
+        Request request = new Request.Builder().url(regURL).delete().header("Authorization", token.auth()).build();
+        client.newCall(request).execute();
+
         if (result.equalsIgnoreCase("Successfully terminated")) {
             return 0;
         } else {
@@ -344,11 +362,12 @@ public class ServiceHandler {
      *
      * @param refUuid instance UUID
      * @return error code | -1: Exception thrown. 0: success. 1: stage 1 error
-     * (Failed pre-condition). 2: stage 2 error (Failed revert). 3: stage 3
-     * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
-     * error (Failed result check).
+     *         (Failed pre-condition). 2: stage 2 error (Failed revert). 3: stage 3
+     *         error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage
+     *         5 error (Failed result check).
      */
-    private int cancelInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+    private int cancelInstance(String refUuid, TokenHandler token)
+            throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
         String instanceState = status();
         if (!instanceState.equalsIgnoreCase("READY")) {
@@ -389,7 +408,8 @@ public class ServiceHandler {
         }
     }
 
-    private int forceRevertInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+    private int forceRevertInstance(String refUuid, TokenHandler token)
+            throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         lastState = "INIT";
         forceRevert(refUuid, token.auth());
         lastState = "COMPILED";
@@ -413,17 +433,18 @@ public class ServiceHandler {
         }
     }
 
-
     /**
-     * Cancels a service instance without commit. Requires instance to be in 'ready' substate.
+     * Cancels a service instance without commit. Requires instance to be in 'ready'
+     * substate.
      *
      * @param refUuid instance UUID
      * @return error code | -1: Exception thrown. 0: success. 1: stage 1 error
-     * (Failed pre-condition). 2: stage 2 error (Failed revert). 3: stage 3
-     * error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage 5
-     * error (Failed result check).
+     *         (Failed pre-condition). 2: stage 2 error (Failed revert). 3: stage 3
+     *         error (Failed propagate). 4: stage 4 error (Failed commit). 5: stage
+     *         5 error (Failed result check).
      */
-    private int releaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+    private int releaseInstance(String refUuid, TokenHandler token)
+            throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         boolean result;
         String instanceState = status();
         if (!instanceState.equalsIgnoreCase("READY")) {
@@ -446,8 +467,8 @@ public class ServiceHandler {
         return 0;
     }
 
-
-    private int forceReleaseInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+    private int forceReleaseInstance(String refUuid, TokenHandler token)
+            throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         forceRevert(refUuid, token.auth());
         lastState = "INIT";
         forcePropagate(refUuid, token.auth());
@@ -455,9 +476,8 @@ public class ServiceHandler {
         return 0;
     }
 
-
-
-    private int forceRetryInstance(String refUuid, TokenHandler token) throws SQLException, IOException, MalformedURLException, InterruptedException {
+    private int forceRetryInstance(String refUuid, TokenHandler token)
+            throws SQLException, IOException, MalformedURLException, InterruptedException {
         lastState = "COMPILED";
         forcePropagate(refUuid, token.auth());
         lastState = "PROPAGATED";
@@ -481,16 +501,15 @@ public class ServiceHandler {
         }
     }
 
-
-    private boolean resetInstance(String refUuid, TokenHandler token) throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
+    private boolean resetInstance(String refUuid, TokenHandler token)
+            throws EJBException, SQLException, IOException, MalformedURLException, InterruptedException {
         URL url = new URL(String.format("%s/service/%s/reset_committed", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, token.auth());
         setSuperState(refUUID, SuperState.CREATE);
-        //lastState = "FAILED";
+        // lastState = "FAILED";
         return result.equalsIgnoreCase("COMMITTED");
     }
-
 
     // Utility Methods ---------------------------------------------------------
     private void setSuperState(String refUuid, SuperState superState) throws SQLException {
@@ -500,8 +519,8 @@ public class ServiceHandler {
         try {
             front_conn = factory.getConnection("frontend");
 
-            prep = front_conn.prepareStatement("UPDATE service_instance SET super_state = ? "
-                    + "WHERE referenceUUID = ?");
+            prep = front_conn
+                    .prepareStatement("UPDATE service_instance SET super_state = ? " + "WHERE referenceUUID = ?");
             prep.setString(1, superState.name());
             prep.setString(2, refUuid);
             prep.executeUpdate();
@@ -517,8 +536,8 @@ public class ServiceHandler {
         URL url = new URL(String.format("%s/service/%s/propagate", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Propagate Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
+        // logger.log(Level.INFO, "Sending Propagate Command");
+        // logger.log(Level.INFO, "Response Code : {0}", result);
 
         lastState = "PROPAGATED";
         return result.equalsIgnoreCase("PROPAGATED");
@@ -528,8 +547,8 @@ public class ServiceHandler {
         URL url = new URL(String.format("%s/service/%s/propagate_forcedretry", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Forced Propagate Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
+        // logger.log(Level.INFO, "Sending Forced Propagate Command");
+        // logger.log(Level.INFO, "Response Code : {0}", result);
 
         lastState = "PROPAGATED";
         return result.equalsIgnoreCase("PROPAGATED");
@@ -539,8 +558,8 @@ public class ServiceHandler {
         URL url = new URL(String.format("%s/service/%s/commit", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Commit Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
+        // logger.log(Level.INFO, "Sending Commit Command");
+        // logger.log(Level.INFO, "Response Code : {0}", result);
 
         lastState = "COMMITTING";
         return result.equalsIgnoreCase("COMMITTING");
@@ -550,8 +569,8 @@ public class ServiceHandler {
         URL url = new URL(String.format("%s/service/%s/commit_forced", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Forced Commit Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
+        // logger.log(Level.INFO, "Sending Forced Commit Command");
+        // logger.log(Level.INFO, "Response Code : {0}", result);
 
         lastState = "COMMITTING";
         return result.equalsIgnoreCase("COMMITTING");
@@ -561,8 +580,8 @@ public class ServiceHandler {
         URL url = new URL(String.format("%s/service/%s/revert", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Revert Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
+        // logger.log(Level.INFO, "Sending Revert Command");
+        // logger.log(Level.INFO, "Response Code : {0}", result);
 
         lastState = result;
         return true;
@@ -572,8 +591,8 @@ public class ServiceHandler {
         URL url = new URL(String.format("%s/service/%s/revert_forced", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "PUT", null, auth);
-        //logger.log(Level.INFO, "Sending Forced Revert Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
+        // logger.log(Level.INFO, "Sending Forced Revert Command");
+        // logger.log(Level.INFO, "Response Code : {0}", result);
 
         lastState = result;
         return true;
@@ -583,8 +602,8 @@ public class ServiceHandler {
         URL url = new URL(String.format("%s/service/%s/", HOST, refUuid));
         HttpURLConnection propagate = (HttpURLConnection) url.openConnection();
         String result = executeHttpMethod(url, propagate, "DELETE", null, auth);
-        //logger.log(Level.INFO, "Sending Delete Command");
-        //logger.log(Level.INFO, "Response Code : {0}", result);
+        // logger.log(Level.INFO, "Sending Delete Command");
+        // logger.log(Level.INFO, "Response Code : {0}", result);
 
         lastState = result;
         return result;

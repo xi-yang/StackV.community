@@ -1,6 +1,4 @@
 import React from "react";
-import PropTypes from "prop-types";
-
 import AccessModal from "./access_modal";
 
 var confirmConfig = {

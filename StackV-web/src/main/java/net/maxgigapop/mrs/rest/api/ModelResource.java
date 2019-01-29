@@ -23,32 +23,34 @@
 
 package net.maxgigapop.mrs.rest.api;
 
-import com.hp.hpl.jena.ontology.OntModel;
-import java.io.StringWriter;
 import java.util.Map;
 import java.util.UUID;
+
 import javax.ejb.EJB;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PUT;
 import javax.enterprise.context.RequestScoped;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
+
+import com.hp.hpl.jena.ontology.OntModel;
+
+import org.json.simple.JSONObject;
+
 import net.maxgigapop.mrs.bean.ModelBase;
 import net.maxgigapop.mrs.bean.VersionGroup;
-import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
-import net.maxgigapop.mrs.system.HandleSystemCall;
 import net.maxgigapop.mrs.common.ModelUtil;
 import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.rest.api.model.ApiModelBase;
 import net.maxgigapop.mrs.rest.api.model.ApiModelViewRequest;
-import org.json.simple.JSONObject;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  * REST Web Service
@@ -91,7 +93,7 @@ public class ModelResource {
         apiModelBase.setId(modelBase.getId());
         apiModelBase.setVersion(modelBase.getCxtVersionTag());
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
-        //apiModelBase.setStatus("");
+        // apiModelBase.setStatus("");
         apiModelBase.setTtlModel(ModelUtil.marshalOntModel(modelBase.getOntModel()));
         logger.trace_end(method);
         return apiModelBase;
@@ -109,7 +111,7 @@ public class ModelResource {
         apiModelBase.setId(modelBase.getId());
         apiModelBase.setVersion(modelBase.getCxtVersionTag());
         apiModelBase.setCreationTime(ModelUtil.modelDateToString(modelBase.getCreationTime()));
-        //apiModelBase.setStatus("");
+        // apiModelBase.setStatus("");
         apiModelBase.setTtlModel(ModelUtil.marshalOntModelJson(modelBase.getOntModel()));
         logger.trace_end(method);
         return apiModelBase;
@@ -122,7 +124,7 @@ public class ModelResource {
      * @return an HTTP response with content of the updated or created resource.
      */
     @PUT
-    @Produces({"application/xml", "application/json"})
+    @Produces({ "application/xml", "application/json" })
     @Path("/{refUUID}")
     public ApiModelBase update(@PathParam("refUUID") String refUUID) throws Exception {
         String method = "update";
@@ -135,7 +137,7 @@ public class ModelResource {
     }
 
     @GET
-    @Produces({"application/xml"})
+    @Produces({ "application/xml" })
     public ApiModelBase creatHeadVersionGroup() throws Exception {
         String method = "creatHeadVersionGroup";
         logger.trace_start(method);
@@ -146,7 +148,7 @@ public class ModelResource {
     }
 
     @GET
-    @Produces({"application/json"})
+    @Produces({ "application/json" })
     public ApiModelBase creatHeadVersionGroupJson() throws Exception {
         String method = "creatHeadVersionGroupJson";
         logger.trace_start(method);
@@ -158,7 +160,7 @@ public class ModelResource {
 
     @GET
     @Path("/systeminstance")
-    @Produces({"application/xml", "application/json"})
+    @Produces({ "application/xml", "application/json" })
     public String push() {
         String method = "push";
         logger.trace_start(method);
@@ -178,10 +180,11 @@ public class ModelResource {
     }
 
     @POST
-    @Consumes({"application/xml", "application/json"})
+    @Consumes({ "application/xml", "application/json" })
     @Produces("application/xml")
     @Path("/view/{refUUID}")
-    public ApiModelBase queryView(@PathParam("refUUID") String refUUID, ApiModelViewRequest viewRequest) throws Exception {
+    public ApiModelBase queryView(@PathParam("refUUID") String refUUID, ApiModelViewRequest viewRequest)
+            throws Exception {
         String method = "queryView";
         logger.refuuid(refUUID);
         OntModel ontModel = systemCallHandler.queryModelView(refUUID, viewRequest.getFilters());
@@ -198,10 +201,11 @@ public class ModelResource {
     }
 
     @POST
-    @Consumes({"application/xml", "application/json"})
-    @Produces({"application/json"})
+    @Consumes({ "application/xml", "application/json" })
+    @Produces({ "application/json" })
     @Path("/view/{refUUID}")
-    public ApiModelBase queryViewJson(@PathParam("refUUID") String refUUID, ApiModelViewRequest viewRequest) throws Exception {
+    public ApiModelBase queryViewJson(@PathParam("refUUID") String refUUID, ApiModelViewRequest viewRequest)
+            throws Exception {
         String method = "queryViewJson";
         logger.refuuid(refUUID);
         OntModel ontModel = systemCallHandler.queryModelView(refUUID, viewRequest.getFilters());
@@ -216,15 +220,15 @@ public class ModelResource {
         logger.trace_end(method);
         return apiModelBase;
     }
-    
+
     @POST
-    @Consumes({"application/json"})
-    @Produces({"application/json"})
+    @Consumes({ "application/json" })
+    @Produces({ "application/json" })
     @Path("/refresh")
-    public Response refreshVersionModels(Map<String,String> requestMap) throws Exception {
+    public Response refreshVersionModels(Map<String, String> requestMap) throws Exception {
         JSONObject jsonRet = new JSONObject();
-        for (String topoUri: requestMap.keySet()) {
-            String modelUuid = requestMap.get(topoUri); // alternative: time stamp 
+        for (String topoUri : requestMap.keySet()) {
+            String modelUuid = requestMap.get(topoUri); // alternative: time stamp
             ModelBase modelBase = systemCallHandler.retrieveLatestModelByDriver(topoUri);
             if (modelBase == null || modelUuid != null && modelBase.getId().equalsIgnoreCase(modelUuid)) {
                 jsonRet.put(topoUri, null);
@@ -239,16 +243,16 @@ public class ModelResource {
         }
         return Response.status(200).entity(jsonRet).build();
     }
-    
+
     @GET
-    @Consumes({"application/json"})
-    @Produces({"application/json"})
+    @Consumes({ "application/json" })
+    @Produces({ "application/json" })
     @Path("/refresh/{topoURI}")
     public Response refreshModelAllOrAny(@PathParam("topoURI") String topoURI) throws Exception {
         JSONObject jsonRet = new JSONObject();
         if (topoURI.equalsIgnoreCase("all")) {
             Map<String, ModelBase> topoModelMap = systemCallHandler.retrieveAllLatestModels();
-            for (String aTopoUri: topoModelMap.keySet()) {
+            for (String aTopoUri : topoModelMap.keySet()) {
                 ModelBase modelBase = topoModelMap.get(aTopoUri);
                 JSONObject jsonTopo = new JSONObject();
                 jsonTopo.put("uuid", modelBase.getId());
@@ -261,7 +265,8 @@ public class ModelResource {
         } else {
             ModelBase modelBase = systemCallHandler.retrieveLatestModelByDriver(topoURI);
             if (modelBase == null) {
-                return Response.status(Response.Status.NOT_FOUND).entity("no model available for topology: "+topoURI).build();
+                return Response.status(Response.Status.NOT_FOUND).entity("no model available for topology: " + topoURI)
+                        .build();
             }
             JSONObject jsonTopo = new JSONObject();
             jsonTopo.put("uuid", modelBase.getId());
@@ -272,5 +277,5 @@ public class ModelResource {
         }
         return Response.status(200).entity(jsonRet).build();
     }
-        
+
 }

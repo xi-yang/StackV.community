@@ -28,22 +28,17 @@
         <groupId>net.maxgigapop</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-
-
     <groupId>net.maxgigapop</groupId>
     <artifactId>StackV-web</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>war</packaging>
-
     <name>StackV-web</name>
-
     <properties>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netbeans.hint.license>licenseheader</netbeans.hint.license>
         <doclint>none</doclint>
     </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.jena</groupId>
@@ -189,22 +184,20 @@
             <version>1.5.18</version>
         </dependency>
     </dependencies>
-
     <build>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
         </resources>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
                     <compilerArguments>
                         <endorseddirs>${endorsed.dir}</endorseddirs>
                     </compilerArguments>
@@ -247,11 +240,9 @@
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
                 <version>1.6</version>
-
                 <configuration>
                     <nodeVersion>v9.8.0</nodeVersion>
                 </configuration>
-
                 <executions>
                     <execution>
                         <goals>
@@ -259,7 +250,6 @@
                         </goals>
                         <phase>generate-sources</phase>
                     </execution>
-
                     <execution>
                         <id>npm install</id>
                         <goals>
@@ -269,7 +259,6 @@
                             <arguments>install</arguments>
                         </configuration>
                     </execution>
-
                     <execution>
                         <id>npm pack main</id>
                         <goals>
@@ -279,7 +268,6 @@
                             <arguments>run build</arguments>
                         </configuration>
                     </execution>
-
                     <!--
                     <execution>
                         <id>grunt build</id>
@@ -291,7 +279,6 @@
                     -->
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 </project>
