@@ -2,19 +2,16 @@ package net.maxgigapop.mrs.rest.api.model.sense;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.maxgigapop.mrs.rest.api.model.sense.DomainDescription;
-import net.maxgigapop.mrs.rest.api.model.sense.ServiceDescription;
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class TopologyDescription   {
-  
+public class TopologyDescription {
+
   private @Valid List<DomainDescription> domains = new ArrayList<DomainDescription>();
   private @Valid List<ServiceDescription> services = new ArrayList<ServiceDescription>();
 
@@ -25,12 +22,12 @@ public class TopologyDescription   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("domains")
   public List<DomainDescription> getDomains() {
     return domains;
   }
+
   public void setDomains(List<DomainDescription> domains) {
     this.domains = domains;
   }
@@ -42,16 +39,15 @@ public class TopologyDescription   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("services")
   public List<ServiceDescription> getServices() {
     return services;
   }
+
   public void setServices(List<ServiceDescription> services) {
     this.services = services;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -62,8 +58,8 @@ public class TopologyDescription   {
       return false;
     }
     TopologyDescription topologyDescription = (TopologyDescription) o;
-    return Objects.equals(domains, topologyDescription.domains) &&
-        Objects.equals(services, topologyDescription.services);
+    return Objects.equals(domains, topologyDescription.domains)
+        && Objects.equals(services, topologyDescription.services);
   }
 
   @Override
@@ -75,7 +71,7 @@ public class TopologyDescription   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class TopologyDescription {\n");
-    
+
     sb.append("    domains: ").append(toIndentedString(domains)).append("\n");
     sb.append("    services: ").append(toIndentedString(services)).append("\n");
     sb.append("}");
@@ -93,4 +89,3 @@ public class TopologyDescription   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

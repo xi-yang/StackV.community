@@ -2,12 +2,13 @@ package templateengine;
 
 import java.util.HashMap;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringEscapeUtils;
+
 import org.json.simple.JSONObject;
 
 public class TemplateEngine {
 
-    //private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TemplateEngine");
+    // private final StackLogger logger = new
+    // StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TemplateEngine");
     Template template;
     String render;
 
@@ -17,18 +18,18 @@ public class TemplateEngine {
     public String apply(JSONObject input) {
         String type = (String) input.get("service");
         switch (type) {
-            case "dnc":
-                template = new DNCTemplate();
-                break;
-            case "vcn":
-                template = new VCNTemplate();
-                break;
-            case "ahc":
-                template = new AHCTemplate();
-                break;    
-            case "ecc":
-                template = new ECTemplate();
-                break;
+        case "dnc":
+            template = new DNCTemplate();
+            break;
+        case "vcn":
+            template = new VCNTemplate();
+            break;
+        case "ahc":
+            template = new AHCTemplate();
+            break;
+        case "ecc":
+            template = new ECTemplate();
+            break;
         }
         render = template.getTemplate();
 
@@ -63,11 +64,11 @@ public class TemplateEngine {
                 blockStr = recurBody.substring(start, recurBody.indexOf(endTag) + endTag.length());
             }
 
-            Block block = new Block(blockStr, (JSONObject) input.get("data"), (JSONObject) input.get("data"), template, new HashMap<String, String>());
+            Block block = new Block(blockStr, (JSONObject) input.get("data"), (JSONObject) input.get("data"), template,
+                    new HashMap<String, String>());
             if (block.isInput()) {
                 recurBody = recurBody.replaceFirst(Pattern.quote(blockStr), block.render());
-            }
-            else {
+            } else {
                 recurBody = recurBody.replace(blockStr, block.render());
             }
 
@@ -76,10 +77,10 @@ public class TemplateEngine {
 
         // Postprocessing
         prepareModel();
-        
+
         recurBody = recurBody.replace("&#123;", "{");
         recurBody = recurBody.replace("&#125;", "}");
-        
+
         return recurBody;
     }
 
@@ -89,7 +90,7 @@ public class TemplateEngine {
 
         String body = render.substring(start, end);
         body = body.replace("<", "&lt;");
-        body = body.replace(">", "&gt;");        
+        body = body.replace(">", "&gt;");
 
         render = render.substring(0, start) + body + render.substring(end);
     }

@@ -1,16 +1,15 @@
 package net.maxgigapop.mrs.rest.api.model.sense;
 
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class Schedule   {
-  
+public class Schedule {
+
   private @Valid String start = null;
   private @Valid String end = null;
   private @Valid String duration = null;
@@ -22,12 +21,12 @@ public class Schedule   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("start")
   public String getStart() {
     return start;
   }
+
   public void setStart(String start) {
     this.start = start;
   }
@@ -39,12 +38,12 @@ public class Schedule   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("end")
   public String getEnd() {
     return end;
   }
+
   public void setEnd(String end) {
     this.end = end;
   }
@@ -56,16 +55,15 @@ public class Schedule   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("duration")
   public String getDuration() {
     return duration;
   }
+
   public void setDuration(String duration) {
     this.duration = duration;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -76,9 +74,8 @@ public class Schedule   {
       return false;
     }
     Schedule schedule = (Schedule) o;
-    return Objects.equals(start, schedule.start) &&
-        Objects.equals(end, schedule.end) &&
-        Objects.equals(duration, schedule.duration);
+    return Objects.equals(start, schedule.start) && Objects.equals(end, schedule.end)
+        && Objects.equals(duration, schedule.duration);
   }
 
   @Override
@@ -90,7 +87,7 @@ public class Schedule   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class Schedule {\n");
-    
+
     sb.append("    start: ").append(toIndentedString(start)).append("\n");
     sb.append("    end: ").append(toIndentedString(end)).append("\n");
     sb.append("    duration: ").append(toIndentedString(duration)).append("\n");
@@ -109,4 +106,3 @@ public class Schedule   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

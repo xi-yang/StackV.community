@@ -23,6 +23,7 @@
 package net.maxgigapop.mrs.rest.api;
 
 import java.util.Set;
+
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
@@ -63,9 +64,9 @@ public class ApplicationConfig extends Application {
         resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.IOExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.ParseExceptionMapper.class);
-        resources.add(net.maxgigapop.mrs.rest.api.exception.SQLExceptionMapper.class);       
+        resources.add(net.maxgigapop.mrs.rest.api.exception.SQLExceptionMapper.class);
         resources.add(org.jboss.resteasy.client.exception.mapper.ApacheHttpClient4ExceptionMapper.class);
-        resources.add(org.jboss.resteasy.core.AcceptHeaderByFileSuffixFilter.class);                
+        resources.add(org.jboss.resteasy.core.AcceptHeaderByFileSuffixFilter.class);
         resources.add(org.jboss.resteasy.plugins.interceptors.encoding.AcceptEncodingGZIPFilter.class);
         resources.add(org.jboss.resteasy.plugins.interceptors.encoding.AcceptEncodingGZIPInterceptor.class);
         resources.add(org.jboss.resteasy.plugins.interceptors.encoding.GZIPDecodingInterceptor.class);

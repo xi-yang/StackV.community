@@ -20,25 +20,29 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS  
  * IN THE WORK.
  */
-package net.maxgigapop.mrs.common;
+package net.maxgigapop.mrs.rest.api;
 
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.ResponseBody;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.security.cert.CertificateException;
+
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.ResponseBody;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+
+import net.maxgigapop.mrs.common.StackLogger;
 
 /**
  *
@@ -74,9 +78,9 @@ public class TokenHandler {
         }
         refreshToken = refresh;
         requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
-        
+
         client = getClient();
-        refreshTokenSub(0);        
+        refreshTokenSub(0);
     }
 
     public TokenHandler(String refresh, String realm, String encode) {
@@ -89,7 +93,7 @@ public class TokenHandler {
         auth = "Basic " + kc_encode;
         durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
         requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
-        
+
         client = getClient();
         refreshTokenSub(0);
     }
@@ -147,22 +151,22 @@ public class TokenHandler {
     private OkHttpClient getClient() {
         try {
             // Create a trust manager that does not validate certificate chains
-            final TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    @Override
-                    public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                    }
-
-                    @Override
-                    public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                    }
-
-                    @Override
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                        return null;
-                    }
+            final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType)
+                        throws CertificateException {
                 }
-            };
+
+                @Override
+                public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType)
+                        throws CertificateException {
+                }
+
+                @Override
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+            } };
 
             // Install the all-trusting trust manager
             final SSLContext sslContext = SSLContext.getInstance("SSL");

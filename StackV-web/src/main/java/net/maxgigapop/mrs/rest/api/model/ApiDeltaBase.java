@@ -23,7 +23,6 @@
 
 package net.maxgigapop.mrs.rest.api.model;
 
-import java.util.Date;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -87,13 +86,13 @@ public class ApiDeltaBase {
         this.referenceVersion = referenceVersion;
     }
 
-//    public String getStatus() {
-//        return status;
-//    }
-//
-//    public void setStatus(String status) {
-//        this.status = status;
-//    }
+    // public String getStatus() {
+    // return status;
+    // }
+    //
+    // public void setStatus(String status) {
+    // this.status = status;
+    // }
     @Override
     public String toString() {
         return "net.maxgigapop.mrs.rest.api.model.ApiDeltaBase[ id=" + id + " ]";

@@ -1,9 +1,10 @@
 package templateengine.helpers.dnc;
 
-import templateengine.helpers.dnc.*;
 import java.util.ArrayList;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+
 import templateengine.helpers.Helper;
 
 public class isIPAssigned implements Helper {

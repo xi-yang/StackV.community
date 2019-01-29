@@ -24,10 +24,12 @@ package net.maxgigapop.mrs.rest.api;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
+
 import net.maxgigapop.mrs.common.StackLogger;
 
 public class JNDIFactory {
@@ -73,6 +75,12 @@ public class JNDIFactory {
                     }
                 } catch (InterruptedException | NamingException ex3) {
                     throw logger.throwing(method, ex);
+                } finally {
+                    try {
+                        result.close();
+                    } catch (SQLException ex4) {
+                        throw logger.throwing(method, ex4);
+                    }
                 }
             }
         } catch (NamingException ex) {

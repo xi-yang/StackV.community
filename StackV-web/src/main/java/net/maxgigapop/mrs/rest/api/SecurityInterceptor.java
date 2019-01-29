@@ -25,6 +25,7 @@ package net.maxgigapop.mrs.rest.api;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -33,12 +34,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.Provider;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.ThreadContext;
 import org.jboss.resteasy.annotations.interception.ServerInterceptor;
-import org.jboss.resteasy.core.Headers;
-import org.jboss.resteasy.core.ServerResponse;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 
@@ -50,8 +50,11 @@ public class SecurityInterceptor implements ContainerRequestFilter {
     private ResourceInfo resourceInfo;
 
     private final Logger logger = LogManager.getLogger(SecurityInterceptor.class.getName());
-    private static final ServerResponse ACCESS_DENIED = new ServerResponse("Access denied for this resource.\n", 401, new Headers<Object>());
-    private static final ServerResponse SERVER_ERROR = new ServerResponse("INTERNAL SERVER ERROR\n", 500, new Headers<Object>());
+    // private static final ServerResponse ACCESS_DENIED = new
+    // ServerResponse("Access denied for this resource.\n", 401, new
+    // Headers<Object>());
+    // private static final ServerResponse SERVER_ERROR = new
+    // ServerResponse("INTERNAL SERVER ERROR\n", 500, new Headers<Object>());
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
@@ -59,7 +62,8 @@ public class SecurityInterceptor implements ContainerRequestFilter {
         UriInfo uri = requestContext.getUriInfo();
 
         if ((uri.getPath()).startsWith("/app/")) {
-            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) requestContext.getProperty(KeycloakSecurityContext.class.getName());
+            KeycloakSecurityContext securityContext = (KeycloakSecurityContext) requestContext
+                    .getProperty(KeycloakSecurityContext.class.getName());
             Set<String> roleSet;
             AccessToken accessToken = securityContext.getToken();
             String method = resourceInfo.getResourceMethod().getName();
@@ -83,7 +87,7 @@ public class SecurityInterceptor implements ContainerRequestFilter {
 
             if (roleSet.contains(role) && (quietRoles.contains(role) || method.equals("subStatus"))) {
                 return;
-            }            
+            }
 
             logger.trace("API Request Received: {}.", uri.getPath());
             if (!accessToken.isActive()) {
@@ -92,10 +96,8 @@ public class SecurityInterceptor implements ContainerRequestFilter {
             }
 
             if (!roleSet.contains(role)) {
-                requestContext.abortWith(Response
-                        .status(Response.Status.UNAUTHORIZED)
-                        .entity("User is not allowed to access the resource:" + method)
-                        .build());
+                requestContext.abortWith(Response.status(Response.Status.UNAUTHORIZED)
+                        .entity("User is not allowed to access the resource:" + method).build());
                 logger.warn("Denied.");
                 return;
             }
