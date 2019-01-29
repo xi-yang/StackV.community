@@ -212,6 +212,11 @@ function initializeIntent() {
             validateInput($input);
         }, 1000);
     });
+    $(document).on("click", ".intent-input-md2", function (e) {
+        loadMD2Modal(e.target.getAttribute("data-directory"), e.target.getAttribute("data-pattern"), e.target.previousSibling.id);
+
+        e.preventDefault();
+    });
 }
 
 
@@ -666,6 +671,17 @@ function renderInputs(arr, $parent) {
                 $span.append($i);
                 $group.append($span);
                 $label.append($group);
+            } else if (ele.getElementsByTagName("md2").length > 0) {
+                $input.css("padding-right", "55px");
+                var $button = $("<button class=\"intent-input-md2\">");
+                $button.text("MD2");
+                $button.attr("data-directory", ele.getElementsByTagName("md2")[0].children[0].innerHTML);
+                if (ele.getElementsByTagName("md2")[0].getElementsByTagName("pattern").length > 0) {
+                    $button.attr("data-pattern", ele.getElementsByTagName("md2")[0].children[1].innerHTML);
+                }
+
+                $label.append($input);
+                $label.append($button);
             } else {
                 $label.append($input);
             }
@@ -2103,6 +2119,57 @@ function loadIntentModalALM(mode) {
             });
 
             $modal.modal("show");
+        }
+    });
+}
+
+function loadMD2Modal(directory, pattern, id) {
+    $.ajax({
+        url: window.location.origin + "/StackV-web/restapi/md2/query/search/" + directory,
+        type: "GET",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            let $modal = $("#intent-modal");
+            $modal.attr("data-input", id);
+            $modal.find(".modal-title").text("Please Select an Entry");
+
+            let $list = $("<div class=\"list-group\" style=\"cursor: pointer;text-align:left;overflow:auto;max-height:50vh;\">");
+            let arr = result.replace(/\[|\]|cn=|\s/g, "").split(",");
+            for (var ele of arr) {
+                $list.append("<a class=\"list-group-item list-group-item-action flex-column align-items-start\" data-value=\"" + ele + "\"><h4 style=\"display: inline-block;\">" + ele + "</h4></a>");
+            }
+            $modal.find(".modal-body").empty().append($list);
+            $modal.find(".modal-footer").empty();
+
+            $list.on("click", "a", function (e) {
+                applyMD2Modal(this.getAttribute("data-value"), directory, pattern, $modal.attr("data-input"));
+                $modal.modal("hide");
+            });
+
+            $modal.modal("show");
+        }
+    });
+}
+
+function applyMD2Modal(cn, directory, pattern, id) {
+    $.ajax({
+        url: window.location.origin + "/StackV-web/restapi/md2/query/attr/cn=" + cn + "," + directory,
+        type: "GET",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            let ret = JSON.parse(result);
+            let matches = pattern.match(/\${(\w+)}/g);
+            for (let i = 0; i < matches.length; i++) {
+                let match = matches[i].substring(2, matches[i].length - 1);
+                let regex = new RegExp("\\${" + match + "}", "g");
+                pattern = pattern.replace(regex, ret[match][0]);
+            }
+
+            $("#" + id).val(pattern);
         }
     });
 }

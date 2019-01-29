@@ -27,9 +27,16 @@ import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.ejb.EJB;
+import javax.naming.AuthenticationException;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -66,6 +73,8 @@ public class MD2Resource {
     private static String serverName;
     private static String ipaBaseServerUrl, ipaUsername, ipaPass;
 
+    private static boolean online = true;
+
     @EJB
     HandleSystemCall systemCallHandler;
 
@@ -74,6 +83,7 @@ public class MD2Resource {
 
     static void loadConfig() {
         try {
+            logger.trace_start("loadConfig");
             URL url = new URL(String.format("%s/config/", host));
             Request request = new Request.Builder().url(url).build();
             Response response = client.newCall(request).execute();
@@ -92,6 +102,7 @@ public class MD2Resource {
             logger.status("loadConfig", "global variable loaded - serverName:" + serverName);
 
             conn = new MD2Connect(ipaBaseServerUrl, ipaUsername, ipaPass);
+            online = conn.validate();
         } catch (IOException | ParseException ex) {
             throw logger.throwing("loadConfig", ex);
         }
@@ -146,13 +157,21 @@ public class MD2Resource {
     //
     @GET
     @Path("/register")
-    public String checkOrchestrator() {
+    public String checkOrchestrator() throws AuthenticationException {
+        if (!online) {
+            return "Resource offline. Verify credentials";
+        }
+
         return (conn.get("cn=" + serverName + ",cn=orchestrators,cn=stackv") == null ? "false" : "true");
     }
 
     @POST
     @Path("/register")
-    public String registerOrchestrator() {
+    public String registerOrchestrator() throws AuthenticationException {
+        if (!online) {
+            return "Resource offline. Verify credentials";
+        }
+
         String method = "registerOrchestrator";
         logger.trace_start(method);
         // Orchestrator entry
@@ -170,7 +189,11 @@ public class MD2Resource {
 
     @DELETE
     @Path("/register")
-    public String deregisterOrchestrator() {
+    public String deregisterOrchestrator() throws AuthenticationException {
+        if (!online) {
+            return "Resource offline. Verify credentials";
+        }
+
         String method = "deregisterOrchestrator";
         logger.trace_start(method);
         conn.remove("cn=" + serverName + ",cn=orchestrators,cn=stackv");
@@ -182,7 +205,11 @@ public class MD2Resource {
     // Drivers
     @POST
     @Path("/register/drivers/{driver}")
-    public String registerDriver(@PathParam("driver") String driver) {
+    public String registerDriver(@PathParam("driver") String driver) throws AuthenticationException {
+        if (!online) {
+            return "Resource offline. Verify credentials";
+        }
+
         String method = "registerDriver";
         logger.trace_start(method);
         HashMap<String, String[]> map = new HashMap<>();
@@ -196,7 +223,11 @@ public class MD2Resource {
 
     @DELETE
     @Path("/register/drivers/{driver}")
-    public String deregisterDriver(@PathParam("driver") String driver) {
+    public String deregisterDriver(@PathParam("driver") String driver) throws AuthenticationException {
+        if (!online) {
+            return "Resource offline. Verify credentials";
+        }
+
         String method = "deregisterDriver";
         logger.trace_start(method);
         conn.remove("cn=" + driver + ",cn=domains,cn=dck,cn=stackv");
@@ -208,7 +239,11 @@ public class MD2Resource {
     // Services
     @POST
     @Path("/register/services/{service}")
-    public String registerService(@PathParam("service") String service) {
+    public String registerService(@PathParam("service") String service) throws AuthenticationException {
+        if (!online) {
+            return "Resource offline. Verify credentials";
+        }
+
         String method = "registerService";
         logger.trace_start(method);
         HashMap<String, String[]> map = new HashMap<>();
@@ -223,7 +258,11 @@ public class MD2Resource {
 
     @DELETE
     @Path("/register/services/{service}")
-    public String deregisterService(@PathParam("service") String service) {
+    public String deregisterService(@PathParam("service") String service) throws AuthenticationException {
+        if (!online) {
+            return "Resource offline. Verify credentials";
+        }
+
         String method = "deregisterService";
         logger.trace_start(method);
         conn.remove("cn=" + service + ",cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv");
@@ -237,19 +276,38 @@ public class MD2Resource {
     //
     @GET
     @Path("/query/drivers")
-    public String driverQuery() {
+    public String driverQuery() throws AuthenticationException {
         return conn.search("cn=domains,cn=dck,cn=stackv");
     }
 
     @GET
     @Path("/query/services/{domain}")
-    public String serviceQuery(@PathParam("domain") String domain) {
+    public String serviceQuery(@PathParam("domain") String domain) throws AuthenticationException {
         return conn.search("cn=services,cn=" + serverName + ",cn=orchestrators,cn=stackv");
     }
 
     @GET
-    @Path("/query/direct/{dn}")
-    public String directQuery(@PathParam("dn") String filter) {
+    @Path("/query/search/{dn}")
+    public String searchQuery(@PathParam("dn") String filter) throws AuthenticationException {
         return conn.search(filter);
+    }
+
+    @GET
+    @Path("/query/attr/{dn}")
+    public String attrQuery(@PathParam("dn") String filter) throws NamingException {
+        Map<String, ArrayList<Object>> retMap = new HashMap<>();
+        Attributes attrs = conn.get(filter);
+        NamingEnumeration<? extends Attribute> en = attrs.getAll();
+        while (en.hasMore()) {
+            Attribute attr = en.next();
+            NamingEnumeration<?> val = attr.getAll();
+            ArrayList<Object> arr = new ArrayList<>();
+            while (val.hasMore()) {
+                arr.add(val.next());
+            }
+
+            retMap.put(attr.getID(), arr);
+        }
+        return JSONObject.toJSONString(retMap);
     }
 }

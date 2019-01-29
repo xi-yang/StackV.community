@@ -307,9 +307,10 @@ class Portal extends React.Component {
                                                     timeout: 2000,
                                                     title: "Error",
                                                     overlay: true,
-                                                    message: "Orchestrator unable to be registered. Please refresh and try again.",
+                                                    message: "Orchestrator unable to be registered. Please check global settings.",
                                                     position: "center"
                                                 });
+                                                portal.switchPage("admin");
                                             }
                                         });
                                     },

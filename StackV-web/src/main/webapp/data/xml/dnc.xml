@@ -60,6 +60,10 @@
                 <input>
                     <name>URI</name>
                     <type>text</type>
+                    <md2>
+                        <directory>cn=domains,cn=dck,cn=stackv</directory>
+                        <pattern>urn:ogf:network:sdn.maxgigapop.net:${cn}::${objectClass}</pattern>
+                    </md2>
                     <size>xlarge</size>
                     <valid>string</valid>
                 </input>
@@ -104,22 +108,22 @@
                 <input>
                     <name>Start</name>
                     <type>text</type>
-                    <size>small</size>
                     <hint>(Calendar or '+?d:?h:?m:?s')</hint>
+                    <size>small</size>
                     <valid>calendar</valid>
                 </input>
                 <input required="true">
                     <name>End</name>
                     <type>text</type>
-                    <size>small</size>
                     <hint>(Calendar or '+?d:?h:?m:?s')</hint>
+                    <size>small</size>
                     <valid>calendar</valid>
                 </input>
                 <input>
                     <name>Duration</name>
                     <type>text</type>
-                    <size>small</size>
                     <hint>(in '+?d:?h:?m:?s')</hint>
+                    <size>small</size>
                     <valid>integer</valid>
                 </input>
             </group>
