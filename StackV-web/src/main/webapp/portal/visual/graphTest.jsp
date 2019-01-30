@@ -102,8 +102,7 @@
             },
             async: true,
             parseOnLoad: true,
-            packages: [
-                {
+            packages: [{
                     name: "d3",
                     location: "//d3js.org/",
                     main: "d3.v3"
@@ -118,11 +117,10 @@
     <script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.0/dojo/dojo.js"></script>
 
     <script type="text/javascript">
-
         var settings = {
             ZOOM_FACTOR: .04,
             ZOOM_MIN: .8,
-            INIT_ZOOM: 2  //The initial zoom factor effects the preciosion in which we can specify the highlighting effect
+            INIT_ZOOM: 2 //The initial zoom factor effects the preciosion in which we can specify the highlighting effect
             //However, it also seems to effect the error in zooming
         };
         var ModelConstructor;
@@ -135,18 +133,19 @@
         var functionMap = {}; // stores objects for funcitonality such as ContextMenu, tag Dialog, etc
 
         var outputApi;
+
         function onload() {
             require(["local/stackv/topology/model",
-                "local/stackv/topology/layout",
-                "local/stackv/topology/render",
-                "local/d3",
-                "local/stackv/utils",
-                "local/stackv/topology/DropDownTree",
-                "local/stackv/topology/ContextMenu",
-                "local/stackv/topology/TagDialog"//,
+                    "local/stackv/topology/layout",
+                    "local/stackv/topology/render",
+                    "local/d3",
+                    "local/stackv/utils",
+                    "local/stackv/topology/DropDownTree",
+                    "local/stackv/topology/ContextMenu",
+                    "local/stackv/topology/TagDialog" //,
 
-                //"local/stackv/topology/OMMPanel" Hiding OMM for May 2017 release
-            ],
+                    //"local/stackv/topology/OMMPanel" Hiding OMM for May 2017 release
+                ],
                 function (m, l, r, d3_, utils_, tree, c, td) { //, op) {
                     var userId = sessionStorage.getItem("subject");
                     var username = sessionStorage.getItem("username");
@@ -186,13 +185,14 @@
                                 tagDialog.init();
                                 functionMap['Tag'] = tagDialog;
                                 // possibly pass in map here later for all possible dialogs
-                                contextMenu = new ContextMenu(d3, render.API, functionMap);//, tagDialog);
+                                contextMenu = new ContextMenu(d3, render.API, functionMap); //, tagDialog);
                                 contextMenu.init();
 
                                 ModelConstructor = m;
                                 model = new ModelConstructor();
                                 outputApi = new outputApi_(render.API, contextMenu, "viz");
-                                model.init(1, drawGraph.bind(undefined, outputApi, model), null, undefined, token);
+                                model.init(1, drawGraph.bind(undefined, outputApi, model), null,
+                                    undefined, token);
                                 //console.log("I'm outputApu" + outputApi);
                                 $("#tagDialog").draggable();
 
@@ -496,7 +496,8 @@
                     height: ($(window).height() * (3 / 4)),
                     open: function () {
                         detached.appendTo($("#dialog_modelView"));
-                        $("#dialog_modelView").html("<pre class=\"jSonDialog\">" + string + "</pre>");
+                        $("#dialog_modelView").html("<pre class=\"jSonDialog\">" + string +
+                            "</pre>");
                     }
                 });
 
@@ -560,6 +561,7 @@
         //They can be used to see how the layout engine behaves, and restore
         //a sane layout it it has been messed up.
         var animIntervalId;
+
         function animStart(rate) {
             animStop();
             animIntervalId = setInterval(function () {
@@ -567,6 +569,7 @@
                 render.redraw();
             }, rate);
         }
+
         function animStop() {
             clearInterval(animIntervalId);
         }
@@ -595,7 +598,8 @@
             };
 
             var zoomFactor = settings.INIT_ZOOM;
-            var offsetX = 0, offsetY = 0;
+            var offsetX = 0,
+                offsetY = 0;
             this.getOffset = function () {
                 return [offsetX, offsetY];
             };
@@ -645,7 +649,7 @@
 
             this._updateTransform = function () {
                 d3.select("#transform" + "_" + this.svgContainerName).
-                    attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
+                attr("transform", "scale(" + zoomFactor + ")translate(" + offsetX + "," + offsetY + ")");
             };
             this._updateTransform();
             //Return the svg coordinates of the point under the given mouse coords
@@ -665,10 +669,11 @@
                 document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.top = y + 10 + "px";
             };
             this.setHoverVisible = function (vis) {
-                document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.visibility = vis ? "visible" : "hidden";
+                document.getElementById("hoverdiv" + "_" + this.svgContainerName).style.visibility = vis ?
+                    "visible" : "hidden";
             };
 
-            this.resetZoom = function () {   // @
+            this.resetZoom = function () { // @
                 zoomFactor = settings.INIT_ZOOM;
                 offsetX = 0;
                 offsetY = 0;
@@ -717,8 +722,7 @@
                                     add = false;
                                 } else {
                                     subnetStrs.push(subnetStr);
-                                }
-                                ;
+                                };
                             });
                         }
                         if (add) {
@@ -811,7 +815,7 @@
                         function buildServicePanel(userId, token) {
                             var tbody = document.getElementById("servicePanel-body");
 
-                            var apiUrl = window.location.origin + '/StackV-web/restapi/app/logging/instances';
+                            var apiUrl = window.location.origin + '/StackV-web/restapi/logging/instances';
                             $.ajax({
                                 url: apiUrl,
                                 type: 'GET',

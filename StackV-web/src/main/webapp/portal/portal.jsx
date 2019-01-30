@@ -134,7 +134,7 @@ class Portal extends React.Component {
                     }
                     break;
                 default:
-                    this.setState({ page: page, refreshEnabled: false });
+                    this.setState({ page: page, refreshEnabled: false, uuid: undefined });
             }
         } else {
             iziToast.show(accessDeniedToast);

@@ -120,9 +120,9 @@ class LoggingPanel extends React.Component {
     initTable() {
         let apiUrl;
         if (this.props.uuid) {
-            apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?refUUID=" + this.props.uuid + "&level=" + this.state.level;
+            apiUrl = window.location.origin + "/StackV-web/restapi/logging/logs/serverside?refUUID=" + this.props.uuid + "&level=" + this.state.level;
         } else {
-            apiUrl = window.location.origin + "/StackV-web/restapi/app/logging/logs/serverside?level=" + this.state.level;
+            apiUrl = window.location.origin + "/StackV-web/restapi/logging/logs/serverside?level=" + this.state.level;
         }
 
         let panel = this;

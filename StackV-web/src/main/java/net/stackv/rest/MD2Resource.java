@@ -64,7 +64,7 @@ import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
 @Path("md2")
-public class LDAPResource {
+public class MD2Resource {
     private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "MD2Resource");
     private static MD2Connect conn;
     private static JSONParser parser = new JSONParser();

@@ -1,17 +1,17 @@
+import PropTypes from "prop-types";
 import React from "react";
 import ReactDOM from "react-dom";
-import PropTypes from "prop-types";
 import ReactInterval from "react-interval";
-
-import "./logging.css";
 import ButtonPanel from "../details/components/details_buttons";
+import "./logging.css";
+
 
 class InstancePanel extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            apiUrl: window.location.origin + "/StackV-web/restapi/app/logging/instances"
+            apiUrl: window.location.origin + "/StackV-web/restapi/logging/instances"
         };
 
         this.initTable = this.initTable.bind(this);
