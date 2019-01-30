@@ -1,8 +1,8 @@
-import React from "react";
 import PropTypes from "prop-types";
+import React from "react";
 import convert from "xml-js";
-
 import schemaXML from "../data/schemas.xml";
+
 var driverConfig = {
     title: "Driver Wizard",
     icon: "fas fa-home",
@@ -266,7 +266,7 @@ class DriverModal extends React.Component {
 
     importRawDriver() {
         let page = this;
-        let raw = $("#driver-modal-raw").val().replace(/\n| /g, "");
+        let raw = $("#driver-modal-raw").val().replace(/\n|\s/g, "");
 
         let uriReg = /<key>topologyUri<\/key><value>(.*?)<\/value>/g;
         let urn = uriReg.exec(raw)[1];

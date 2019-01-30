@@ -21,3 +21,5 @@
 /StackV-web/src/main/webapp/js/bundles/
 
 /StackV-web/package-lock.json
+StackV-ejb/.factorypath
+StackV-web/.factorypath

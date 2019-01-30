@@ -1,0 +1,8 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Unit" verbose="1">
+    <test name="Core Handlers">
+        <packages>
+            <package name="core" />
+        </packages>
+    </test>
+</suite>

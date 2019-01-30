@@ -8,7 +8,7 @@ import org.json.simple.JSONObject;
 public class TemplateEngine {
 
     // private final StackLogger logger = new
-    // StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TemplateEngine");
+    // StackLogger("net.stackv.rest.WebResource", "TemplateEngine");
     Template template;
     String render;
 

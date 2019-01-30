@@ -36,7 +36,7 @@ class SettingsPanel extends React.Component {
                 <hr /><h3>Keycloak</h3>
                 <label style={{ width: "50%" }}>Server URL<input className="form-control" name="system.keycloak"></input></label>
                 <hr /><h3>MD2</h3>
-                <div class={this.state.md2 ? "form-group" : "form-group has-error"}>
+                <div className={this.state.md2 ? "form-group" : "form-group has-error"}>
                     <label style={{ width: "70%" }}>Server URL<input className="form-control" name="ipa.server"></input></label>
                     <label style={{ width: "40%" }}>Username<input className="form-control" name="ipa.username"></input></label>
                     <label style={{ width: "40%" }}>Password<input type="password" className="form-control" name="ipa.password"></input></label>

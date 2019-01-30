@@ -19,7 +19,7 @@ public class Block {
     JSONObject input;
     JSONObject scopedInput;
     HashMap<String, String> context;
-    //private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "Block");
+    //private final StackLogger logger = new StackLogger("net.stackv.rest.WebResource", "Block");
 
     public Block(String _str, JSONObject _input, JSONObject _scopedInput, Template _template, HashMap<String, String> _context) {
         str = _str;
