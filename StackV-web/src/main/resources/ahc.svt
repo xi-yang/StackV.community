@@ -1,6 +1,6 @@
 <serviceDelta>
 <uuid>{{uuid}}</uuid>
-<workerClassPath>net.stackv.service.orchestrate.SimpleWorker</workerClassPath>
+<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
 
 <modelAddition>
 
