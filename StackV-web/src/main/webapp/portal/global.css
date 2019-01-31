@@ -28,7 +28,7 @@ div#service-specific {
     width: 80%;
 }
 
-.loader-circle {
+div.loader-circle {
     border:5px solid #91ef5a;
     height:50px;
     border-radius:50%;

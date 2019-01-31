@@ -24,6 +24,7 @@ package net.maxgigapop.mrs.service;
 
 import java.util.HashMap;
 import java.util.Iterator;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -41,17 +42,17 @@ final class ServiceParser {
 
     public HashMap<String, String> parse(JSONObject dataJSON, String refUUID) {
         switch (type) {
-            case "dnc":
-                return parseDNC(dataJSON, refUUID);
-            case "netcreate":
-                return parseNet(dataJSON, refUUID);
-            case "hybridcloud":
-                return parseHybridCloud(dataJSON, refUUID);
-            case "omm":
-                return parseOMM(dataJSON, refUUID);
-            default:
-                return null;
-        }       
+        case "dnc":
+            return parseDNC(dataJSON, refUUID);
+        case "netcreate":
+            return parseNet(dataJSON, refUUID);
+        case "hybridcloud":
+            return parseHybridCloud(dataJSON, refUUID);
+        case "omm":
+            return parseOMM(dataJSON, refUUID);
+        default:
+            return null;
+        }
     }
 
     // Parsing Methods ---------------------------------------------------------
@@ -59,7 +60,7 @@ final class ServiceParser {
     private HashMap<String, String> parseDNC(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
-        
+
         JSONArray linksArr = (JSONArray) dataJSON.get("connections");
         for (int i = 1; i <= linksArr.size(); i++) {
             JSONObject linksJSON = (JSONObject) linksArr.get(i - 1);
@@ -107,7 +108,8 @@ final class ServiceParser {
             JSONArray vmArr = (JSONArray) subJSON.get("virtual_machines");
             if (vmArr != null) {
                 for (Object vmEle : vmArr) {
-                    //value format: "vm_name & subnet_index_number & type_detail & host & interfaces"
+                    // value format: "vm_name & subnet_index_number & type_detail & host &
+                    // interfaces"
                     JSONObject vmJSON = (JSONObject) vmEle;
 
                     // Name
@@ -259,7 +261,7 @@ final class ServiceParser {
         return paraMap;
     }
 
-    private HashMap<String, String> parseFlow(JSONObject dataJSON, String refUuid) {
+    HashMap<String, String> parseFlow(JSONObject dataJSON, String refUuid) {
         HashMap<String, String> paraMap = new HashMap<>();
         paraMap.put("instanceUUID", refUuid);
 
@@ -284,9 +286,9 @@ final class ServiceParser {
         Iterator<?> keys = dataJSON.keySet().iterator();
         while (keys.hasNext()) {
             String key = (String) keys.next();
-            //if ( dataJSON.get(key) instanceof JSONObject ) {
+            // if ( dataJSON.get(key) instanceof JSONObject ) {
             paraMap.put(key, dataJSON.get(key).toString());
-            //}
+            // }
         }
 
         return paraMap;
@@ -295,18 +297,18 @@ final class ServiceParser {
     /**
      *
      * @param serviceType filename of the service
-     * @param name user-supplied tag
-     * @param refUuid instance UUID
+     * @param name        user-supplied tag
+     * @param refUuid     instance UUID
      * @return formatted URN.
      */
     private String urnBuilder(String serviceType, String name, String refUuid) {
         switch (serviceType) {
-            case "dnc":
-                return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
-            case "netcreate":
-                return "urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + name;
-            default:
-                return "ERROR";
+        case "dnc":
+            return "urn:ogf:network:service+" + refUuid + ":resource+links:tag+" + name;
+        case "netcreate":
+            return "urn:ogf:network:service+" + refUuid + ":resource+virtual_clouds:tag+" + name;
+        default:
+            return "ERROR";
         }
     }
 }

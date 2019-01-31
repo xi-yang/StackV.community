@@ -2,19 +2,16 @@ package net.maxgigapop.mrs.rest.api.model.sense;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.maxgigapop.mrs.rest.api.model.sense.CapabilityDescription;
-import net.maxgigapop.mrs.rest.api.model.sense.DiscoveryDescriptionEndPoints;
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class DiscoveryDescription   {
-  
+public class DiscoveryDescription {
+
   private @Valid String version = null;
   private @Valid List<CapabilityDescription> capailities = new ArrayList<CapabilityDescription>();
   private @Valid List<DiscoveryDescriptionEndPoints> endPoints = new ArrayList<DiscoveryDescriptionEndPoints>();
@@ -26,12 +23,12 @@ public class DiscoveryDescription   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("version")
   public String getVersion() {
     return version;
   }
+
   public void setVersion(String version) {
     this.version = version;
   }
@@ -43,12 +40,12 @@ public class DiscoveryDescription   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("capailities")
   public List<CapabilityDescription> getCapailities() {
     return capailities;
   }
+
   public void setCapailities(List<CapabilityDescription> capailities) {
     this.capailities = capailities;
   }
@@ -60,16 +57,15 @@ public class DiscoveryDescription   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("end_points")
   public List<DiscoveryDescriptionEndPoints> getEndPoints() {
     return endPoints;
   }
+
   public void setEndPoints(List<DiscoveryDescriptionEndPoints> endPoints) {
     this.endPoints = endPoints;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -80,9 +76,9 @@ public class DiscoveryDescription   {
       return false;
     }
     DiscoveryDescription discoveryDescription = (DiscoveryDescription) o;
-    return Objects.equals(version, discoveryDescription.version) &&
-        Objects.equals(capailities, discoveryDescription.capailities) &&
-        Objects.equals(endPoints, discoveryDescription.endPoints);
+    return Objects.equals(version, discoveryDescription.version)
+        && Objects.equals(capailities, discoveryDescription.capailities)
+        && Objects.equals(endPoints, discoveryDescription.endPoints);
   }
 
   @Override
@@ -94,7 +90,7 @@ public class DiscoveryDescription   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class DiscoveryDescription {\n");
-    
+
     sb.append("    version: ").append(toIndentedString(version)).append("\n");
     sb.append("    capailities: ").append(toIndentedString(capailities)).append("\n");
     sb.append("    endPoints: ").append(toIndentedString(endPoints)).append("\n");
@@ -113,4 +109,3 @@ public class DiscoveryDescription   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

@@ -1,0 +1,8 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Integration" verbose="1">
+    <test name="External Adapters">
+        <packages>
+            <package name="external" />
+        </packages>
+    </test>
+</suite>

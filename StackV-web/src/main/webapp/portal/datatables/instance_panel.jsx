@@ -1,17 +1,17 @@
+import PropTypes from "prop-types";
 import React from "react";
 import ReactDOM from "react-dom";
-import PropTypes from "prop-types";
 import ReactInterval from "react-interval";
-
-import "./logging.css";
 import ButtonPanel from "../details/components/details_buttons";
+import "./logging.css";
+
 
 class InstancePanel extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            apiUrl: window.location.origin + "/StackV-web/restapi/app/logging/instances"
+            apiUrl: window.location.origin + "/StackV-web/restapi/logging/instances"
         };
 
         this.initTable = this.initTable.bind(this);
@@ -113,7 +113,7 @@ class InstancePanel extends React.Component {
 
                 ReactDOM.render(
                     React.createElement(ButtonPanel, {
-                        uuid: row.data().referenceUUID, super: superState, sub: subState, last: row.data().lastState, owner: row.data().owner,
+                        frameLoad: panel.props.frameLoad, uuid: row.data().referenceUUID, super: superState, sub: subState, last: row.data().lastState, owner: row.data().owner,
                         keycloak: panel.props.keycloak, page: "catalog", resume: panel.props.resumeRefresh, switchPage: panel.props.switchPage,
                     }, null),
                     document.getElementById("button-panel")

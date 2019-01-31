@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="info" package="net.maxgigapop.mrs"  name="StackV-ejb">
+<Configuration status="info" package="net.maxgigapop.mrs" name="StackV-ejb">
     <Appenders>
         <Console name="RainsOut" target="SYSTEM_OUT">
             <PatternLayout pattern="%X{event} : %msg ref[%X{refuuid}] target[%X{targetid}] -%X{severity}- %ex{2}%n" />
         </Console>
-        
+        <Console name="InterceptorOut" target="SYSTEM_OUT">
+            <PatternLayout pattern="%logger{1}: %X{username}:%X{method}>%X{role} %X{objectid} [%marker] - %X{event} : %msg - %X{severity}%n" />
+        </Console>
+        <Console name="APIOut" target="SYSTEM_OUT">
+            <PatternLayout pattern="%logger{1}: %X{module}.%X{method} %X{refuuid}: %X{objectid} [%marker] - %X{event} : %msg - %X{severity}: %ex{5}%n" />
+        </Console>
         <JDBC name="MySQL" tableName="frontend.log">
             <DataSource jndiName="java:jboss/datasources/LoggerDS" />
             <Column name="marker" pattern="%marker" />
@@ -14,12 +19,12 @@
             <Column name="event" pattern="%X{event}" />
             <Column name="message" pattern="%message" />
             <Column name="exception" pattern="%ex" />
-            <Column name="severity" pattern="%X{severity}" />                       
+            <Column name="severity" pattern="%X{severity}" />
             <Column name="module" pattern="%X{module}" />
             <Column name="method" pattern="%X{method}" />
             <Column name="referenceUUID" pattern="%X{refuuid}" />
             <Column name="targetID" pattern="%X{targetid}" />
-        </JDBC>      
+        </JDBC>
     </Appenders>
     <Loggers>
         <AsyncLogger name="net.maxgigapop.mrs.service" level="info" additivity="false">
@@ -37,6 +42,13 @@
         <AsyncLogger name="net.maxgigapop.mrs.core" level="info" additivity="false">
             <AppenderRef ref="RainsOut" />
             <AppenderRef ref="MySQL" level="info" />
+        </AsyncLogger>
+        <AsyncLogger name="net.maxgigapop.mrs.rest.api.WebResource" level="trace" additivity="false">
+            <AppenderRef ref="APIOut" />
+            <AppenderRef ref="MySQL" />
+        </AsyncLogger>
+        <AsyncLogger name="net.maxgigapop.mrs.rest.api.SecurityInterceptor" level="info" additivity="false">
+            <AppenderRef ref="InterceptorOut" />
         </AsyncLogger>
         <Root level="info">
             <AppenderRef ref="RainsOut" />

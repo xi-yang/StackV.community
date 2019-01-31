@@ -1,9 +1,9 @@
-import React from "react";
-import PropTypes from "prop-types";
 import { is } from "immutable";
-
+import PropTypes from "prop-types";
+import React from "react";
 import ButtonPanel from "./details_buttons";
 import InstructionPanel from "./details_instructions";
+
 
 class DetailsPanel extends React.Component {
     constructor(props) {
@@ -54,7 +54,7 @@ class DetailsPanel extends React.Component {
                     <tr>
                         <td>Operation Status</td>
                         <td>
-                            <p style={{ display: "inline" }} id="instance-substate">{this.props.state.get("sub")}</p><small id="instance-laststate"> (after {this.props.state.get("last")})</small>
+                            <p style={{ display: "inline" }} id="instance-substate">{this.props.state.get("sub")}</p>{this.props.state.get("sub") === "FAILED" && <small id="instance-laststate"> (after {this.props.state.get("last")})</small>}
                         </td>
                     </tr>
                     <tr className="instruction-row">
@@ -66,7 +66,7 @@ class DetailsPanel extends React.Component {
                     <tr className="button-row">
                         <td colSpan="2">
                             <ButtonPanel {...this.props} super={this.props.state.get("super")} sub={this.props.state.get("sub")} last={this.props.state.get("last")} owner={this.props.meta.get("owner")}
-                                isVerifying={this.props.verify.get("drone")} load={this.props.load} keycloak={this.props.keycloak} page="details" />
+                                isVerifying={this.props.verify.get("drone")} page="details" />
                         </td>
                     </tr>
                 </tbody>

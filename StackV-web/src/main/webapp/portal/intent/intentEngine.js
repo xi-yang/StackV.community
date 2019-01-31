@@ -22,7 +22,10 @@
  */
 
 /* global Mousetrap, Power2, TweenLite */
-import { keycloak, getURLParameter } from "../nexus";
+import {
+    getURLParameter,
+    keycloak
+} from "../nexus";
 
 var options = [];
 var factories = {};
@@ -55,8 +58,12 @@ var $errorModal = $("#error-modal").iziModal({
 });
 
 export function loadIntent(type) {
-    Mousetrap.bind("left", function () { if ($activeStage) prevStage(); });
-    Mousetrap.bind("right", function () { if ($activeStage) nextStage(); });
+    Mousetrap.bind("left", function () {
+        if ($activeStage) prevStage();
+    });
+    Mousetrap.bind("right", function () {
+        if ($activeStage) nextStage();
+    });
 
     intentType = type;
     $.ajax({
@@ -123,7 +130,12 @@ function renderIntent() {
 
 function initializeIntent() {
     var panel = $("#intent-panel-body");
-    gsap["intent"] = new TweenLite("#intent-panel", 0.5, { ease: Power2.easeInOut, paused: true, opacity: "1", display: "block" });
+    gsap["intent"] = new TweenLite("#intent-panel", 0.5, {
+        ease: Power2.easeInOut,
+        paused: true,
+        opacity: "1",
+        display: "block"
+    });
     // Initialize meta sidebar
     var meta = intent.children[0];
     initMeta(meta);
@@ -139,8 +151,13 @@ function initializeIntent() {
         // Initialize stage panel
         var stage = stages[i];
         var id = constructID(stage);
-        var $div = $("<div>", { class: "intent-stage-div", id: id });
-        var $prog = $("<li>", { id: "prog-" + id });
+        var $div = $("<div>", {
+            class: "intent-stage-div",
+            id: id
+        });
+        var $prog = $("<li>", {
+            id: "prog-" + id
+        });
         if (stage.getAttribute("condition")) {
             $div.addClass("conditional");
             $div.attr("data-condition", stage.getAttribute("condition"));
@@ -161,7 +178,12 @@ function initializeIntent() {
         panel.append($div);
         stages[id] = $div;
         var $currentStageDiv = $div;
-        gsap[id] = new TweenLite("#" + id, 0.5, { ease: Power2.easeInOut, paused: true, opacity: "1", display: "block" });
+        gsap[id] = new TweenLite("#" + id, 0.5, {
+            ease: Power2.easeInOut,
+            paused: true,
+            opacity: "1",
+            display: "block"
+        });
 
         if (i === 1) {
             $activeStage = $div;
@@ -190,6 +212,11 @@ function initializeIntent() {
             validateInput($input);
         }, 1000);
     });
+    $(document).on("click", ".intent-input-md2", function (e) {
+        loadMD2Modal(e.target.getAttribute("data-directory"), e.target.getAttribute("data-pattern"), e.target.previousSibling.id);
+
+        e.preventDefault();
+    });
 }
 
 
@@ -216,7 +243,12 @@ function initMeta(meta) {
         var condition = block.getAttribute("condition");
 
         var $label = $("<label>").text(str);
-        var $input = $("<input>", { type: "number", name: "block-" + tag, value: 1, min: 0 });
+        var $input = $("<input>", {
+            type: "number",
+            name: "block-" + tag,
+            value: 1,
+            min: 0
+        });
         $input.attr("data-block", tag);
         $input.change(function () {
             var eles = $(".block-" + $(this).data("block"));
@@ -309,7 +341,10 @@ function renderInputs(arr, $parent) {
             var str = name.charAt(0).toUpperCase() + name.slice(1);
             var eleID = constructID(ele);
 
-            var $div = $("<div>", { class: "intent-group-div", id: eleID });
+            var $div = $("<div>", {
+                class: "intent-group-div",
+                id: eleID
+            });
             $parent.append($div);
             var $name = $("<div class=\"group-header col-sm-12\"><div class=\"group-name\">" + str + "</div></div>");
             $div.append($name);
@@ -412,7 +447,11 @@ function renderInputs(arr, $parent) {
             let required = ele.getAttribute("required");
 
             let $label = $("<label>").text(ele.children[0].innerHTML);
-            let $input = $("<input>", { type: type, class: "intent-input", id: name });
+            let $input = $("<input>", {
+                type: type,
+                class: "intent-input",
+                id: name
+            });
 
             if (ele.getElementsByTagName("hint").length > 0) {
                 $label.text($label.text() + " " + ele.getElementsByTagName("hint")[0].innerHTML);
@@ -483,7 +522,10 @@ function renderInputs(arr, $parent) {
 
             // Handle multiple choice sourcing
             if (ele.getElementsByTagName("source").length > 0) {
-                $input = $("<select>", { id: name, class: "intent-input" });
+                $input = $("<select>", {
+                    id: name,
+                    class: "intent-input"
+                });
                 var selectName = name;
                 var source = ele.getElementsByTagName("source")[0];
 
@@ -532,18 +574,26 @@ function renderInputs(arr, $parent) {
                     }
                 });
             } else if (ele.getElementsByTagName("link").length > 0) {
-                $input = $("<select>", { id: name, class: "intent-input" });
+                $input = $("<select>", {
+                    id: name,
+                    class: "intent-input"
+                });
                 let selectName = name;
                 var link = ele.getElementsByTagName("link")[0].innerHTML;
                 $input.attr("data-link", link);
-                var $default = $("<option>", { selected: true }).text("");
+                var $default = $("<option>", {
+                    selected: true
+                }).text("");
                 $input.append($default);
                 var nameVal = ele.getElementsByTagName("link")[0].getAttribute("nameVal");
                 if (nameVal) {
                     $input.addClass("nameVal");
                 }
             } else if (ele.getElementsByTagName("options").length > 0) {
-                $input = $("<select>", { id: name, class: "intent-input" });
+                $input = $("<select>", {
+                    id: name,
+                    class: "intent-input"
+                });
                 let selectName = name;
                 var options = ele.getElementsByTagName("options")[0].children;
                 if (!ele.getAttribute("required")) {
@@ -555,7 +605,9 @@ function renderInputs(arr, $parent) {
                 for (let j = 0; j < options.length; j++) {
                     var $option;
                     if (options[j].getAttribute("condition") !== null) {
-                        $option = $("<option>", { disabled: true });
+                        $option = $("<option>", {
+                            disabled: true
+                        });
                         $option.attr("data-condition-select", options[j].getAttribute("condition"));
                     } else {
                         $option = $("<option>");
@@ -619,6 +671,17 @@ function renderInputs(arr, $parent) {
                 $span.append($i);
                 $group.append($span);
                 $label.append($group);
+            } else if (ele.getElementsByTagName("md2").length > 0) {
+                $input.css("padding-right", "55px");
+                var $button = $("<button class=\"intent-input-md2\">");
+                $button.text("MD2");
+                $button.attr("data-directory", ele.getElementsByTagName("md2")[0].children[0].innerHTML);
+                if (ele.getElementsByTagName("md2")[0].getElementsByTagName("pattern").length > 0) {
+                    $button.attr("data-pattern", ele.getElementsByTagName("md2")[0].children[1].innerHTML);
+                }
+
+                $label.append($input);
+                $label.append($button);
             } else {
                 $label.append($input);
             }
@@ -649,7 +712,10 @@ function factorizeRendering() {
         let name = head.children[0].innerText.split(" #")[0];
         let key = id.replace(new RegExp("\\_num\\d*", "gm"), "");
         if (factories[key]["block"] === undefined) {
-            var $button = $("<button>", { class: "intent-button-factory", text: "Add " + name });
+            var $button = $("<button>", {
+                class: "intent-button-factory",
+                text: "Add " + name
+            });
             $button.attr("data-factory", key);
             $button.attr("data-target", fact.parentElement.id);
             if ($(fact).data("bound")) {
@@ -691,6 +757,7 @@ function factorizeRendering() {
     enforceBounds();
     expandStarters();
 }
+
 function recursivelyFactor(id, ele) {
     if (ele) {
         var arr = ele.children;
@@ -845,6 +912,7 @@ function validateInput($input) {
 
     return true;
 }
+
 function validateAllInputs() {
     var validation = $("[data-valid]");
     var ret = true;
@@ -861,7 +929,10 @@ function collapseGroups() {
     $(".collapsing").each(function () {
         var $div = $(this);
         var collapseStr = "collapse-" + $div.attr("id");
-        var $collapseDiv = $("<div>", { class: "collapse in", id: collapseStr });
+        var $collapseDiv = $("<div>", {
+            class: "collapse in",
+            id: collapseStr
+        });
         var $toggle = $("<a>").attr("data-toggle", "collapse")
             .attr("data-target", "#" + collapseStr)
             .addClass("group-collapse-toggle");
@@ -880,7 +951,10 @@ function collapseGroups() {
     $(".collapsed").each(function () {
         var $div = $(this);
         var collapseStr = "collapse-" + $div.attr("id");
-        var $collapseDiv = $("<div>", { class: "collapse", id: collapseStr });
+        var $collapseDiv = $("<div>", {
+            class: "collapse",
+            id: collapseStr
+        });
         var $toggle = $("<a>").attr("data-toggle", "collapse")
             .attr("data-target", "#" + collapseStr)
             .addClass("group-collapse-toggle collapsed");
@@ -906,7 +980,10 @@ function collapseDiv($name, $div) {
         .attr("data-target", "#" + collapseStr)
         .addClass("group-collapse-toggle");
 
-    var $collapseDiv = $("<div>", { class: "collapse in", id: collapseStr });
+    var $collapseDiv = $("<div>", {
+        class: "collapse in",
+        id: collapseStr
+    });
 
     $name.append($toggle);
 
@@ -958,6 +1035,7 @@ function prevStage() {
         }, 500);
     }
 }
+
 function nextStage(flag) {
     if (!proceeding) {
         proceeding = true;
@@ -1009,6 +1087,7 @@ function getParentName(key) {
         return null;
     }
 }
+
 function getName(key) {
     var arr = key.split("-");
     var index = arr.length - 1;
@@ -1067,7 +1146,9 @@ function buildClone(key, target, $factoryBtn) {
     var cloneID = $clone.attr("id");
 
     // Replace control buttons
-    var $button = $("<button>", { class: "intent-button-remove close" });
+    var $button = $("<button>", {
+        class: "intent-button-remove close"
+    });
     $button.attr("aria-label", "Close");
     $button.html("<span aria-hidden=\"true\">&times;</span>");
     $button.click(function () {
@@ -1092,7 +1173,12 @@ function buildClone(key, target, $factoryBtn) {
         $target.append($clone);
     }
 
-    gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, { ease: Power2.easeInOut, paused: true, opacity: "1", display: "block" });
+    gsap[cloneID] = new TweenLite("#" + cloneID, 0.5, {
+        ease: Power2.easeInOut,
+        paused: true,
+        opacity: "1",
+        display: "block"
+    });
     gsap[cloneID].play();
 
     // Reset listeners
@@ -1151,7 +1237,9 @@ function refreshLinks() {
         var currSelection = $input.val();
         $input.children().remove();
         var link = $input.data("link");
-        var $default = $("<option>", { selected: true }).text("");
+        var $default = $("<option>", {
+            selected: true
+        }).text("");
         $input.append($default);
 
         var targetArr = $(".block-" + link);
@@ -1202,6 +1290,7 @@ function refreshNumerals($ele) {
         }
     }
 }
+
 function refreshNames() {
     var $nameArr = $("[data-name]");
     for (var i = 0; i < $nameArr.length; i++) {
@@ -1296,6 +1385,7 @@ function parseSchemaIntoManifest(schema) {
 }
 
 var recurCache = {};
+
 function parseManifestIntoJSON() {
     // Step 1: Reorg hierarchy
     $(intent).find("path").each(function () {
@@ -1481,6 +1571,7 @@ function findKeyDeepCache(recur, key) {
     }
     return result;
 }
+
 function findKeyDeep(recur, key) {
     var result = null;
     if (recur instanceof Array) {
@@ -1528,6 +1619,7 @@ function simplifyManifest(manifest) {
         simplifyManifestSub(manifest[prop], prop);
     }
 }
+
 function simplifyManifestSub(recur, key) {
     for (var prop in recur) {
         var index = prop.indexOf(key);
@@ -1604,6 +1696,7 @@ function checkFulfillment() {
 }
 
 var nameRetrievalArr = [];
+
 function getNames(obj, name) {
     for (var key in obj) {
         if (obj.hasOwnProperty(key)) {
@@ -1742,7 +1835,9 @@ function initializeInputs() {
             }
         }
         if (constEle) {
-            var $message = $("<div>", { class: "intent-input-message" });
+            var $message = $("<div>", {
+                class: "intent-input-message"
+            });
             if (constEle.getElementsByTagName("message").length > 0) {
                 $message.text(constEle.getElementsByTagName("message")[0].innerHTML);
             }
@@ -1788,6 +1883,7 @@ function generalizeID(id) {
 function openSaveModal() {
     $("#saveModal").modal();
 }
+
 function saveManifest() {
     var scaffManifest = {};
     scaffManifest["name"] = $("#profile-name").val();
@@ -1809,6 +1905,7 @@ function saveManifest() {
         }
     });
 }
+
 function parseTestManifest() {
     // Get all inputs.
     $(".conditional").removeClass("conditional");
@@ -1870,6 +1967,7 @@ function preloadDNC() {
         $("#connections-connection_num1-terminal_num3-vlan_tag").val("103");
     }, 500);
 }
+
 function preloadAWSVCN() {
     $("#meta-alias").val("Preloaded VCN AWS Test");
     $("[name=block-gateways]").val(2).change();
@@ -1896,6 +1994,7 @@ function preloadAWSVCN() {
         $("#gateways-gateway_num1-route_num1-to").val("urn:ogf:network:domain=dragon.maxgigapop.net:node=CLPK:port=1-1-2:link=*");
     }, 500);
 }
+
 function preloadOPSVCN() {
     $("#meta-alias").val("Preloaded VCN OPS Test");
     $("[name=block-gateways]").val(2).change();
@@ -1938,6 +2037,7 @@ function preloadOPSVCN() {
         $("#sriovs-sriov_num2-mac_address").val("aa:bb:cc:dd:01:57");
     }, 500);
 }
+
 function preloadAHC() {
     $("#meta-alias").val("Preloaded AHC Test");
 
@@ -2019,6 +2119,57 @@ function loadIntentModalALM(mode) {
             });
 
             $modal.modal("show");
+        }
+    });
+}
+
+function loadMD2Modal(directory, pattern, id) {
+    $.ajax({
+        url: window.location.origin + "/StackV-web/restapi/md2/query/search/" + directory,
+        type: "GET",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            let $modal = $("#intent-modal");
+            $modal.attr("data-input", id);
+            $modal.find(".modal-title").text("Please Select an Entry");
+
+            let $list = $("<div class=\"list-group\" style=\"cursor: pointer;text-align:left;overflow:auto;max-height:50vh;\">");
+            let arr = result.replace(/\[|\]|cn=|\s/g, "").split(",");
+            for (var ele of arr) {
+                $list.append("<a class=\"list-group-item list-group-item-action flex-column align-items-start\" data-value=\"" + ele + "\"><h4 style=\"display: inline-block;\">" + ele + "</h4></a>");
+            }
+            $modal.find(".modal-body").empty().append($list);
+            $modal.find(".modal-footer").empty();
+
+            $list.on("click", "a", function (e) {
+                applyMD2Modal(this.getAttribute("data-value"), directory, pattern, $modal.attr("data-input"));
+                $modal.modal("hide");
+            });
+
+            $modal.modal("show");
+        }
+    });
+}
+
+function applyMD2Modal(cn, directory, pattern, id) {
+    $.ajax({
+        url: window.location.origin + "/StackV-web/restapi/md2/query/attr/cn=" + cn + "," + directory,
+        type: "GET",
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
+        },
+        success: function (result) {
+            let ret = JSON.parse(result);
+            let matches = pattern.match(/\${(\w+)}/g);
+            for (let i = 0; i < matches.length; i++) {
+                let match = matches[i].substring(2, matches[i].length - 1);
+                let regex = new RegExp("\\${" + match + "}", "g");
+                pattern = pattern.replace(regex, ret[match][0]);
+            }
+
+            $("#" + id).val(pattern);
         }
     });
 }

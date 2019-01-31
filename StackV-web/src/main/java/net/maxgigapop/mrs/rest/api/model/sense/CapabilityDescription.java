@@ -1,16 +1,15 @@
 package net.maxgigapop.mrs.rest.api.model.sense;
 
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class CapabilityDescription   {
-  
+public class CapabilityDescription {
+
   private @Valid String type = null;
   private @Valid String value = null;
 
@@ -21,12 +20,12 @@ public class CapabilityDescription   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("type")
   public String getType() {
     return type;
   }
+
   public void setType(String type) {
     this.type = type;
   }
@@ -38,16 +37,15 @@ public class CapabilityDescription   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("value")
   public String getValue() {
     return value;
   }
+
   public void setValue(String value) {
     this.value = value;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -58,8 +56,7 @@ public class CapabilityDescription   {
       return false;
     }
     CapabilityDescription capabilityDescription = (CapabilityDescription) o;
-    return Objects.equals(type, capabilityDescription.type) &&
-        Objects.equals(value, capabilityDescription.value);
+    return Objects.equals(type, capabilityDescription.type) && Objects.equals(value, capabilityDescription.value);
   }
 
   @Override
@@ -71,7 +68,7 @@ public class CapabilityDescription   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class CapabilityDescription {\n");
-    
+
     sb.append("    type: ").append(toIndentedString(type)).append("\n");
     sb.append("    value: ").append(toIndentedString(value)).append("\n");
     sb.append("}");
@@ -89,4 +86,3 @@ public class CapabilityDescription   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

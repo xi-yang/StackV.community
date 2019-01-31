@@ -1,12 +1,14 @@
 import React from "react";
 import PropTypes from "prop-types";
 import Mousetrap from "mousetrap";
+import { RotateLoader } from "react-spinners";
 
 import "./admin.css";
 
 import AdminDots from "./components/admin_dots";
 import LoggingPanel from "../datatables/logging_panel";
 import APIPanel from "./components/admin_api";
+import SettingsPanel from "./components/admin_settings";
 
 class Admin extends React.Component {
     constructor(props) {
@@ -19,7 +21,7 @@ class Admin extends React.Component {
         Mousetrap.bind("right", function () { page.viewShift("right"); });
         this.setView = this.setView.bind(this);
         this.state = {
-            view: "logging",
+            view: "settings",
         };
 
     }
@@ -34,18 +36,30 @@ class Admin extends React.Component {
         let modView = [];
         switch (this.state.view) {
             case "api":
-                modView = [true, false];
+                modView = [false, false, true];
+                break;
+            case "settings":
+                modView = [false, true, false];
                 break;
             case "logging":
-                modView = [false, true];
+                modView = [true, false, false];
                 break;
         }
+
         return <div style={{ width: "100%", height: "100%" }}>
-            <div className="page page-admin">
+            <RotateLoader
+                css={"display: block;position: absolute;margin: auto;left: 50%;top: 30%;z-index: 100;"}
+                sizeUnit={"px"}
+                size={15}
+                color={"#7ED321"}
+                loading={this.props.loading}
+            />
+            <div className={this.props.loading ? "page page-admin loading" : "page page-admin"}>
                 <AdminDots view={this.state.view} setView={this.setView}></AdminDots>
 
-                <APIPanel {...this.props} active={modView[0]} />
-                <LoggingPanel {...this.props} active={modView[1]}></LoggingPanel>
+                <LoggingPanel {...this.props} active={modView[0]}></LoggingPanel>
+                <SettingsPanel {...this.props} active={modView[1]} />
+                <APIPanel {...this.props} active={modView[2]} />
             </div>
         </div>;
     }
@@ -53,16 +67,25 @@ class Admin extends React.Component {
     // =============== //
     viewShift(dir) {
         switch (this.state.view) {
-            case "api":
+            case "logging":
                 if (dir === "right") {
-                    this.setState({ view: "logging" });
+                    this.setState({ view: "settings" });
                 }
                 break;
-            case "logging":
+            case "settings":
                 if (dir === "left") {
+                    this.setState({ view: "logging" });
+                }
+                if (dir === "right") {
                     this.setState({ view: "api" });
                 }
                 break;
+            case "api":
+                if (dir === "left") {
+                    this.setState({ view: "settings" });
+                }
+                break;
+
         }
     }
 }

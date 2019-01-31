@@ -1,22 +1,22 @@
-import React from "react";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { far } from "@fortawesome/free-regular-svg-icons";
+import { fas } from "@fortawesome/free-solid-svg-icons";
+import "bootstrap";
 //import Keycloak from "keycloak-js";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
-import "bootstrap";
+import React from "react";
 import ReactInterval from "react-interval";
-
-import "./global.css";
-
-import Navbar from "./nav/navbar";
-import Visualization from "./visual/visualization";
+import Admin from "./admin/admin";
 import Catalog from "./catalog/catalog";
 import Details from "./details/details";
 import Drivers from "./drivers/drivers";
-import Admin from "./admin/admin";
+import "./global.css";
+import Navbar from "./nav/navbar";
+import Visualization from "./visual/visualization";
 
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { fas } from "@fortawesome/free-solid-svg-icons";
-import { far } from "@fortawesome/free-regular-svg-icons";
+
+
 
 library.add(far, fas);
 
@@ -53,7 +53,8 @@ class Portal extends React.Component {
             keycloak: keycloak,
             visualMode: "new",
             page: "catalog",
-            refreshTimer: 500,
+            loading: false,
+            refreshTimer: 1000,
             refreshEnabled: false,
         };
 
@@ -65,26 +66,14 @@ class Portal extends React.Component {
         this.setRefresh = this.setRefresh.bind(this);
         this.healthCheck = this.healthCheck.bind(this);
         this.tokenCheck = this.tokenCheck.bind(this);
+        this.frameLoad = this.frameLoad.bind(this);
+        this.checkRegistration = this.checkRegistration.bind(this);
 
         Mousetrap.bind("shift+left", () => { this.viewShift("left"); });
         Mousetrap.bind("shift+right", () => { this.viewShift("right"); });
     }
     componentDidMount() {
-        /*const keycloak = Keycloak("/StackV-web/resources/keycloak.json");
-        keycloak.init({ onLoad: "login-required" }).then(authenticated => {
-            this.setState({ keycloak: keycloak, authenticated: authenticated });
-        }).catch(function () {
-            alert("failed to initialize");
-        });
-
-        $.ajaxSetup({
-            cache: false,
-            timeout: 60000,
-            beforeSend: function (xhr) {
-                xhr.setRequestHeader("Authorization", "bearer " + keycloak.token);
-                xhr.setRequestHeader("Refresh", keycloak.refreshToken);
-            }
-        });*/
+        this.checkRegistration();
     }
     verifyPageAccess(newPage, param) {
         let portal = this;
@@ -124,7 +113,7 @@ class Portal extends React.Component {
     }
 
     switchPage(page, param) {
-        if (this.verifyPageAccess(page, param)) {
+        if (this.verifyPageAccess(page, param) && this.state.page !== page) {
             switch (page) {
                 case "details":
                     if (param && param.uuid) {
@@ -145,7 +134,7 @@ class Portal extends React.Component {
                     }
                     break;
                 default:
-                    this.setState({ page: page, refreshEnabled: false });
+                    this.setState({ page: page, refreshEnabled: false, uuid: undefined });
             }
         } else {
             iziToast.show(accessDeniedToast);
@@ -186,6 +175,16 @@ class Portal extends React.Component {
     }
 
     /* */
+    frameLoad(time, callback) {
+        let page = this;
+        this.setState({ loading: true });
+        setTimeout(function () {
+            page.setState({ loading: false });
+            if (callback && typeof callback === "function") {
+                callback();
+            }
+        }, time);
+    }
     pauseRefresh() {
         this.setState({ refreshEnabled: false });
     }
@@ -198,15 +197,15 @@ class Portal extends React.Component {
     loadPage() {
         switch (this.state.page) {
             case "visualization":
-                return <Visualization visualMode={this.state.visualMode} keycloak={this.state.keycloak} />;
+                return <Visualization {...this.state} visualMode={this.state.visualMode} keycloak={this.state.keycloak} />;
             case "catalog":
                 return <Catalog {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "details":
-                return <Details {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
+                return <Details {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} frameLoad={this.frameLoad} />;
             case "drivers":
                 return <Drivers {...this.state} switchPage={this.switchPage} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
             case "admin":
-                return <Admin {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} />;
+                return <Admin {...this.state} pauseRefresh={this.pauseRefresh} resumeRefresh={this.resumeRefresh} frameLoad={this.frameLoad} />;
             default:
                 return <div></div>;
         }
@@ -238,6 +237,111 @@ class Portal extends React.Component {
                         break;
                 }
         }
+    }
+    checkRegistration() {
+        let portal = this;
+        $.ajax({
+            url: window.location.origin + "/StackV-web/restapi/config/system.name",
+            async: false,
+            type: "GET",
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader("Authorization", "bearer " + portal.state.keycloak.token);
+                xhr.setRequestHeader("Refresh", portal.state.keycloak.token);
+            },
+            success: function (name) {
+                if (name) {
+                    console.log("Orchestrator " + name + " online.");
+                } else {
+                    iziToast.question({
+                        drag: false,
+                        timeout: false,
+                        close: false,
+                        overlay: true,
+                        displayMode: 1,
+                        id: "question",
+                        progressBar: true,
+                        title: "Server Registration",
+                        message: "Please register a server name:",
+                        position: "center",
+                        inputs: [
+                            ["<input type=\"text\">", "keyup", function (instance, toast, input, e) {
+                                //console.info(e);                                
+                            }, true]
+                        ],
+                        buttons: [
+                            ["<button><b>Confirm</b></button>", function (instance, toast, button, e, inputs) {
+                                console.info(button);
+                                console.info(e);
+                                $.ajax({
+                                    url: window.location.origin + "/StackV-web/restapi/config/system.name/" + encodeURIComponent(inputs[0].value),
+                                    async: false,
+                                    type: "PUT",
+                                    beforeSend: function (xhr) {
+                                        xhr.setRequestHeader("Authorization", "bearer " + portal.state.keycloak.token);
+                                        xhr.setRequestHeader("Refresh", portal.state.keycloak.token);
+                                    },
+                                    success: function () {
+                                        $.ajax({
+                                            url: window.location.origin + "/StackV-web/restapi/md2/register/",
+                                            async: false,
+                                            type: "POST",
+                                            beforeSend: function (xhr) {
+                                                xhr.setRequestHeader("Authorization", "bearer " + portal.state.keycloak.token);
+                                                xhr.setRequestHeader("Refresh", portal.state.keycloak.token);
+                                            },
+                                            success: function () {
+                                                iziToast.success({
+                                                    id: "success",
+                                                    zindex: 9999,
+                                                    timeout: 2000,
+                                                    title: "Success",
+                                                    overlay: true,
+                                                    message: "Orchestrator registered.",
+                                                    position: "center"
+                                                });
+                                            },
+                                            error: function () {
+                                                iziToast.error({
+                                                    id: "error",
+                                                    zindex: 9999,
+                                                    timeout: 2000,
+                                                    title: "Error",
+                                                    overlay: true,
+                                                    message: "Orchestrator unable to be registered. Please check global settings.",
+                                                    position: "center"
+                                                });
+                                                portal.switchPage("admin");
+                                            }
+                                        });
+                                    },
+                                    error: function () {
+                                        iziToast.error({
+                                            id: "error",
+                                            zindex: 9999,
+                                            timeout: 2000,
+                                            title: "Error",
+                                            overlay: true,
+                                            message: "Orchestrator unable to be saved. Please refresh and try again.",
+                                            position: "center"
+                                        });
+                                    }
+                                });
+                                instance.hide({ transitionOut: "fadeOut" }, toast, "button");
+                                /* iziToast.success({
+                                     id: 'success',
+                                     zindex: 9999,
+                                     timeout: 2000,
+                                     title: 'Success',
+                                     overlay: true,
+                                     message: 'Thank you',
+                                     position: 'center'
+                                 });*/
+                            }, false], // true to focus                            
+                        ]
+                    });
+                }
+            }
+        });
     }
 }
 export default Portal;

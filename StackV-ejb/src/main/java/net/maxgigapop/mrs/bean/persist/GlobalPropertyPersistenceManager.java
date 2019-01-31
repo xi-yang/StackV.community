@@ -31,6 +31,7 @@ import javax.persistence.TemporalType;
 import net.maxgigapop.mrs.bean.GlobalProperty;
 import static net.maxgigapop.mrs.bean.persist.PersistenceManager.createQuery;
 import net.maxgigapop.mrs.common.StackLogger;
+import org.json.simple.JSONObject;
 
 /*
  *
@@ -69,6 +70,29 @@ public class GlobalPropertyPersistenceManager extends PersistenceManager {
         }
         return gp.getValue();
     }
+
+    
+    public static String getAll() {
+        try {
+            Query q = createQuery(String.format("FROM %s", GlobalProperty.class.getSimpleName()));
+            List<GlobalProperty> list = (List<GlobalProperty>) q.getResultList();
+            if (list == null || list.isEmpty()) {
+                return null;
+            }
+            JSONObject jo = new JSONObject();
+            for (GlobalProperty gpo: list) {
+                jo.put(gpo.getProperty(), gpo.getValue());
+            }
+            return jo.toJSONString();
+        } catch (Exception e) {
+            if (e.getMessage().contains("No entity found")) {
+                logger.warning("getAll", "global_property list is empty.");
+                return null;
+            }
+            throw logger.error_throwing("getAll", e.getMessage());
+        }
+    }
+
 
     public static void setProperty(String property, String value) {
         GlobalProperty gp = findByProperty(property);

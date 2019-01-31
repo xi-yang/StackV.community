@@ -2,17 +2,16 @@ package net.maxgigapop.mrs.rest.api.model.sense;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class ServiceIntentRequestQueries   {
-  
+public class ServiceIntentRequestQueries {
+
   private @Valid String ask = null;
   private @Valid List<Object> options = new ArrayList<Object>();
 
@@ -23,12 +22,12 @@ public class ServiceIntentRequestQueries   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("ask")
   public String getAsk() {
     return ask;
   }
+
   public void setAsk(String ask) {
     this.ask = ask;
   }
@@ -40,16 +39,15 @@ public class ServiceIntentRequestQueries   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("options")
   public List<Object> getOptions() {
     return options;
   }
+
   public void setOptions(List<Object> options) {
     this.options = options;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -60,8 +58,8 @@ public class ServiceIntentRequestQueries   {
       return false;
     }
     ServiceIntentRequestQueries serviceIntentRequestQueries = (ServiceIntentRequestQueries) o;
-    return Objects.equals(ask, serviceIntentRequestQueries.ask) &&
-        Objects.equals(options, serviceIntentRequestQueries.options);
+    return Objects.equals(ask, serviceIntentRequestQueries.ask)
+        && Objects.equals(options, serviceIntentRequestQueries.options);
   }
 
   @Override
@@ -73,7 +71,7 @@ public class ServiceIntentRequestQueries   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ServiceIntentRequestQueries {\n");
-    
+
     sb.append("    ask: ").append(toIndentedString(ask)).append("\n");
     sb.append("    options: ").append(toIndentedString(options)).append("\n");
     sb.append("}");
@@ -91,4 +89,3 @@ public class ServiceIntentRequestQueries   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

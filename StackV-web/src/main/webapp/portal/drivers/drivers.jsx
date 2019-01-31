@@ -1,11 +1,11 @@
-import React from "react";
-import PropTypes from "prop-types";
-import iziToast from "izitoast";
-import ReactInterval from "react-interval";
 import { Set } from "immutable";
-
+import iziToast from "izitoast";
+import PropTypes from "prop-types";
+import React from "react";
+import ReactInterval from "react-interval";
 import DriverModal from "./components/driver_modal";
 import "./drivers.css";
+
 
 const unavailableToast = {
     theme: "dark",
@@ -216,15 +216,25 @@ class Drivers extends React.Component {
             });
         } else {
             // Disable driver
-            let apiURL = window.location.origin + "/StackV-web/restapi/driver/" + urn + "/disabled/true";
             $.ajax({
-                url: apiURL,
+                url: window.location.origin + "/StackV-web/restapi/driver/" + urn + "/disabled/true",
                 type: "PUT",
                 beforeSend: function (xhr) {
                     xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
                     xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
                 },
-                success: function (result) {
+                success: function () {
+                    page.props.resumeRefresh();
+                },
+            });
+            $.ajax({
+                url: window.location.origin + "/StackV-web/restapi/ready/reset",
+                type: "PUT",
+                beforeSend: function (xhr) {
+                    xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
+                    xhr.setRequestHeader("Refresh", page.props.keycloak.refreshToken);
+                },
+                success: function () {
                     page.props.resumeRefresh();
                 },
             });

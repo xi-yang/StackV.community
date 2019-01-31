@@ -23,9 +23,11 @@
 package net.maxgigapop.mrs.rest.api.exception;
 
 import java.sql.SQLException;
+
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.json.simple.JSONObject;
 
@@ -41,8 +43,8 @@ public class SQLExceptionMapper implements ExceptionMapper<SQLException> {
         jsonErrResponse.put("type", exception.toString());
         jsonErrResponse.put("exception", exception.getMessage());
         jsonErrResponse.put("cause", exception.getCause());
-        jsonErrResponse.put("stacktrace", ExceptionUtils.getStackTrace(exception));                
-        
+        jsonErrResponse.put("stacktrace", ExceptionUtils.getStackTrace(exception));
+
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(jsonErrResponse.toJSONString()).build();
     }
 }

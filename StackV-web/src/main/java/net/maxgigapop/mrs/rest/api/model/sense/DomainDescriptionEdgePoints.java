@@ -2,19 +2,16 @@ package net.maxgigapop.mrs.rest.api.model.sense;
 
 import java.util.ArrayList;
 import java.util.List;
-import net.maxgigapop.mrs.rest.api.model.sense.CapabilityDescription;
-import net.maxgigapop.mrs.rest.api.model.sense.ServiceTerminationPoint;
-import javax.validation.constraints.*;
+import java.util.Objects;
+
 import javax.validation.Valid;
 
-
-import io.swagger.annotations.*;
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import io.swagger.annotations.ApiModelProperty;
 
-public class DomainDescriptionEdgePoints   {
-  
+public class DomainDescriptionEdgePoints {
+
   private @Valid ServiceTerminationPoint stp = null;
   private @Valid List<CapabilityDescription> capailities = new ArrayList<CapabilityDescription>();
   private @Valid String peerUri = null;
@@ -27,12 +24,12 @@ public class DomainDescriptionEdgePoints   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("stp")
   public ServiceTerminationPoint getStp() {
     return stp;
   }
+
   public void setStp(ServiceTerminationPoint stp) {
     this.stp = stp;
   }
@@ -44,12 +41,12 @@ public class DomainDescriptionEdgePoints   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("capailities")
   public List<CapabilityDescription> getCapailities() {
     return capailities;
   }
+
   public void setCapailities(List<CapabilityDescription> capailities) {
     this.capailities = capailities;
   }
@@ -61,12 +58,12 @@ public class DomainDescriptionEdgePoints   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("peer_uri")
   public String getPeerUri() {
     return peerUri;
   }
+
   public void setPeerUri(String peerUri) {
     this.peerUri = peerUri;
   }
@@ -78,16 +75,15 @@ public class DomainDescriptionEdgePoints   {
     return this;
   }
 
-  
   @ApiModelProperty(value = "")
   @JsonProperty("peer_name")
   public String getPeerName() {
     return peerName;
   }
+
   public void setPeerName(String peerName) {
     this.peerName = peerName;
   }
-
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -98,10 +94,10 @@ public class DomainDescriptionEdgePoints   {
       return false;
     }
     DomainDescriptionEdgePoints domainDescriptionEdgePoints = (DomainDescriptionEdgePoints) o;
-    return Objects.equals(stp, domainDescriptionEdgePoints.stp) &&
-        Objects.equals(capailities, domainDescriptionEdgePoints.capailities) &&
-        Objects.equals(peerUri, domainDescriptionEdgePoints.peerUri) &&
-        Objects.equals(peerName, domainDescriptionEdgePoints.peerName);
+    return Objects.equals(stp, domainDescriptionEdgePoints.stp)
+        && Objects.equals(capailities, domainDescriptionEdgePoints.capailities)
+        && Objects.equals(peerUri, domainDescriptionEdgePoints.peerUri)
+        && Objects.equals(peerName, domainDescriptionEdgePoints.peerName);
   }
 
   @Override
@@ -113,7 +109,7 @@ public class DomainDescriptionEdgePoints   {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class DomainDescriptionEdgePoints {\n");
-    
+
     sb.append("    stp: ").append(toIndentedString(stp)).append("\n");
     sb.append("    capailities: ").append(toIndentedString(capailities)).append("\n");
     sb.append("    peerUri: ").append(toIndentedString(peerUri)).append("\n");
@@ -133,4 +129,3 @@ public class DomainDescriptionEdgePoints   {
     return o.toString().replace("\n", "\n    ");
   }
 }
-

@@ -1,40 +1,29 @@
 /* global details_viz */
-import React from "react";
-import PropTypes from "prop-types";
 import { Map } from "immutable";
 import Mousetrap from "mousetrap";
-import { css } from "emotion";
-import { RotateLoader } from "react-spinners";
+import PropTypes from "prop-types";
+import React from "react";
 import ReactInterval from "react-interval";
-
+import { RotateLoader } from "react-spinners";
+import AccessPanel from "../datatables/access_panel";
+import LoggingPanel from "../datatables/logging_panel";
+import DetailsDots from "./components/details_dots";
+import DetailsPanel from "./components/details_panel";
+import VisualizationPanel from "./components/visualization_panel";
 import "./details.css";
 
-import DetailsPanel from "./components/details_panel";
-import DetailsDots from "./components/details_dots";
-import LoggingPanel from "../datatables/logging_panel";
-import VisualizationPanel from "./components/visualization_panel";
-import AccessPanel from "../datatables/access_panel";
+
 
 var $intentModal = $("#details-intent-modal");
 var intentConfig = {
     width: 750
 };
 
-const override = css`
-    display: block;
-    position: absolute;
-    margin: auto;
-    left: 50%;
-    top: 30%;
-    z-index: 100;
-`;
-
 class Details extends React.Component {
     constructor(props) {
         super(props);
 
         this.viewShift = this.viewShift.bind(this);
-        this.load = this.load.bind(this);
 
         let page = this;
         Mousetrap.bind("left", function () { page.viewShift("left"); });
@@ -44,7 +33,6 @@ class Details extends React.Component {
         this.setView = this.setView.bind(this);
         this.state = {
             view: "details",
-            loading: false,
             meta: {},
             state: {},
             verify: {},
@@ -63,14 +51,6 @@ class Details extends React.Component {
     }
     componentWillUnmount() {
         $intentModal.iziModal("destroy");
-    }
-
-    load(seconds) {
-        let page = this;
-        this.setState({ loading: true });
-        setTimeout(function () {
-            page.setState({ loading: false });
-        }, seconds * 1000);
     }
     setView(panel) {
         this.setState({ view: panel });
@@ -93,30 +73,33 @@ class Details extends React.Component {
                 break;
         }
 
-        let accessAvailable = (this.state.state.sub === "READY" && (this.state.state.super === "CREATE" || this.state.state.super === "REINSTATE"));
+        let modAllowed = [true, true, true, true];
+        modAllowed[2] = (this.state.state.sub !== "INIT");
+        modAllowed[3] = (this.state.state.sub === "READY" && (this.state.state.super === "CREATE" || this.state.state.super === "REINSTATE"));
+
         let pageClasses = "page page-details";
-        if (this.state.loading) {
+        if (this.props.loading) {
             pageClasses = "page page-details loading";
         }
         return <div style={{ width: "100%", height: "100%" }}>
-            <ReactInterval timeout={this.props.refreshTimer} enabled={(this.props.refreshEnabled && !this.state.loading)} callback={this.fetchData} />
-            <ReactInterval timeout={10000} enabled={(this.props.refreshEnabled && !this.state.loading)} callback={this.loadVisualization} />
+            <ReactInterval timeout={this.props.refreshTimer} enabled={(this.props.refreshEnabled && !this.props.loading)} callback={this.fetchData} />
+            <ReactInterval timeout={10000} enabled={this.props.refreshEnabled && !this.props.loading && $(".displayPanel-active").length === 0} callback={this.loadVisualization} />
             <RotateLoader
-                className={override}
+                css={"display: block;position: absolute;margin: auto;left: 50%;top: 30%;z-index: 100;"}
                 sizeUnit={"px"}
                 size={15}
                 color={"#7ED321"}
-                loading={this.state.loading}
+                loading={this.props.loading}
             />
             <div className={pageClasses}>
-                <DetailsDots view={this.state.view} setView={this.setView} access={accessAvailable}></DetailsDots>
+                <DetailsDots view={this.state.view} setView={this.setView} allowed={modAllowed}></DetailsDots>
 
                 <LoggingPanel {...this.props} active={modActive[0]}></LoggingPanel>
                 <DetailsPanel active={modActive[1]} uuid={this.props.uuid} meta={Map(this.state.meta)} state={Map(this.state.state)}
                     verify={Map(this.state.verify)} load={this.load} {...this.props} />
-                <VisualizationPanel active={modActive[2]} verify={Map(this.state.verify)}></VisualizationPanel>
+                {modAllowed[2] && <VisualizationPanel active={modActive[2]} verify={Map(this.state.verify)}></VisualizationPanel>}
 
-                {accessAvailable && <AccessPanel active={modActive[3]} {...this.props} />}
+                {modAllowed[3] && <AccessPanel active={modActive[3]} {...this.props} />}
                 <div id="details-viz"></div>
             </div>
         </div>;

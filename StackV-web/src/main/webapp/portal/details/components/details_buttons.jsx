@@ -1,6 +1,4 @@
 import React from "react";
-import PropTypes from "prop-types";
-
 import AccessModal from "./access_modal";
 
 var confirmConfig = {
@@ -127,7 +125,7 @@ class ButtonPanel extends React.Component {
                 <OpButton operation="Cancel" uuid={this.props.uuid} visible={this.state.cancel} send={this.sendRequest} />
                 <OpButton operation="Force Cancel" uuid={this.props.uuid} visible={this.state.force_cancel} send={this.sendRequest} />
                 <OpButton operation="Reinstate" uuid={this.props.uuid} visible={this.state.reinstate} send={this.sendRequest} />
-                <OpButton operation="Force Reinstate" uuid={this.props.uuid} visible={this.state.force_reinstatel} send={this.sendRequest} />
+                <OpButton operation="Force Reinstate" uuid={this.props.uuid} visible={this.state.force_reinstate} send={this.sendRequest} />
                 <OpButton operation="Modify" uuid={this.props.uuid} visible={this.state.modify} send={this.sendRequest} />
                 <OpButton operation="Verify" uuid={this.props.uuid} visible={this.state.verify} send={this.sendRequest} />
                 <OpButton operation="Unverify" label="Cancel Verification" uuid={this.props.uuid} visible={this.state.unverify} send={this.sendRequest} />
@@ -164,19 +162,19 @@ class ButtonPanel extends React.Component {
                                 window.document.location = "/StackV-web/portal/";
                             }, 100);
                         } else {
-                            if (panel.props.resume) { panel.props.resume(); }
+                            if (panel.props.resume) { panel.props.frameLoad(1000); panel.props.resume(); }
                         }
                         break;
                     case "verify":
                         if (panel.props.page === "details") {
-                            panel.props.load(5);
+                            panel.props.frameLoad(4000);
                         } else {
                             if (panel.props.resume) { panel.props.resume(); }
                         }
                         break;
                     default:
                         if (panel.props.page === "details") {
-                            panel.props.load(5);
+                            panel.props.frameLoad(4000);
                         } else {
                             if (panel.props.resume) { panel.props.resume(); }
                         }

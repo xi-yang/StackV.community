@@ -22,29 +22,45 @@
  */
 package net.maxgigapop.mrs.common;
 
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.ResponseBody;
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.security.cert.CertificateException;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
+import com.squareup.okhttp.ResponseBody;
+
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.keycloak.authorization.client.AuthzClient;
+import org.keycloak.authorization.client.Configuration;
 
 /**
  *
  * @author rikenavadur
  */
 public class TokenHandler {
+    private Map<String, Object> cred = new HashMap<String, Object>() {
+        private static final long serialVersionUID = 1L;
+        {
+            put("secret", "ae53fbea-8812-4c13-918f-0065a1550b7c");
+            // put("secret", "b1c063dd-1a2a-464f-8a9f-7fd2fac74a23");
+        }
+    };;
+    private Configuration config = new Configuration("https://k152.maxgigapop.net:8543/auth", "StackV", "StackV", cred,
+            null);
+    AuthzClient keycloakClient = AuthzClient.create(config);
 
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TokenHandler");
     private final String kc_url = System.getProperty("kc_url");
@@ -54,7 +70,7 @@ public class TokenHandler {
     private String auth = "Basic " + kc_encode;
     private String durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
 
-    private final OkHttpClient client;
+    private final OkHttpClient httpClient;
     private static final MediaType URL = MediaType.parse("application/x-www-form-urlencoded; charset=utf-8");
     private String requestData;
 
@@ -74,9 +90,9 @@ public class TokenHandler {
         }
         refreshToken = refresh;
         requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
-        
-        client = getClient();
-        refreshTokenSub(0);        
+
+        httpClient = getClient();
+        refreshTokenSub(0);
     }
 
     public TokenHandler(String refresh, String realm, String encode) {
@@ -89,8 +105,8 @@ public class TokenHandler {
         auth = "Basic " + kc_encode;
         durl = kc_url + "/realms/" + kc_realm + "/protocol/openid-connect/token";
         requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;
-        
-        client = getClient();
+
+        httpClient = getClient();
         refreshTokenSub(0);
     }
 
@@ -117,7 +133,7 @@ public class TokenHandler {
             RequestBody body = RequestBody.create(URL, requestData);
             Request request = new Request.Builder().url(durl).header("Authorization", auth).post(body).build();
 
-            try (ResponseBody response = client.newCall(request).execute().body()) {
+            try (ResponseBody response = httpClient.newCall(request).execute().body()) {
                 JSONObject ret = (JSONObject) parser.parse(response.string());
 
                 accessToken = (String) ret.get("access_token");
@@ -147,22 +163,22 @@ public class TokenHandler {
     private OkHttpClient getClient() {
         try {
             // Create a trust manager that does not validate certificate chains
-            final TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    @Override
-                    public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                    }
-
-                    @Override
-                    public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-                    }
-
-                    @Override
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                        return null;
-                    }
+            final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+                @Override
+                public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType)
+                        throws CertificateException {
                 }
-            };
+
+                @Override
+                public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType)
+                        throws CertificateException {
+                }
+
+                @Override
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+            } };
 
             // Install the all-trusting trust manager
             final SSLContext sslContext = SSLContext.getInstance("SSL");
