@@ -339,9 +339,9 @@ public class ServiceHandler {
 
         commonsClose(front_conn, prep, null, logger);
 
-        URL url = new URL(String.format("%s/md2/servicepolicies/%s", HOST, refUuid));
-        HttpURLConnection delete = (HttpURLConnection) url.openConnection();
-        executeHttpMethod(url, delete, "DELETE", null, token.auth());
+        // URL url = new URL(String.format("%s/md2/servicepolicies/%s", HOST, refUuid));
+        // HttpURLConnection delete = (HttpURLConnection) url.openConnection();
+        // executeHttpMethod(url, delete, "DELETE", null, token.auth());
 
         String result = delete(refUuid, token.auth());
 

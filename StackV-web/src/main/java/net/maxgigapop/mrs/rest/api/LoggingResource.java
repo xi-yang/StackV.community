@@ -62,10 +62,10 @@ import org.json.simple.parser.JSONParser;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 
-import net.maxgigapop.mrs.common.StackLogger;
-import net.maxgigapop.mrs.system.HandleSystemCall;
 import net.maxgigapop.mrs.common.AuditService;
 import net.maxgigapop.mrs.common.KeycloakHandler;
+import net.maxgigapop.mrs.common.StackLogger;
+import net.maxgigapop.mrs.system.HandleSystemCall;
 
 /**
  * Logging Resource

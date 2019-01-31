@@ -215,9 +215,35 @@ public class MD2Resource {
         logger.trace_start(method);
         HashMap<String, String[]> map = new HashMap<>();
         map.put("cn", new String[] { "cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
-        map.put("objectclass", new String[] { "top", "dckConfig" });
-
+        map.put("objectclass", new String[] { "top", "dckContainer" });
         conn.add(map);
+
+        // Automation subentry
+        map.put("cn", new String[] { "cn=automation,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+        map.put("cn", new String[] { "cn=devices,cn=automation,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+        map.put("cn", new String[] { "cn=networks,cn=automation,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+        map.put("cn", new String[] { "cn=servers,cn=automation,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+
+        // Configuration subentry
+        map.put("cn", new String[] { "cn=configuration,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+        map.put("cn", new String[] { "cn=cloud,cn=configuration,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+        map.put("cn",
+                new String[] { "cn=network,cn=cloud,cn=configuration,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+        map.put("cn",
+                new String[] { "cn=server,cn=cloud,cn=configuration,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+        map.put("cn", new String[] { "cn=credentials,cn=configuration,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+        map.put("cn", new String[] { "cn=default,cn=configuration,cn=" + driver + ",cn=domains,cn=dck,cn=stackv" });
+        conn.add(map);
+
         logger.end(method);
         return "cn=" + driver + ",cn=domains,cn=dck,cn=stackv";
     }
