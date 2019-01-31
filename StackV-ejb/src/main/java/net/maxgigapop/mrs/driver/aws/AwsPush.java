@@ -834,7 +834,8 @@ public class AwsPush {
                 //requests += String.format("RunInstancesRequest ami-146e2a7c t2.micro ") 
                 //requests+=String.format("InstanceNetworkInterfaceSpecification %s %d",id,index)
                 String[] parameters = request.split("\\s+");
-                System.out.println("**RunInstancesRequest - parameters: " + parameters);
+                System.out.println("**RunInstancesRequest - request: " + request);
+                System.out.println("**RunInstancesRequest - parameters: " + Arrays.deepToString(parameters));
 
                 RunInstancesRequest runInstance = new RunInstancesRequest();
                 runInstance.withImageId(parameters[1]);
@@ -995,22 +996,15 @@ public class AwsPush {
                 JSONObject vmAttrs = new JSONObject();
                 
                 
-                // ***DOES imageID WORK??
-                dckVMEntryCN = parameters[1]; //imageID
+                // VM URI
+                // NOTE: the position is hard to be numbered as there is a while loop that builds the string
+                dckVMEntryCN = parameters[parameters.length - 1];
+                System.out.println("**AwsPush - dckVMEntryCN (vmuri): " + dckVMEntryCN);
+                System.out.println("**AwsPush - topologyuri: " + topologyUri);
                 
-                // *** WHAT ARE THE OTHER VM ATTRIBUTES NEEDED UNDER THE CONTAINER?
-                // just testing to make sure attributes work
-                String instanceType = parameters[2];
-                String keypairName = parameters[3];
-                String maxCount = parameters[4];
-                String minCount = parameters[5];
-                vmAttrs.put("instance_type", instanceType);
-                vmAttrs.put("keypair_name", keypairName);
-                vmAttrs.put("max_count", maxCount);
-                vmAttrs.put("min_count", minCount);
                 
                 //String dckResult = dckOps.addDCKVMEntry(dckVMEntryCN, topologyUri, vmContainerAttrs, vmAttrs);
-                String dckResult = dckOps.addDCKVMEntry(dckVMEntryCN, "demo:top:uri", "", vmContainerAttrs.toJSONString(), vmAttrs.toJSONString());
+                String dckResult = dckOps.addDCKVMEntry(dckVMEntryCN, topologyUri, "", vmContainerAttrs.toJSONString(), vmAttrs.toJSONString());
                 System.out.println("***AwsPush addDCKVMEntry result: " + dckResult);
             } 
             
@@ -1155,7 +1149,7 @@ public class AwsPush {
                 easJSON.put("eastaskoptions", easTaskOptions.toJSONString());
 
                 Dck dckOps = new Dck();
-                String dckResult = dckOps.addDCKVMEntry(globusCN, "demo:top:uri", dckVMEntryCN , dckGlobusContainerAttrs.toJSONString(), dckGlobusJSON);
+                String dckResult = dckOps.addDCKVMEntry(globusCN, topologyUri, dckVMEntryCN , dckGlobusContainerAttrs.toJSONString(), dckGlobusJSON);
                 System.out.println("***RunGlobusConnectRequest - dckResult: " + dckResult);
                 Eas easOps = new Eas();
                 easOps.createEasTaskForVF(easJSON);
@@ -3365,6 +3359,7 @@ public class AwsPush {
                 
                 //flavorID = "m4.xlarge"; //for testing instances with more than 3 network interfaces
                 //put request for new instance
+                String vmURI = node.asResource().getURI();
                 requests += String.format("RunInstancesRequest %s %s %s %s %s %s ", imageID, flavorID, keypairName, secgroupName, nodeIdTagValue, subnetId);
 
                 //put the root device of the instance
@@ -3391,6 +3386,7 @@ public class AwsPush {
                     requests += "any any any any ";
                 }
                 requests += String.format("%d %s %s ",numRequestedInBatch,portId,vpcId);
+                requests += String.format("%s ", vmURI);
                 requests += "\n";
             }
         }

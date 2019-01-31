@@ -119,7 +119,7 @@ public class Eas {
         paramsArrArgs.put("eastasktriggers", params.get("eastasktriggers"));
         paramsArrArgs.put("eastasklockedby", params.get("eastasklockedby"));
         paramsArrArgs.put("eastasklockexpires", params.get("eastasklockexpires"));
-        paramsArrArgs.put("eastaskresourcerefdn", params.get("eastaskresourcerefdn"));
+        paramsArrArgs.put("eastaskresourcerefdn", escapeLdapDN(params.get("eastaskresourcerefdn").toString()));
         paramsArrArgs.put("eastaskoptions", params.get("eastaskoptions"));
         
        
@@ -128,6 +128,24 @@ public class Eas {
         leaseJSON.put("params", paramsArr);
         
         return runIpaRequest(leaseJSON);
+    }
+    
+    /**
+     * Escapes some special characters in DN (https://ldap.com/ldap-dns-and-rdns/)
+     * @param dn
+     * @return 
+     */
+    private String escapeLdapDN(String dn) {
+        if(isStrNullOrEmpty(dn)) return "";
+        return dn.replace("\\", "\\5c") // escape \
+                .replace("\"","\\\"") // escape "
+                .replace(" ", "\\ ") // escape space
+                .replace(",", "\\,") // escape comma
+                .replace("+", "\\+") // escape +
+                .replace("#","\\#") // escape #
+                .replace("<", "\\<") // escape <
+                .replace(">", "\\>") // escape >
+                .replace(";","\\;"); // escape semicolon
     }
     
     
