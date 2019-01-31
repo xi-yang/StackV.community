@@ -85,10 +85,6 @@ public class Eas {
     }
     
     private boolean createEasTask(JSONObject params) {       
-        if (params.get("dn") == null) {
-            logger.warning("createEasTask", "Null reference DN");
-            return false;
-        }
         JSONObject createEasTaskResponseJSON = createAndRunEasTaskJSON(params);
         
          // parse the JSON response for the address

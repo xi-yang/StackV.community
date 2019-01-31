@@ -3,6 +3,7 @@
  * Created by: Miguel Uzcategui 2015
  * Modified by: Xi Yang 2015-2016
  * Modified by: Adam Smith 2017
+ * Modified by: SaiArvind Ganganapalle 2018-2019
 
  * Permission is hereby granted, free of charge, to any person obtaining a copy 
  * of this software and/or hardware specification (the “Work”) to deal in the 
@@ -217,7 +218,9 @@ public class AwsPush {
         //create new vpn connections
         requests += createVPNConnectionRequests(modelRef, modelAdd);
         
-        globusConnectRequests(modelRef, modelAdd, true);
+        // Added 1/19
+        // add DCK/EAS plugin integration
+        requests += globusConnectRequests(modelRef, modelAdd, true);
         
         return requests;
     }
@@ -231,6 +234,7 @@ public class AwsPush {
         String method = "pushCommit";
         logger.start(method);
         String[] requests = r.split("[\\n]");
+        String dckVMEntryCN = "UNMODIFIED";
         for (String request : requests) {
             logger.trace_start(method + "." + request);
             if (request.contains("TerminateInstancesRequest")) {
@@ -840,14 +844,7 @@ public class AwsPush {
                 runInstance.withMinCount(Integer.parseInt(parameters[11]));
                 //runInstance.withSecurityGroupIds(parameters[4]);
                 
-                // update 12/18
-                // creating a dck server entry
-                //Dck dckOps = new Dck();
-                //JSONObject vmContainerAttrs = new JSONObject();
-                //vmContainerAttrs.put("fqdn",System.getProperty("ipa_url"));
-                //JSONObject vmAttrs = new JSONObject();
-                //dckOps.addDCKVMEntry(cn, topologyUri, vmContainerAttrs, vmAttrs);
-                //dckOps.addDCKVMEntry(cn, "urn:ogf:network:aws.amazon.com:aws-cloud", vmContainerAttrs, vmAttrs);
+                
                 
                 //integrate the root device
                 if (!parameters[7].equalsIgnoreCase("any")) {
@@ -989,6 +986,32 @@ public class AwsPush {
                     }
                 }
                 }
+                
+                // update 12/18 - 1/19
+                // creating a dck server entry
+                Dck dckOps = new Dck();
+                JSONObject vmContainerAttrs = new JSONObject();
+                vmContainerAttrs.put("fqdn",System.getProperty("ipa_url"));
+                JSONObject vmAttrs = new JSONObject();
+                
+                
+                // ***DOES imageID WORK??
+                dckVMEntryCN = parameters[1]; //imageID
+                
+                // *** WHAT ARE THE OTHER VM ATTRIBUTES NEEDED UNDER THE CONTAINER?
+                // just testing to make sure attributes work
+                String instanceType = parameters[2];
+                String keypairName = parameters[3];
+                String maxCount = parameters[4];
+                String minCount = parameters[5];
+                vmAttrs.put("instance_type", instanceType);
+                vmAttrs.put("keypair_name", keypairName);
+                vmAttrs.put("max_count", maxCount);
+                vmAttrs.put("min_count", minCount);
+                
+                //String dckResult = dckOps.addDCKVMEntry(dckVMEntryCN, topologyUri, vmContainerAttrs, vmAttrs);
+                String dckResult = dckOps.addDCKVMEntry(dckVMEntryCN, "demo:top:uri", "", vmContainerAttrs.toJSONString(), vmAttrs.toJSONString());
+                System.out.println("***AwsPush addDCKVMEntry result: " + dckResult);
             } 
             
             else if (request.contains("AttachVolumeRequest")) {
@@ -1090,6 +1113,52 @@ public class AwsPush {
                     ec2Client.tagResource(vpn.getVpnConnectionId(), parameters[4]);
                     ec2Client.tagResource(cgw.getCustomerGatewayId(), parameters[5]);
                 }
+            } else if (request.contains("RunGlobusConnectRequests")) {
+                System.out.println("**RunGlobusConnectRequests**");
+                // execute eas task creation here using extracted information from propagate
+                 
+                //extract and create the EAS task JSON and Globus DCK JSON
+                String[] parameters = request.split("\\s+");     
+                
+                String dckGlobusJSON = parameters[1];
+                JSONObject dckGlobusContainerAttrs = new JSONObject();
+                dckGlobusContainerAttrs.put("dckStatus","PENDING");
+                
+                JSONObject easJSON = new JSONObject();                
+                // default
+                easJSON.put("eastaskaction", "create");
+                easJSON.put("eastasklockedby", "user"); // currently required non-empty by the EAS plugin
+                easJSON.put("eastasklockexpires", "1"); // currently required non-empty by the EAS plugin
+                easJSON.put("eastaskstatus", "INIT");
+                easJSON.put("eastasktype", "vfs-provision");
+                
+                easJSON.put("cn", parameters[2]); //eas task cn
+                
+                // CREATE SEPARATE FUNCTION TO MAKE THE REF DN
+                String refDN = "cn=" + dckVMEntryCN + ",cn=servers,cn=automation,cn=demo,cn=domains,cn=dck,cn=stackv,dc=research,dc=maxgigapop,dc=net";
+                String globusCN = parameters[3]; // globus CN task refers to 
+                easJSON.put("eastaskresourcerefdn", refDN); 
+                
+                // creating eas task triggers
+                JSONArray triggers = new JSONArray();
+                JSONObject triggersObj = new JSONObject();
+                triggersObj.put("exists", "true"); // default
+                triggersObj.put("type", "ldap-query"); // default
+                triggersObj.put("dn", "cn=" + globusCN + "," + refDN); // 
+                triggers.add(triggersObj);
+                easJSON.put("eastasktriggers", triggers.toJSONString());
+                
+                JSONObject easTaskOptions = new JSONObject();
+                easTaskOptions.put("ServiceType", "globus_connect");
+                easTaskOptions.put("ServiceNumber", parameters[4]); // instance counter            
+                easTaskOptions.put("ServiceCN", globusCN);
+                easJSON.put("eastaskoptions", easTaskOptions.toJSONString());
+
+                Dck dckOps = new Dck();
+                String dckResult = dckOps.addDCKVMEntry(globusCN, "demo:top:uri", dckVMEntryCN , dckGlobusContainerAttrs.toJSONString(), dckGlobusJSON);
+                System.out.println("***RunGlobusConnectRequest - dckResult: " + dckResult);
+                Eas easOps = new Eas();
+                easOps.createEasTaskForVF(easJSON);
             }
             logger.trace_end(method+"."+request);
         }
@@ -1152,7 +1221,8 @@ public class AwsPush {
      * ****************************************************************
      * Create VF in commit stage
      */
-    private void globusConnectRequests(OntModel model, OntModel modelAdd, boolean creation) {
+    private String globusConnectRequests(OntModel model, OntModel modelAdd, boolean creation) {
+        String request = "";
         String method = "globusConnectRequests";
         List<JSONObject> requests = new ArrayList();
         String query = "SELECT ?vm ?ep ?shortname ?username ?password ?directory ?interface ?public WHERE {"
@@ -1178,14 +1248,18 @@ public class AwsPush {
                 + "}";
         ResultSet r = executeQuery(query, model, modelAdd);
         
-        JSONObject vmContainerAttrs = new JSONObject();
-        vmContainerAttrs.put("fqdn", System.getProperty("ipa_url"));
-        JSONObject vmAttrs = new JSONObject();
+        JSONObject globusDCKAttrs = new JSONObject();
         JSONObject easJSON = new JSONObject();
-        String vmCN = "";
+        
+        String globusCN = ""; // dck globus connect CN
+        String easTaskCN = "";
+        
+        // using counter to keep track of number of instances in while loop
+        int instanceCounter = 0;
         while (r.hasNext()) {
+            ++instanceCounter;
             QuerySolution q = r.next();
-            System.out.println("***AWS PUSH - globusConnectRequest - QuerySolution q: " + q.toString());
+//            System.out.println("***AWS PUSH - globusConnectRequest - QuerySolution q: " + q.toString());
             JSONObject o = new JSONObject();
             requests.add(o);
             o.put("request", "GlobusConnectRequest");
@@ -1196,42 +1270,41 @@ public class AwsPush {
                 o.put("status", "delete");
             }
             
-            String vmUri = q.getResource("vm").getURI();
-            System.out.println("***AWS PUSH - globusConnectRequests - vmURI:  " + vmUri);
-            String serverName = ResourceTool.getResourceName(vmUri, awsPrefix.vpc());
-            System.out.println("***AWS PUSH - globusConnectRequests - serverName:  " + serverName);
+            String vmUri = q.getResource("vm").getURI();            
+            String serverName = ResourceTool.getResourceName(vmUri, awsPrefix.vpc());            
             o.put("server name", serverName);
+            
             String shortName = q.get("shortname").toString();
             o.put("shortname", shortName); // request
-            vmCN = "globus_connect:" + shortName; // vm container cn
-            vmAttrs.put("short_name", shortName); // vm attribute cn:value
-            easJSON.put("cn", shortName + "_globus"); // eas task cn
+            globusCN = "globus_connect:" + shortName; // dck vm container cn
+            globusDCKAttrs.put("short_name", shortName); // dck vm attribute cn:value
+            easTaskCN = shortName + "_globus"; // eas task cn
             
             String userName = "";
             if (q.contains("username")) {
                 userName = q.get("username").toString();
-                vmAttrs.put("username", userName);
+                globusDCKAttrs.put("username", userName);
             }
             o.put("username", userName);
             
             String userPass = "";
             if (q.contains("password")) {
                 userPass = q.get("password").toString();
-                 vmAttrs.put("password", userPass);
+                 globusDCKAttrs.put("password", userPass);
             }
             o.put("password", userPass);
             
             String defaultDir = "";
             if (q.contains("directory")) {
                 defaultDir = q.get("directory").toString();
-                 vmAttrs.put("default_directory", defaultDir);
+                 globusDCKAttrs.put("default_directory", defaultDir);
             }
             o.put("directory", defaultDir);
             
             String dataInterface = "";
             if (q.contains("interface")) {
                 dataInterface = q.get("interface").toString();
-                 vmAttrs.put("data_interface_ip", dataInterface);
+                 globusDCKAttrs.put("data_interface_ip", dataInterface);
             }
             o.put("interface", dataInterface);
             
@@ -1249,41 +1322,44 @@ public class AwsPush {
  
         // 1) create vm entry in run instance requests, 2) create VF in globus requests
         
-        Dck dckOps = new Dck();
-        String dn = dckOps.addDCKVMEntry(vmCN, "demo:top:uri", vmContainerAttrs, vmAttrs);
-        // String dn = dckOps.addDCKVMEntry(vmCN, topologyUri, vmContainerAttrs, vmAttrs);
-        System.out.println("**AWS PUSH - globusConnectRequests - dn result of dck add vm: "+ dn);
+//        Dck dckOps = new Dck();
+//        String dckResult = "UNMODIFIED";
+//        dckResult = dckOps.addDCKVMEntry(globusCN, "demo:top:uri", vmContainerAttrs, globusDCKAttrs);
+//        // String dckResult = dckOps.addDCKVMEntry(globusCN, topologyUri, vmContainerAttrs, globusDCKAttrs);
+//        System.out.println("**AWS PUSH - globusConnectRequests - result of dck add vm: "+ dckResult.toString());
         
         // create eas task and virtual function here
-        Eas easOps = new Eas();
-        easJSON.put("eastaskaction", "create");
-        easJSON.put("eastasklockedby", "user"); // currently required non-empty by the EAS plugin
-        easJSON.put("eastasklockexpires", "1"); // currently required non-empty by the EAS plugin
-        easJSON.put("eastaskresourcerefdn", "cn=refdn");
-        easJSON.put("eastaskstatus", "INIT");
+        // Eas easOps = new Eas();
+        // easJSON.put("eastaskaction", "create");
+        // easJSON.put("eastasklockedby", "user"); // currently required non-empty by the EAS plugin - dispatcher will take of this
+        // easJSON.put("eastasklockexpires", "1"); // currently required non-empty by the EAS plugin - dispatcher will take of this
         
-        JSONArray triggers = new JSONArray();
-        JSONObject triggersObj = new JSONObject();
-        triggersObj.put("exists", "true");
-        triggersObj.put("type", "ldap-query");
-        triggersObj.put("dn", vmCN + "," + dn);
-        triggers.add(triggersObj);
-        easJSON.put("eastasktriggers", triggers.toJSONString());
+        // easJSON.put("eastaskresourcerefdn", refDN);
+        // easJSON.put("eastaskstatus", "INIT");
         
-        easJSON.put("eastasktype", "vfs-provision");
+        // JSONArray triggers = new JSONArray();
+        // JSONObject triggersObj = new JSONObject();
+        // triggersObj.put("exists", "true");
+        // triggersObj.put("type", "ldap-query");
+        // triggersObj.put("dn", "cn=" + globusCN + "," + refDN); // 
+        // triggers.add(triggersObj);
+        // easJSON.put("eastasktriggers", triggers.toJSONString());
         
-        JSONObject easTaskOptions = new JSONObject();
-        easTaskOptions.put("ServiceType", "globus_connect");
-        easTaskOptions.put("ServiceNumber", "1"); // always 1???
-        easTaskOptions.put("DispatchGroup", "group-dispatch");
-        easTaskOptions.put("ServiceCN", vmCN);
-        easJSON.put("eastaskoptions", easTaskOptions.toJSONString());
+        // easJSON.put("eastasktype", "vfs-provision");
         
-        System.out.println("**AWS PUSH - globusConnectRequests - easJSON: " + easJSON.toString());
+        // JSONObject easTaskOptions = new JSONObject();
+        // easTaskOptions.put("ServiceType", "globus_connect");
+        // easTaskOptions.put("ServiceNumber", instanceCounter);
+        // easTaskOptions.put("DispatchGroup", "group-dispatch"); // ignore
+        // easTaskOptions.put("ServiceCN", globusCN);
+        // easJSON.put("eastaskoptions", easTaskOptions.toJSONString());
         
-        String result = easOps.createEasTaskForVF(easJSON);
+        // String result = easOps.createEasTaskForVF(easJSON);
         
-        System.out.println("**AWS PUSH - globusConnectRequests - eas task creation result: " + result);
+        request += String.format("RunGlobusConnectRequests %s %s %s %s", 
+                globusDCKAttrs.toJSONString(), easTaskCN, globusCN, instanceCounter);               
+        
+        return request;
     }
 
     /**
