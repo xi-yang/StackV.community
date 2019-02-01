@@ -1699,18 +1699,10 @@ public class WebResource {
     @GET
     @Path("/service/{siUUID}/substatus")
     public String subStatus(@PathParam("siUUID") String refUUID) throws SQLException, IOException {
-        System.out.println("HELPPLEASE");
-        String auth = httpRequest.getHttpHeaders().getHeaderString("Authorization");
         final String refresh = httpRequest.getHttpHeaders().getHeaderString("Refresh");
         final TokenHandler token = new TokenHandler(refresh);
-
-        System.out.println("AFTER TOKEN");
-
-        URL url = new URL(String.format("%s/service/%s/status", host, refUUID));
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        return executeHttpMethod(url, connection, "GET", null, auth);
-        // ServiceHandler instance = new ServiceHandler(refUUID, token);
-        // return instance.status();
+        ServiceHandler instance = new ServiceHandler(refUUID, token);
+        return instance.status();
     }
 
     @POST

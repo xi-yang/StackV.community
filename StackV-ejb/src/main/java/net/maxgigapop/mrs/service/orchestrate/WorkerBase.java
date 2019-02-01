@@ -24,6 +24,7 @@
 package net.maxgigapop.mrs.service.orchestrate;
 
 import static java.lang.Thread.sleep;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,20 +33,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
-import javax.ejb.EJBException;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-import net.maxgigapop.mrs.bean.ServiceDelta;
+
 import net.maxgigapop.mrs.bean.ModelBase;
+import net.maxgigapop.mrs.bean.ServiceDelta;
 import net.maxgigapop.mrs.bean.SystemDelta;
 import net.maxgigapop.mrs.bean.VersionGroup;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.core.DataConcurrencyPoster;
-import net.maxgigapop.mrs.core.SystemModelCoordinator;
 
 public class WorkerBase {
-    
+
     private static final StackLogger logger = new StackLogger(WorkerBase.class.getName(), "WorkerBase");
 
     protected VersionGroup referenceSystemModelVG = null;
@@ -84,7 +85,8 @@ public class WorkerBase {
         return null;
     }
 
-    // return set of actions that are Idle AND (not in its subtree) AND (have none un-merged child)
+    // return set of actions that are Idle AND (not in its subtree) AND (have none
+    // un-merged child)
     // the returned list include the input ActionBase itself
     protected Set<ActionBase> lookupIndependentActions(ActionBase action) {
         Set<ActionBase> list = new HashSet<>();
@@ -101,19 +103,19 @@ public class WorkerBase {
     protected void runWorkflow() {
         String method = "runWorkflow";
         logger.start(method);
-        
+
         ActionBase mergedRoot = null;
         Map<ActionBase, Future<ServiceDelta>> resultMap = new HashMap<>();
 
         // start workflow run
-        //1. lookupDeepestIdleAction to get an available action;
+        // 1. lookupDeepestIdleAction to get an available action;
         ActionBase nextAction = this.lookupIdleLeafAction();
-        //2.  lookupIndependentActions to find list of parallel actions for the step
+        // 2. lookupIndependentActions to find list of parallel actions for the step
         Set<ActionBase> batchOfActions = this.lookupIndependentActions(nextAction);
         // Top loop to exhaust idle actions in rootActions list and sub-trees
-        long total_timeout = 9000; // 9000 intervals x 100ms = 900 seconds 
+        long total_timeout = 9000; // 9000 intervals x 100ms = 900 seconds
         while (!batchOfActions.isEmpty() && total_timeout > 0) {
-            //3. execute the idle actions in the list (asynchronously)
+            // 3. execute the idle actions in the list (asynchronously)
             Iterator<ActionBase> itA = batchOfActions.iterator();
             while (itA.hasNext()) {
                 ActionBase action = itA.next();
@@ -126,8 +128,8 @@ public class WorkerBase {
                     itA.remove();
                 }
             }
-            //4. poll action status 
-            long timeout = 3000; // 3000 intervals x 100ms = 300 seconds 
+            // 4. poll action status
+            long timeout = 3000; // 3000 intervals x 100ms = 300 seconds
             while (timeout-- > 0 && !resultMap.isEmpty()) {
                 total_timeout--;
                 try {
@@ -151,16 +153,16 @@ public class WorkerBase {
                                     upperAction.mergeResult(resultDelta);
                                     action.setState(ActionState.MERGED);
                                 }
-                            } else if (mergedRoot == null){
+                            } else if (mergedRoot == null) {
                                 // merge root actions delta to the first root element
                                 mergedRoot = action;
-                            } else if (!action.equals(mergedRoot)){
+                            } else if (!action.equals(mergedRoot)) {
                                 // merge root actions delta to the first root element
                                 mergedRoot.mergeResult(resultDelta);
                             }
                             itA.remove();
                         } catch (Exception ex) {
-                            //$$ TODO: cleanup and cancel/shutdown other actions in workflow
+                            // $$ TODO: cleanup and cancel/shutdown other actions in workflow
                             String errMsg;
                             if (action.getState() == ActionState.FAILED) {
                                 errMsg = "workflow caught exception from " + action;
@@ -174,19 +176,22 @@ public class WorkerBase {
                 // lookupDeepestIdleAction to get next available action
                 nextAction = this.lookupIdleLeafAction();
                 if (nextAction != null) {
-                    //lookupIndependentActions and add all independent idel actions to execution batch
+                    // lookupIndependentActions and add all independent idel actions to execution
+                    // batch
                     batchOfActions.addAll(this.lookupIndependentActions(nextAction));
-                    total_timeout -= (3000-timeout);
+                    total_timeout -= (3000 - timeout);
                     break;
                 }
             }
-            // continue to batch execution (to exectute new action and/or wait ones in processing)            
+            // continue to batch execution (to exectute new action and/or wait ones in
+            // processing)
         }
         if (total_timeout < 0) {
             throw logger.error_throwing(method, "timed out after 900 seconds - workflow unsuccessful");
         }
 
-        // final touch to convert serviceDelta into systemDelta and raise exception if some annotation remains
+        // final touch to convert serviceDelta into systemDelta and raise exception if
+        // some annotation remains
         mergedRoot.sanitizeOutputDelta(this.annoatedModelDelta);
         this.resultModelDelta = new SystemDelta();
         this.resultModelDelta.setModelAddition(mergedRoot.getOutputDelta().getModelAddition());
@@ -196,9 +201,10 @@ public class WorkerBase {
 
     protected void retrieveSystemModel() {
         String method = "retrieveSystemModel";
-        try {//@TODO: use cache model from DataConcurrencyPoster
+        try {// @TODO: use cache model from DataConcurrencyPoster
             Context ejbCxt = new InitialContext();
-            DataConcurrencyPoster dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt.lookup("java:module/DataConcurrencyPoster");
+            DataConcurrencyPoster dataConcurrencyPoster = (DataConcurrencyPoster) ejbCxt
+                    .lookup("java:module/DataConcurrencyPoster");
             referenceSystemModelVG = dataConcurrencyPoster.getSystemModelCoordinator_cachedVersinGroup();
             if (referenceSystemModelVG == null) {
                 throw logger.error_throwing(method, "null referenceVersionGroup - systemModelCoordinator is not ready");

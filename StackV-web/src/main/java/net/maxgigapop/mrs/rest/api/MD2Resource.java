@@ -22,8 +22,6 @@
  */
 package net.maxgigapop.mrs.rest.api;
 
-import java.io.IOException;
-import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
@@ -52,13 +50,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
 import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
+import net.maxgigapop.mrs.common.GlobalHandler;
 import net.maxgigapop.mrs.common.MD2Connect;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.system.HandleSystemCall;
@@ -79,32 +75,21 @@ public class MD2Resource {
     HandleSystemCall systemCallHandler;
 
     static void loadConfig() {
-        try {
-            logger.trace_start("loadConfig");
-            URL url = new URL(String.format("%s/config/", host));
-            Request request = new Request.Builder().url(url).build();
-            Response response = client.newCall(request).execute();
-            String responseStr = response.body().string();
+        logger.trace_start("loadConfig");
+        JSONObject props = GlobalHandler.subscribe(MD2Resource.class.getName());
+        ipaBaseServerUrl = (String) props.get("ipa.server");
+        logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + ipaBaseServerUrl);
+        ipaBaseDomain = (String) props.get("ipa.domain");
+        logger.status("loadConfig", "global variable loaded - ipaBaseDomain:" + ipaBaseDomain);
+        ipaUsername = (String) props.get("ipa.username");
+        logger.status("loadConfig", "global variable loaded - ipaUsername:" + ipaUsername);
+        ipaPass = (String) props.get("ipa.password");
+        logger.status("loadConfig", "global variable loaded - ipaPasswd:" + ipaPass);
+        serverName = (String) props.get("system.name");
+        logger.status("loadConfig", "global variable loaded - serverName:" + serverName);
 
-            Object obj = parser.parse(responseStr);
-            JSONObject props = (JSONObject) obj;
-
-            ipaBaseServerUrl = (String) props.get("ipa.server");
-            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + ipaBaseServerUrl);            
-            ipaBaseDomain = (String) props.get("ipa.domain");
-            logger.status("loadConfig", "global variable loaded - ipaBaseDomain:" + ipaBaseDomain);
-            ipaUsername = (String) props.get("ipa.username");
-            logger.status("loadConfig", "global variable loaded - ipaUsername:" + ipaUsername);
-            ipaPass = (String) props.get("ipa.password");
-            logger.status("loadConfig", "global variable loaded - ipaPasswd:" + ipaPass);
-            serverName = (String) props.get("system.name");
-            logger.status("loadConfig", "global variable loaded - serverName:" + serverName);
-
-            conn = new MD2Connect(ipaBaseServerUrl, ipaBaseDomain, ipaUsername, ipaPass);
-            online = conn.validate();
-        } catch (IOException | ParseException ex) {
-            throw logger.throwing("loadConfig", ex);
-        }
+        conn = new MD2Connect(ipaBaseServerUrl, ipaBaseDomain, ipaUsername, ipaPass);
+        online = conn.validate();
     }
 
     static {

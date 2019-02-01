@@ -48,7 +48,7 @@ import org.json.simple.parser.ParseException;
  */
 public class TokenHandler {
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TokenHandler");
-    private final String kc_url = System.getProperty("kc_url");
+    private final String kc_url = GlobalHandler.get("system.keycloak");
     private String kc_encode = "U3RhY2tWOmFlNTNmYmVhLTg4MTItNGMxMy05MThmLTAwNjVhMTU1MGI3Yw==";
 
     private String kc_realm = "StackV";
