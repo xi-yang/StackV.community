@@ -49,10 +49,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 
-import com.squareup.okhttp.OkHttpClient;
-
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import net.maxgigapop.mrs.common.GlobalHandler;
 import net.maxgigapop.mrs.common.MD2Connect;
@@ -63,9 +60,6 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 public class MD2Resource {
     private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "MD2Resource");
     private static MD2Connect conn;
-    private static JSONParser parser = new JSONParser();
-    private static String host = "http://127.0.0.1:8080/StackV-web/restapi";
-    private static final OkHttpClient client = new OkHttpClient();
     private static String serverName;
     private static String ipaBaseServerUrl, ipaUsername, ipaPass, ipaBaseDomain;
 
