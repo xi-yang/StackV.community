@@ -20,7 +20,6 @@
 /StackV-web/node_modules/
 /StackV-web/src/main/webapp/js/bundles/
 
-/StackV-web/package-lock.json
 StackV-ejb/.factorypath
 StackV-web/.factorypath
 .vscode/launch.json
