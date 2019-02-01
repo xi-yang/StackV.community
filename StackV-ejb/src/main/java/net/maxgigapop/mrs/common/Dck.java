@@ -122,8 +122,7 @@ public class Dck {
      * @param vmAttrsString (sublevel/nested entries
      * @return 
      */
-    public String addDCKVMEntry(String cn, String domainTopUri, String subDir, String containerAttrsString, String vmAttrsString) {        
-        System.out.println("Dck.java - cn: " + cn + ", domain top uri: " + domainTopUri);        
+    public String addDCKVMEntry(String cn, String domainTopUri, String subDir, String containerAttrsString, String vmAttrsString) {                        
         JSONObject containerAttrs = null;
         JSONObject vmAttrs = null;
         try {
@@ -146,29 +145,22 @@ public class Dck {
         }
         
         // first create VM container
-        String containerPath = createDCKPath(subDir);
-        System.out.println("**Dck.java - addDckVMEntry - containerPAth: " + containerPath);
+        String containerPath = createDCKPath(subDir);        
         JSONObject vmContainerResponseJSON = md2AddEntry(cn, "dckConfig", containerPath, domainTopUri, containerAttrs);
-        // check the response to make sure the container was created - if not return an error result
-        System.out.println("***addDCKVMEntry - vmContainerResponseJSON: " + vmContainerResponseJSON.toString());
-        
-        System.out.println("***addDCKVMEntry - vmAttrs: " + vmAttrs.toString());
+        // check the response to make sure the container was created - if not return an error result        
+               
         
         // once the VM dck container has been created, then add all the attributes of the VM stored in attrs
-        System.out.println("***addDCKVMEntry - vmAttrs.keySet(): " + vmAttrs.keySet().toString());
+       
         Iterator<String> iterator = vmAttrs.keySet().iterator();
-        String attributePath = containerPath + cn;
-        System.out.println("**Dck.java - addDckVMEntry - attributePath: " + attributePath);
+        String attributePath = containerPath + cn;       
         while (iterator.hasNext()) {
-            String vmAttrCN = iterator.next();
-            System.out.println("***addDCKVMEntry - vmAttrCN: " + vmAttrCN);
-            System.out.println("***addDCKVMEntry - vmAttrs.get(vmAttrCN): " + vmAttrs.get(vmAttrCN));
+            String vmAttrCN = iterator.next();            
             JSONObject vmAttrCNAttrs = new JSONObject();
             vmAttrCNAttrs.put("dckOption", vmAttrs.get(vmAttrCN));
             JSONObject vmAttrResponseJSON = md2AddEntry(vmAttrCN, "dckConfig", attributePath, domainTopUri, vmAttrCNAttrs);
             
-            // check the result to make sure the attribute was added - if not rollback any changes
-            System.out.println("***addDCKVMEntry - vmAttrResponseJSON: " + vmAttrResponseJSON.toString());
+            // check the result to make sure the attribute was added - if not rollback any changes            
         }
         
         return result;
@@ -246,8 +238,7 @@ public class Dck {
         JSONObject entryJson = new JSONObject();
         entryJson.put("cn", cn);
         entryJson.put("objectclass", objectClass);
-        entryJson.put("path", path);
-        System.out.println("**DCK - md2AddEntry - path: " + path);
+        entryJson.put("path", path);        
         entryJson.put("domain", domainTopUri);
         
         // check if attrs is null - if so only a VM container is being created

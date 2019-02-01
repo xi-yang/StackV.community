@@ -43,8 +43,7 @@ public class Eas {
         ipaTool = new IPATool();
     }
     
-    public String createEasTaskForVF(JSONObject params) {
-        System.out.print("Eas - createEaskTaskForVF: " + params.toJSONString());
+    public String createEasTaskForVF(JSONObject params) {        
         String result = "";
         
         if (params == null || params.isEmpty()) {

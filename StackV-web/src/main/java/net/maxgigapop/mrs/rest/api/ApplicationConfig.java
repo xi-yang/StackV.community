@@ -47,9 +47,6 @@ public class ApplicationConfig extends Application {
     }
 
     private void addRestResourceClasses(Set<Class<?>> resources) {
-        resources.add(io.swagger.jaxrs.listing.AcceptHeaderApiListingResource.class);
-        resources.add(io.swagger.jaxrs.listing.ApiListingResource.class);
-        resources.add(io.swagger.jaxrs.listing.SwaggerSerializers.class);
         resources.add(net.maxgigapop.mrs.rest.api.CORSResponseFilter.class);
         resources.add(net.maxgigapop.mrs.rest.api.ConfigResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
