@@ -28,7 +28,7 @@ public class MD2Connect {
     public MD2Connect(String url, String domain, String principal, String credentials) {
         // Identify service provider to use
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-        env.put(Context.PROVIDER_URL, url + "/" + domain);
+        env.put(Context.PROVIDER_URL, "ldap://" + url + "/" + domain);
         env.put(Context.SECURITY_AUTHENTICATION, "simple");
         env.put(Context.SECURITY_PRINCIPAL, principal);
         env.put(Context.SECURITY_CREDENTIALS, credentials);
@@ -44,7 +44,7 @@ public class MD2Connect {
     }
 
     public static void main(String[] args) throws AuthenticationException, InvalidNameException {
-        MD2Connect conn = new MD2Connect("ldap://180-133.research.maxgigapop.net", "dc=research,dc=maxgigapop,dc=net",
+        MD2Connect conn = new MD2Connect("180-133.research.maxgigapop.net", "dc=research,dc=maxgigapop,dc=net",
                 "uid=admin,cn=users,cn=accounts,dc=research,dc=maxgigapop,dc=net", "MAX1234!");
         System.out.println(conn.validate());
     }
