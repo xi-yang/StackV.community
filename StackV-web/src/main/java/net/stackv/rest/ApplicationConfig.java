@@ -47,15 +47,12 @@ public class ApplicationConfig extends Application {
     }
 
     private void addRestResourceClasses(Set<Class<?>> resources) {
-        resources.add(io.swagger.jaxrs.listing.AcceptHeaderApiListingResource.class);
-        resources.add(io.swagger.jaxrs.listing.ApiListingResource.class);
-        resources.add(io.swagger.jaxrs.listing.SwaggerSerializers.class);
         resources.add(net.stackv.rest.CORSResponseFilter.class);
         resources.add(net.stackv.rest.ConfigResource.class);
         resources.add(net.stackv.rest.DeltaResource.class);
         resources.add(net.stackv.rest.DriverResource.class);
-        resources.add(LoggingResource.class);
-        resources.add(MD2Resource.class);
+        resources.add(net.stackv.rest.LoggingResource.class);
+        resources.add(net.stackv.rest.MD2Resource.class);
         resources.add(net.stackv.rest.ModelResource.class);
         resources.add(net.stackv.rest.SecurityInterceptor.class);
         resources.add(net.stackv.rest.SenseDiscoveryApi.class);
