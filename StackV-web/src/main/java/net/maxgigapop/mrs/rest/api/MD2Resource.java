@@ -71,7 +71,7 @@ public class MD2Resource {
     private static String host = "http://127.0.0.1:8080/StackV-web/restapi";
     private static final OkHttpClient client = new OkHttpClient();
     private static String serverName;
-    private static String ipaBaseServerUrl, ipaUsername, ipaPass;
+    private static String ipaBaseServerUrl, ipaUsername, ipaPass, ipaBaseDomain;
 
     private static boolean online = true;
 
@@ -90,7 +90,9 @@ public class MD2Resource {
             JSONObject props = (JSONObject) obj;
 
             ipaBaseServerUrl = (String) props.get("ipa.server");
-            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + ipaBaseServerUrl);
+            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + ipaBaseServerUrl);            
+            ipaBaseDomain = (String) props.get("ipa.domain");
+            logger.status("loadConfig", "global variable loaded - ipaBaseDomain:" + ipaBaseDomain);
             ipaUsername = (String) props.get("ipa.username");
             logger.status("loadConfig", "global variable loaded - ipaUsername:" + ipaUsername);
             ipaPass = (String) props.get("ipa.password");
@@ -98,7 +100,7 @@ public class MD2Resource {
             serverName = (String) props.get("system.name");
             logger.status("loadConfig", "global variable loaded - serverName:" + serverName);
 
-            conn = new MD2Connect(ipaBaseServerUrl, ipaUsername, ipaPass);
+            conn = new MD2Connect(ipaBaseServerUrl, ipaBaseDomain, ipaUsername, ipaPass);
             online = conn.validate();
         } catch (IOException | ParseException ex) {
             throw logger.throwing("loadConfig", ex);

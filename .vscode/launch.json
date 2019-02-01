@@ -1,11 +1,9 @@
 {
-    "configurations": [
-        {
-            "type": "java",
-            "name": "CodeLens (Launch) - MD2Connect",
-            "request": "launch",
-            "mainClass": "net.maxgigapop.mrs.common.MD2Connect",
-            "projectName": "StackV-ejb"
-        }
-    ]
+    "configurations": [{
+        "type": "java",
+        "name": "Debug Wildfly",
+        "request": "attach",
+        "hostName": "localhost",
+        "port": 8787
+    }]
 }

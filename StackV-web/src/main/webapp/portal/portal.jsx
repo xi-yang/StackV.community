@@ -84,7 +84,7 @@ class Portal extends React.Component {
                 return roles.indexOf("A_Admin") > -1;
             case "details":
                 if (roles.indexOf("A_Admin") === -1 && (param && param.uuid)) {
-                    let apiUrl = window.location.origin + "/StackV-web/restapi/app/access/instances/" + param.uuid;
+                    let apiUrl = window.location.origin + "/StackV-web/restapi/auth/access/instances/" + param.uuid;
                     let res;
                     $.ajax({
                         url: apiUrl,

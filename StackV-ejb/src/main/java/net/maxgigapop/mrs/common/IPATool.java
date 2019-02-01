@@ -23,23 +23,18 @@
  */
 package net.maxgigapop.mrs.common;
 
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
-import java.io.IOException;
-import java.net.URL;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.logging.Logger;
+
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -47,11 +42,19 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 /**
- * IPA tool to interact with FreeIPA.
- * Derived from Antonio Heard's IPAResource.java (located in StackV-web
- * net.maxgigapop.mrs.rest.api). Antonio strips the RPC headers, but I do not
- * as Alm.java uses those headers to verify the success/failure of the request
+ * IPA tool to interact with FreeIPA. Derived from Antonio Heard's
+ * IPAResource.java (located in StackV-web net.maxgigapop.mrs.rest.api). Antonio
+ * strips the RPC headers, but I do not as Alm.java uses those headers to verify
+ * the success/failure of the request
  *
  * @author saiarvind
  */
@@ -62,7 +65,7 @@ public class IPATool {
 
     JSONParser parser = new JSONParser();
     OkHttpClient client = new OkHttpClient();
-    String ipaBaseServerUrl, ipaUsername, ipaPasswd, ipaCookie;
+    String ipaBaseServerUrl, ipaBaseDomain, ipaUsername, ipaPasswd, ipaCookie;
 
     public IPATool() {
         loadConfig();
@@ -80,6 +83,8 @@ public class IPATool {
 
             ipaBaseServerUrl = (String) props.get("ipa.server");
             logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + props.get("ipa.server"));
+            ipaBaseDomain = (String) props.get("ipa.domain");
+            logger.status("loadConfig", "global variable loaded - ipaBaseServerUrl:" + props.get("ipa.domain"));
             ipaUsername = (String) props.get("ipa.username");
             logger.status("loadConfig", "global variable loaded - ipaUsername:" + props.get("ipa.username"));
             ipaPasswd = (String) props.get("ipa.password");
@@ -91,23 +96,21 @@ public class IPATool {
     }
 
     static {
-        TrustManager[] trustAllCerts = new TrustManager[]{
-            new X509TrustManager() {
-                @Override
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
-
-                @Override
-                public void checkClientTrusted(X509Certificate[] certs, String authType) {
-                }
-
-                @Override
-                public void checkServerTrusted(X509Certificate[] certs, String authType) {
-                }
-
+        TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+            @Override
+            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                return null;
             }
-        };
+
+            @Override
+            public void checkClientTrusted(X509Certificate[] certs, String authType) {
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] certs, String authType) {
+            }
+
+        } };
 
         SSLContext sc;
         try {
@@ -121,7 +124,7 @@ public class IPATool {
                     return true;
                 }
             };
-            // set the  allTrusting verifier
+            // set the allTrusting verifier
             HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
         } catch (KeyManagementException | NoSuchAlgorithmException ex) {
 
@@ -145,7 +148,7 @@ public class IPATool {
                 conn.setRequestMethod("POST");
                 conn.setDoInput(true);
                 conn.setDoOutput(true);
-//                conn.setSSLSocketFactory();
+                // conn.setSSLSocketFactory();
                 DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
                 wr.writeBytes(formattedLoginData);
                 wr.flush();
@@ -158,7 +161,8 @@ public class IPATool {
                     result.put("ResponseMessage", conn.getResponseMessage());
                     result.put("LoginSuccess", true);
 
-                    // get the ipa_session cookie from the returned header fields and assign it to ipaCookie
+                    // get the ipa_session cookie from the returned header fields and assign it to
+                    // ipaCookie
                     ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
                     logger.trace("ipaLogin", "Successfully logged into IPA Server");
                 } else { // if the request fails
@@ -205,7 +209,7 @@ public class IPATool {
                 conn.setDoInput(true);
                 conn.setDoOutput(true);
 
-                //JSONObject postDataJson = (JSONObject) parser.parse(postData);
+                // JSONObject postDataJson = (JSONObject) parser.parse(postData);
                 DataOutputStream wr = new DataOutputStream((conn.getOutputStream()));
                 wr.writeBytes(postData);
                 wr.flush();
@@ -223,7 +227,7 @@ public class IPATool {
                     }
                     ipaCookie = conn.getHeaderFields().get("Set-Cookie").get(0);
                     result = (JSONObject) parser.parse(responseStr.toString());
-                } else { // if the request fails                
+                } else { // if the request fails
                     try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
                         String inputLine;
                         responseStr = new StringBuilder();

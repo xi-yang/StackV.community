@@ -1,9 +1,9 @@
-import React from "react";
-import PropTypes from "prop-types";
-import { cx, css } from "emotion";
-
 import { faSync } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { css } from "emotion";
+import PropTypes from "prop-types";
+import React from "react";
+
 
 const live = css`
     color: #91ef5a;    

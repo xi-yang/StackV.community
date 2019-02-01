@@ -54,6 +54,7 @@ public class ApplicationConfig extends Application {
         resources.add(net.maxgigapop.mrs.rest.api.ConfigResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.KeycloakResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.LoggingResource.class);
         resources.add(net.maxgigapop.mrs.rest.api.MD2Resource.class);
         resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
@@ -65,6 +66,6 @@ public class ApplicationConfig extends Application {
         resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.IOExceptionMapper.class);
         resources.add(net.maxgigapop.mrs.rest.api.exception.ParseExceptionMapper.class);
-        resources.add(net.maxgigapop.mrs.rest.api.exception.SQLExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.SQLExceptionMapper.class);       
     }
 }

@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 import net.maxgigapop.mrs.common.MD2Connect;
 
 public class MD2Test {
-    MD2Connect conn = new MD2Connect("180-133.research.maxgigapop.net:389",
+    MD2Connect conn = new MD2Connect("180-133.research.maxgigapop.net:389", "dc=research,dc=maxgigapop,dc=net",
             "uid=admin,cn=users,cn=accounts,dc=research,dc=maxgigapop,dc=net", "MAX1234!");
 
     @Test

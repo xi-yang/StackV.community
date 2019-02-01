@@ -228,7 +228,7 @@ class Drivers extends React.Component {
                 },
             });
             $.ajax({
-                url: window.location.origin + "/StackV-web/restapi/ready/reset",
+                url: window.location.origin + "/StackV-web/restapi/service/ready/reset",
                 type: "PUT",
                 beforeSend: function (xhr) {
                     xhr.setRequestHeader("Authorization", "bearer " + page.props.keycloak.token);
