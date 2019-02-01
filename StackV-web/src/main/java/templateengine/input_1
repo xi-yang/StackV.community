@@ -1,66 +1,43 @@
 {
   "data": {
-    "uuid": "0405093b-5d8b-47ad-bdac-1b78a88e9224",
-    "parent": "urn:ogf:network:sdn.maxgigapop.net:network",
-    "cidr": "10.0.0.0/16",
-    "subnets": [
-      {
-        "name": "Subnet_1",
-        "cidr": "10.0.0.0/24",
-        "internet_routable": false,
-        "vms": [
-          {
-            "name": "VM_1",
-            "host": "any",
-            "floating_ip": "any",
-            "routes": [
-              {
-                "from": "TFrom",
-                "to": "TTo",
-                "next_hop": "TNext"
-              }
-            ],
-            "sriovs": [
-              {
-                "hosting_gateway": "Gateway_2",
-                "name": "SRIOV_1",
-                "ip_address": "1.1.1.1",
-                "mac_address": "AA:BB:CC:DD:EE:FF"
-              }
-            ]
-          }
-        ]
-      }
-    ],
+    "parent": "urn:ogf:network:aws.amazon.com:aws-cloud",
     "gateways": [
       {
-        "name": "Gateway_1",
-        "type": "UCS Port Profile",
-        "connects": [
-          {
-            "from": "TestFrom",
-            "to": "TestTo"
-          }
-        ]
-      },
-      {
-        "name": "Gateway_2",
-        "type": "UCS Port Profile",
-        "connects": [
-          {
-            "from": "TestFrom",
-            "to": "TestToo"
-          }
-        ]
+        "name": "Gateway 1"
       }
     ],
     "options": [
-      "openstack-form"
-    ]
+      "aws-form"
+    ],
+    "cidr": "10.0.0.0/16",
+    "subnets": [
+      {
+        "vpn_route_propagation": true,
+        "name": "Subnet 1",
+        "cidr": "10.0.0.0/24",
+        "vms": [
+          {
+            "interfaces": [
+              {
+                "public": false,
+                "type": "Ethernet"
+              }
+            ],
+            "name": "VM 1",
+            "globus_connect": {
+              "password": "max1$fun",
+              "public": false,
+              "data_interface_ip": "206.196.180.169",
+              "short_name": "MAX-SC18-Demo-TEST",
+              "default_directory": "/mnt",
+              "username": "xiyang"
+            }
+          }
+        ],
+        "internet_routable": false
+      }
+    ],
+    "uuid": "6fd0bad2-890f-4837-a41a-06319d7689bf"
   },
-  "service": "vcn",
-  "uuid": "0405093b-5d8b-47ad-bdac-1b78a88e9224",
-  "options": [
-    "openstack-form"
-  ]
+  "service": "vcn"
 }

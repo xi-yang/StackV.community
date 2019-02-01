@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="intent.xsd">
+<intent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="intent.xsd">
     <meta>
         <name>Virtual Cloud Network</name>
         <block>
@@ -20,7 +18,6 @@
             <tag>sriovs</tag>
             <name>SRIOVs</name>
         </block>
-        
         <validation>
             <constraint>
                 <name>string</name>
@@ -49,14 +46,14 @@
             </constraint>
         </validation>
     </meta>
-    <stage name="Host" return="false" proceeding="true">        
+    <stage name="Host" return="false" proceeding="true">
         <input trigger="aws-form">
             <name>AWS</name>
-            <type>button</type>            
+            <type>button</type>
         </input>
         <input trigger="openstack-form">
             <name>OpenStack</name>
-            <type>button</type>           
+            <type>button</type>
         </input>
     </stage>
     <stage name="Details">
@@ -64,7 +61,6 @@
             <path>
                 <parent>root</parent>
             </path>
-                        
             <input>
                 <name>Parent</name>
                 <type>select</type>
@@ -82,7 +78,7 @@
                 <default>10.0.0.0/16</default>
                 <valid>cidr</valid>
             </input>
-        </group>        
+        </group>
     </stage>
     <stage name="Subnets">
         <group block="subnets" name="Subnet" collapsible="true" opened="true">
@@ -95,7 +91,7 @@
                 <name>CIDR</name>
                 <type>text</type>
                 <default firstOnly="true">10.0.0.0/24</default>
-                <valid>cidr</valid>                
+                <valid>cidr</valid>
             </input>
             <input condition="aws-form">
                 <name>VPN Route Propagation</name>
@@ -106,7 +102,6 @@
                 <name>Internet Routable</name>
                 <type>checkbox</type>
             </input>
-            
             <group factory="true" name="route" label="off" collapsible="true">
                 <input>
                     <name>From</name>
@@ -133,9 +128,8 @@
     <stage name="VMs">
         <group block="vms" name="VM" collapsible="true" opened="true">
             <path>
-                <parent>subnet host</parent>                
+                <parent>subnet host</parent>
             </path>
-            
             <group name="Details" passthrough="true" collapsible="true" opened="true">
                 <input>
                     <name>Subnet Host</name>
@@ -147,7 +141,7 @@
                     <name>Name</name>
                     <type>text</type>
                     <valid>string</valid>
-                </input>                                    
+                </input>
                 <input>
                     <name>Security Group</name>
                     <type>text</type>
@@ -160,12 +154,12 @@
                 </input>
                 <input condition="aws-form">
                     <name>Instance Type</name>
-                    <type>text</type>                
+                    <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input condition="openstack-form">
                     <name>Flavor</name>
-                    <type>text</type>                
+                    <type>text</type>
                     <valid>string</valid>
                 </input>
                 <input>
@@ -175,7 +169,7 @@
                 </input>
                 <input condition="openstack-form">
                     <name>Host</name>
-                    <type>text</type>               
+                    <type>text</type>
                     <default>any</default>
                     <valid>string</valid>
                 </input>
@@ -185,17 +179,16 @@
                     <default>any</default>
                 </input>
             </group>
-            
-            <group factory="true" condition="aws-form" name="Interface"  collapsible="true">
+            <group factory="true" condition="aws-form" name="Interface" collapsible="true">
                 <input required="true">
                     <name>Type</name>
-                    <type>select</type>                    
+                    <type>select</type>
                     <options>
                         <option>Ethernet</option>
                         <option condition="openstack-form">SRIOV</option>
-                    </options>   
-                    <size>small</size>  
-                    <valid>select</valid>               
+                    </options>
+                    <size>small</size>
+                    <valid>select</valid>
                 </input>
                 <input>
                     <name>Public</name>
@@ -205,8 +198,8 @@
                 <input>
                     <name>Elastic IP</name>
                     <type>text</type>
-                    <size>small</size>                    
-                </input>                
+                    <size>small</size>
+                </input>
             </group>
             <group name="Routes" passthrough="true" collapsible="true">
                 <group factory="true" name="Route">
@@ -231,7 +224,7 @@
                     </input>
                 </group>
             </group>
-            <group name="IPSec VPN" condition="openstack-form"  collapsible="true">
+            <group name="IPSec VPN" condition="openstack-form" collapsible="true">
                 <fulfilled>
                     <name>local_ip</name>
                 </fulfilled>
@@ -263,7 +256,7 @@
                     </input>
                 </group>
             </group>
-            <group name="Globus Connect" condition="openstack-form" collapsible="true">
+            <group name="Globus Connect" collapsible="true">
                 <fulfilled>
                     <name>username</name>
                 </fulfilled>
@@ -302,7 +295,6 @@
                 <fulfilled>
                     <name>size</name>
                 </fulfilled>
-                
                 <input>
                     <name>Size</name>
                     <type>text</type>
@@ -315,7 +307,7 @@
                     <default>/mnt/ceph1</default>
                     <valid>string</valid>
                 </input>
-            </group>            
+            </group>
             <group condition="openstack-form" name="Ceph FS" collapsible="true">
                 <fulfilled>
                     <name>mount_point</name>
@@ -331,18 +323,18 @@
                     <type>text</type>
                     <default>/</default>
                     <size>small</size>
-                    <valid>string</valid>                    
+                    <valid>string</valid>
                 </input>
                 <input>
                     <name>CephFS Client</name>
                     <type>text</type>
                     <default>admin</default>
                     <size>small</size>
-                    <valid>string</valid>                    
+                    <valid>string</valid>
                 </input>
-            </group>            
+            </group>
             <group name="NFS" condition="openstack-form" collapsible="true">
-                <group factory="true" name="Export">                    
+                <group factory="true" name="Export">
                     <input>
                         <name>Value</name>
                         <type>text</type>
@@ -353,7 +345,7 @@
         </group>
     </stage>
     <stage name="Gateways">
-        <group block="gateways" name="Gateway" collapsible="true" opened="true">            
+        <group block="gateways" name="Gateway" collapsible="true" opened="true">
             <input>
                 <name>Name</name>
                 <type>text</type>
@@ -365,11 +357,11 @@
                 <options>
                     <option condition="aws-form">AWS Direct Connect</option>
                     <option condition="aws-form">Cloud VPN</option>
-                    <option condition="openstack-form">UCS Port Profile</option>                    
+                    <option condition="openstack-form">UCS Port Profile</option>
                 </options>
                 <valid>select</valid>
-            </input>                        
-            <group factory="true" name="Connect" collapsible="true" opened="true">  
+            </input>
+            <group factory="true" name="Connect" collapsible="true" opened="true">
                 <bound>
                     <name>gateways-gateway-type</name>
                     <value>AWS Direct Connect</value>
@@ -384,12 +376,12 @@
                     <name>gateways-gateway-type</name>
                     <value>UCS Port Profile</value>
                     <max>1</max>
-                </bound>              
+                </bound>
                 <bound>
                     <name>gateways-gateway-type</name>
                     <value>L2 Stitch Port</value>
                     <max>1</max>
-                </bound>              
+                </bound>
                 <input condition="type::ucs_port_profile">
                     <name>From</name>
                     <type>text</type>
@@ -417,19 +409,18 @@
                 </input>
             </group>
         </group>
-    </stage>    
+    </stage>
     <stage name="SRIOVs" condition="openstack-form">
         <group block="sriovs" name="SRIOV" collapsible="true" opened="true">
             <path>
                 <parent>Hosting VM</parent>
             </path>
-            
             <input>
                 <name>Hosting Gateway</name>
                 <type>select</type>
                 <link nameVal="true">gateways</link>
                 <valid>select</valid>
-            </input>  
+            </input>
             <input>
                 <name>Hosting VM</name>
                 <type>select</type>
@@ -440,7 +431,7 @@
                 <name>Name</name>
                 <type>text</type>
                 <valid>string</valid>
-            </input>           
+            </input>
             <input>
                 <name>IP Address</name>
                 <type>text</type>
@@ -451,7 +442,7 @@
                         <args>ip</args>
                     </plugin>
                 </modal>
-            </input>       
+            </input>
             <input>
                 <name>MAC Address</name>
                 <type>text</type>
@@ -462,7 +453,7 @@
                         <args>mac</args>
                     </plugin>
                 </modal>
-            </input>            
+            </input>
         </group>
     </stage>
 </intent>

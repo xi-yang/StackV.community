@@ -6,6 +6,9 @@
 ## Java specific files
 *.class
 
+## VS Code files
+.vscode/launch.json
+
 ## Generic files to ignore
 *~
 *.lock

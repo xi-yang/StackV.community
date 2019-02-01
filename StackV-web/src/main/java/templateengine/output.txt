@@ -1,0 +1,108 @@
+<serviceDelta>
+<uuid>6fd0bad2-890f-4837-a41a-06319d7689bf</uuid>
+<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
+
+<modelAddition>
+
+@prefix rdfs:  &lt;http://www.w3.org/2000/01/rdf-schema#&gt; .
+@prefix owl:   &lt;http://www.w3.org/2002/07/owl#&gt; .
+@prefix xsd:   &lt;http://www.w3.org/2001/XMLSchema#&gt; .
+@prefix rdf:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix nml:   &lt;http://schemas.ogf.org/nml/2013/03/base#&gt; .
+@prefix mrs:   &lt;http://schemas.ogf.org/mrs/2013/12/topology#&gt; .
+@prefix spa:   &lt;http://schemas.ogf.org/mrs/2015/02/spa#&gt; .
+
+&lt;x-policy-annotation:data:vpc-criteria&gt;
+    a            spa:PolicyData ;
+    spa:type     "JSON" ;
+    spa:value    """{"parent":"urn:ogf:network:aws.amazon.com:aws-cloud","routes":[{"nextHop":"internet","to":"0.0.0.0/0"}],"gateways":[{"type":"internet"},{"type":"vpn"}],"cidr":"10.0.0.0/16","subnets":[{"routes":[{"nextHop":"vpn","from":"vpn","to":"0.0.0.0/0"},{"nextHop":"internet","to":"0.0.0.0/0"}],"name":"Subnet 1","cidr":"10.0.0.0/24"}],"type":"internal"}""".
+
+&lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_clouds:tag+vpc1&gt;
+    a nml:Topology ;
+
+spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; .
+
+    
+        
+        
+            &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1&gt;
+                a           nml:Node ;
+                nml:name    "VM_1";
+                
+                
+                    nml:hasBidirectionalPort   &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:eth0&gt;;
+                
+                spa:dependOn &lt;x-policy-annotation:action:create-VM_1&gt; .
+
+            
+                &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:eth0&gt;
+                    a           nml:BidirectionalPort;
+                    
+                    spa:dependOn &lt;x-policy-annotation:action:create-VM_1&gt; .
+
+                
+            
+
+            &lt;x-policy-annotation:action:create-VM_1&gt;
+                a            spa:PolicyAction ;
+                spa:type     "MCE_VMFilterPlacement" ;
+                spa:dependOn &lt;x-policy-annotation:action:create-vpc&gt; ;
+                spa:importFrom  &lt;x-policy-annotation:data:vpc-subnet-VM_1-criteria&gt;.
+
+            &lt;x-policy-annotation:data:vpc-subnet-VM_1-criteria&gt;
+                a           spa:PolicyData;
+                spa:type    "JSON";
+                spa:format  """{
+                    "place_into": "%$.subnets[0].uri%"}""" .
+        
+        
+            
+            
+              &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus&gt;
+	                a  mrs:EndPoint ;
+	                mrs:type "globus:connect" ;
+	                mrs:hasNetworkAddress &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:username&gt; ;
+	            mrs:hasNetworkAddress &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:password&gt; ;
+	            mrs:hasNetworkAddress &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:directory&gt; ;
+	            mrs:hasNetworkAddress &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:interface&gt; ;
+	            mrs:hasNetworkAddress &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:public&gt; ;
+	                nml:name "MAX-SC18-Demo-TEST" .
+	            &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1&gt;
+	               nml:hasService       &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus&gt;.
+	            &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:username&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:username";
+	               mrs:value "xiyang" .
+	            &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:password&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:password";
+	               mrs:value "max1$fun" .
+	            &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:directory&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:directory";
+	               mrs:value "/mnt" .
+	            &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:interface&gt;
+	               a mrs:NetworkAddress ;
+	               mrs:type "globus:interface";
+	               mrs:value "206.196.180.169" .
+	            &lt;urn:ogf:network:service+6fd0bad2-890f-4837-a41a-06319d7689bf:resource+virtual_machines:tag+VM_1:service+globus:public&gt;
+	                  a mrs:NetworkAddress ;
+	                  mrs:type "globus:public";
+	                  mrs:value "false" .
+            
+        
+    
+
+
+
+&lt;x-policy-annotation:action:create-vpc&gt;
+    a           spa:PolicyAction ;
+    spa:type     "MCE_VirtualNetworkCreation" ;
+    spa:importFrom &lt;x-policy-annotation:data:vpc-criteria&gt;;
+    spa:exportTo &lt;x-policy-annotation:data:vpc-export&gt;
+,&lt;x-policy-annotation:data:vpc-subnet-VM_1-criteria&gt;.
+
+
+</modelAddition>
+
+</serviceDelta>
