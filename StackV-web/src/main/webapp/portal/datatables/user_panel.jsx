@@ -1,16 +1,14 @@
 import React from "react";
-import ReactDOM from "react-dom";
-import PropTypes from "prop-types";
 import ReactInterval from "react-interval";
-
 import "./logging.css";
+
 
 class UserPanel extends React.Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            apiUrl: window.location.origin + "/StackV-web/restapi/app/access/" + props.uuid
+            apiUrl: window.location.origin + "/StackV-web/restapi/auth/access/" + props.uuid
         };
 
         this.initTable = this.initTable.bind(this);
@@ -76,7 +74,7 @@ class UserPanel extends React.Component {
 
         $("#userData tbody").on("click", "tr.user-row", function () {
             let user = $(this).attr("data-username");
-            let apiUrl = window.location.origin + "/StackV-web/restapi/app/access/" + panel.props.uuid + "/" + user;
+            let apiUrl = window.location.origin + "/StackV-web/restapi/auth/access/" + panel.props.uuid + "/" + user;
             let method = "PUT";
             if ($(this).hasClass("permitted")) {
                 method = "DELETE";

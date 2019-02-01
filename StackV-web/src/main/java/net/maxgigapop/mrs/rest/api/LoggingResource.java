@@ -33,7 +33,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.ExecutorService;
+import java.util.Set;
 
 import javax.ejb.EJB;
 import javax.net.ssl.HostnameVerifier;
@@ -58,12 +58,10 @@ import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.UnhandledException;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.representations.AccessToken;
 
 import net.maxgigapop.mrs.common.AuditService;
-import net.maxgigapop.mrs.common.KeycloakHandler;
 import net.maxgigapop.mrs.common.StackLogger;
 import net.maxgigapop.mrs.system.HandleSystemCall;
 
@@ -76,9 +74,6 @@ import net.maxgigapop.mrs.system.HandleSystemCall;
 public class LoggingResource {
     private static final StackLogger logger = new StackLogger(WebResource.class.getName(), "LoggingResource");
     private static String host = "http://127.0.0.1:8080/StackV-web/restapi";
-    private static JSONParser parser = new JSONParser();
-
-    private static final ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
     private static final OkHttpClient client = new OkHttpClient();
 
     private final JNDIFactory factory = new JNDIFactory();
@@ -252,6 +247,17 @@ public class LoggingResource {
         }
     }
 
+    boolean verifyUserRole(HttpRequest httpRequest, String role) {
+        KeycloakSecurityContext securityContext = (KeycloakSecurityContext) httpRequest
+                .getAttribute(KeycloakSecurityContext.class.getName());
+        final AccessToken accessToken = securityContext.getToken();
+
+        Set<String> roleSet;
+        roleSet = accessToken.getRealmAccess().getRoles();
+
+        return roleSet.contains(role);
+    }
+
     @GET
     @Path("/instances")
     @Produces("application/json")
@@ -262,7 +268,7 @@ public class LoggingResource {
                 .getAttribute(KeycloakSecurityContext.class.getName());
         AccessToken accessToken = securityContext.getToken();
         String username = accessToken.getPreferredUsername();
-        boolean isAdmin = KeycloakHandler.verifyUserRole(httpRequest, "A_Admin");
+        boolean isAdmin = verifyUserRole(httpRequest, "A_Admin");
 
         try (Connection front_conn = factory.getConnection("frontend");) {
             String prepString;

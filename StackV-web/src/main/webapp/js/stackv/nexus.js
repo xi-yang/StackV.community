@@ -136,7 +136,7 @@ function verifyPageRoles() {
         case "/StackV-web/portal/details/":
             if (keycloak.tokenParsed.realm_access.roles.indexOf("A_Admin") === -1) {
                 var uuid = sessionStorage.getItem("instance-uuid");
-                var apiUrl = baseUrl + "/StackV-web/restapi/app/access/instances/" + uuid;
+                var apiUrl = baseUrl + "/StackV-web/restapi/auth/access/instances/" + uuid;
                 $.ajax({
                     url: apiUrl,
                     type: "GET",
@@ -232,6 +232,7 @@ function cancelInstance(uuid) {
     });
     //window.location.replace('/StackV-web/');
 }
+
 function forceCancelInstance(uuid) {
     var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/force_cancel";
     $.ajax({
@@ -261,6 +262,7 @@ function reinstateInstance(uuid) {
     });
     //window.location.replace('/StackV-web/');
 }
+
 function forceReinstateInstance(uuid) {
     var apiUrl = baseUrl + "/StackV-web/restapi/app/service/" + uuid + "/force_reinstate";
     $.ajax({
@@ -445,12 +447,14 @@ function refreshSync(refreshed, time) {
         $("#refresh-button").html("Manually Refresh Now");
     }
 }
+
 function pauseRefresh() {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
     document.getElementById("refresh-button").innerHTML = "Paused";
     $("#refresh-timer").attr("disabled", true);
 }
+
 function resumeRefresh() {
     var timer = $("#refresh-timer");
     if (timer.attr("disabled")) {
@@ -462,6 +466,7 @@ function resumeRefresh() {
         }
     }
 }
+
 function timerChange(sel) {
     clearInterval(refreshTimer);
     clearInterval(countdownTimer);
@@ -472,6 +477,7 @@ function timerChange(sel) {
         $(".loading-prog").css("width", "0%");
     }
 }
+
 function setRefresh(time) {
     countdown = time;
     countdownTimer = setInterval(function () {
@@ -482,6 +488,7 @@ function setRefresh(time) {
         reloadData();
     }, (time * 1000));
 }
+
 function refreshCountdown() {
     $("#refresh-button").html("Refresh in " + (countdown - 1) + " seconds");
     countdown--;
@@ -491,6 +498,7 @@ function refreshCountdown() {
     var prog = (setting - countdown + .5) / setting;
     $(".loading-prog").css("width", (prog * 100) + "%");
 }
+
 function reloadDataManual() {
     var timer = $("#refresh-timer");
     if (timer.attr("disabled")) {
@@ -518,6 +526,7 @@ var openLogDetails = 0;
 var cachedStart = 0;
 var justRefreshed = 0;
 var now = new Date();
+
 function loadLoggingDataTable(apiUrl) {
     dataTableClass = "logging";
     dataTable = $("#loggingData").DataTable({
@@ -535,19 +544,33 @@ function loadLoggingDataTable(apiUrl) {
             }
         },
         "buttons": ["csv"],
-        "columns": [
-            {
+        "columns": [{
                 "className": "details-control",
                 "orderable": false,
                 "data": null,
                 "defaultContent": "",
                 "width": "20px"
             },
-            { "data": "timestamp", "width": "150px" },
-            { "data": "level", "width": "60px" },
-            { "data": "event" },
-            { "data": "referenceUUID", "width": "275px" },
-            { "data": "message", "visible": false, "searchable": false }
+            {
+                "data": "timestamp",
+                "width": "150px"
+            },
+            {
+                "data": "level",
+                "width": "60px"
+            },
+            {
+                "data": "event"
+            },
+            {
+                "data": "referenceUUID",
+                "width": "275px"
+            },
+            {
+                "data": "message",
+                "visible": false,
+                "searchable": false
+            }
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("row-" + data.level.toLowerCase());
@@ -556,7 +579,9 @@ function loadLoggingDataTable(apiUrl) {
         "initComplete": function (settings, json) {
             console.log("DataTables has finished its initialization.");
         },
-        "order": [[1, "asc"]],
+        "order": [
+            [1, "asc"]
+        ],
         "ordering": false,
         "processing": true,
         "scroller": {
@@ -620,6 +645,7 @@ function loadLoggingDataTable(apiUrl) {
         $("#logging-filter-level").val("INFO");
     }
 }
+
 function formatChild(d) {
     // `d` is the original data object for the row
     var retString = "<table cellpadding=\"5\" cellspacing=\"0\" border=\"0\">";
@@ -661,11 +687,21 @@ function loadInstanceDataTable(apiUrl) {
             }
         },
         "buttons": ["csv"],
-        "columns": [
-            { "data": "alias" },
-            { "data": "type", width: "110px" },
-            { "data": "referenceUUID", "width": "250px" },
-            { "data": "state", "width": "125px" }
+        "columns": [{
+                "data": "alias"
+            },
+            {
+                "data": "type",
+                width: "110px"
+            },
+            {
+                "data": "referenceUUID",
+                "width": "250px"
+            },
+            {
+                "data": "state",
+                "width": "125px"
+            }
         ],
         "createdRow": function (row, data, dataIndex) {
             $(row).addClass("instance-row");
@@ -701,12 +737,14 @@ function reloadLogs() {
         dataTable.ajax.reload(null, false);
     }
 }
+
 function drawLoggingCurrentTime() {
     now = new Date();
     var $time = $("#log-time");
     var nowStr = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2) + ":" + ("0" + now.getSeconds()).slice(-2);
     $time.text(nowStr);
 }
+
 function filterLogs() {
     var level = $("#logging-filter-level").val();
     if (level !== undefined) {
@@ -731,6 +769,7 @@ function filterLogs() {
         dataTable.ajax.url(newURL).load(null, false);
     }
 }
+
 function downloadLogs() {
     var ret = [];
     if (dataTable) {

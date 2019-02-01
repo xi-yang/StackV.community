@@ -24,8 +24,6 @@ package net.maxgigapop.mrs.common;
 
 import java.io.IOException;
 import java.security.cert.CertificateException;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
@@ -43,28 +41,15 @@ import com.squareup.okhttp.ResponseBody;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.keycloak.authorization.client.AuthzClient;
-import org.keycloak.authorization.client.Configuration;
 
 /**
  *
  * @author rikenavadur
  */
 public class TokenHandler {
-    private Map<String, Object> cred = new HashMap<String, Object>() {
-        private static final long serialVersionUID = 1L;
-        {
-            put("secret", "ae53fbea-8812-4c13-918f-0065a1550b7c");
-            // put("secret", "b1c063dd-1a2a-464f-8a9f-7fd2fac74a23");
-        }
-    };;
-    private Configuration config = new Configuration("https://k152.maxgigapop.net:8543/auth", "StackV", "StackV", cred,
-            null);
-    AuthzClient keycloakClient = AuthzClient.create(config);
-
     private final StackLogger logger = new StackLogger("net.maxgigapop.mrs.rest.api.WebResource", "TokenHandler");
-    private final String kc_url = System.getProperty("kc_url");
-    private String kc_encode = System.getProperty("kc_encode");
+    private final String kc_url = GlobalHandler.get("system.keycloak");
+    private String kc_encode = "U3RhY2tWOmFlNTNmYmVhLTg4MTItNGMxMy05MThmLTAwNjVhMTU1MGI3Yw==";
 
     private String kc_realm = "StackV";
     private String auth = "Basic " + kc_encode;
@@ -83,10 +68,6 @@ public class TokenHandler {
     public TokenHandler(String refresh) {
         if (refresh == null || refresh.isEmpty()) {
             logger.error("init", "No refresh token present!");
-        }
-        if (kc_encode == null) {
-            kc_encode = "U3RhY2tWOmFlNTNmYmVhLTg4MTItNGMxMy05MThmLTAwNjVhMTU1MGI3Yw==";
-            auth = "Basic " + kc_encode;
         }
         refreshToken = refresh;
         requestData = "grant_type=refresh_token&refresh_token=" + refreshToken;

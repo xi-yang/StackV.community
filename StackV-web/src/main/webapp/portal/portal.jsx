@@ -84,7 +84,7 @@ class Portal extends React.Component {
                 return roles.indexOf("A_Admin") > -1;
             case "details":
                 if (roles.indexOf("A_Admin") === -1 && (param && param.uuid)) {
-                    let apiUrl = window.location.origin + "/StackV-web/restapi/app/access/instances/" + param.uuid;
+                    let apiUrl = window.location.origin + "/StackV-web/restapi/auth/access/instances/" + param.uuid;
                     let res;
                     $.ajax({
                         url: apiUrl,
@@ -113,31 +113,33 @@ class Portal extends React.Component {
     }
 
     switchPage(page, param) {
-        if (this.verifyPageAccess(page, param) && this.state.page !== page) {
-            switch (page) {
-                case "details":
-                    if (param && param.uuid) {
-                        this.setState({ page: "details", uuid: param.uuid, refreshEnabled: false });
-                        sessionStorage.setItem("instance-uuid", param.uuid);
-                    } else if (this.state.uuid) {
-                        this.setState({ page: "details", uuid: this.state.uuid, refreshEnabled: false });
-                        sessionStorage.setItem("instance-uuid", this.state.uuid);
-                    } else {
-                        iziToast.show(detailsErrorToast);
-                    }
-                    break;
-                case "visualization":
-                    if (param.shiftKey) {
-                        this.setState({ page: "visualization", refreshEnabled: false });
-                    } else {
-                        window.location.replace("/StackV-web/portal/visual/graphTest.jsp");
-                    }
-                    break;
-                default:
-                    this.setState({ page: page, refreshEnabled: false, uuid: undefined });
+        if (this.state.page !== page) {
+            if (this.verifyPageAccess(page, param)) {
+                switch (page) {
+                    case "details":
+                        if (param && param.uuid) {
+                            this.setState({ page: "details", uuid: param.uuid, refreshEnabled: false });
+                            sessionStorage.setItem("instance-uuid", param.uuid);
+                        } else if (this.state.uuid) {
+                            this.setState({ page: "details", uuid: this.state.uuid, refreshEnabled: false });
+                            sessionStorage.setItem("instance-uuid", this.state.uuid);
+                        } else {
+                            iziToast.show(detailsErrorToast);
+                        }
+                        break;
+                    case "visualization":
+                        if (param.shiftKey) {
+                            this.setState({ page: "visualization", refreshEnabled: false });
+                        } else {
+                            window.location.replace("/StackV-web/portal/visual/graphTest.jsp");
+                        }
+                        break;
+                    default:
+                        this.setState({ page: page, refreshEnabled: false, uuid: undefined });
+                }
+            } else {
+                iziToast.show(accessDeniedToast);
             }
-        } else {
-            iziToast.show(accessDeniedToast);
         }
     }
 

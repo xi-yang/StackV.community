@@ -47,21 +47,22 @@ public class ApplicationConfig extends Application {
     }
 
     private void addRestResourceClasses(Set<Class<?>> resources) {
-        resources.add(net.stackv.rest.CORSResponseFilter.class);
-        resources.add(net.stackv.rest.ConfigResource.class);
-        resources.add(net.stackv.rest.DeltaResource.class);
-        resources.add(net.stackv.rest.DriverResource.class);
-        resources.add(net.stackv.rest.LoggingResource.class);
-        resources.add(net.stackv.rest.MD2Resource.class);
-        resources.add(net.stackv.rest.ModelResource.class);
-        resources.add(net.stackv.rest.SecurityInterceptor.class);
-        resources.add(net.stackv.rest.SenseDiscoveryApi.class);
-        resources.add(net.stackv.rest.SenseServiceApi.class);
-        resources.add(net.stackv.rest.ServiceResource.class);
-        resources.add(net.stackv.rest.WebResource.class);
-        resources.add(net.stackv.rest.exception.EJBExceptionMapper.class);
-        resources.add(net.stackv.rest.exception.IOExceptionMapper.class);
-        resources.add(net.stackv.rest.exception.ParseExceptionMapper.class);
-        resources.add(net.stackv.rest.exception.SQLExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.CORSResponseFilter.class);
+        resources.add(net.maxgigapop.mrs.rest.api.ConfigResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.DeltaResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.DriverResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.KeycloakResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.LoggingResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.MD2Resource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.ModelResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.SecurityInterceptor.class);
+        resources.add(net.maxgigapop.mrs.rest.api.SenseDiscoveryApi.class);
+        resources.add(net.maxgigapop.mrs.rest.api.SenseServiceApi.class);
+        resources.add(net.maxgigapop.mrs.rest.api.ServiceResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.WebResource.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.EJBExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.IOExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.ParseExceptionMapper.class);
+        resources.add(net.maxgigapop.mrs.rest.api.exception.SQLExceptionMapper.class);       
     }
 }

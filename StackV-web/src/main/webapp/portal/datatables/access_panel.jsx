@@ -1,8 +1,8 @@
-import React from "react";
 import iziToast from "izitoast";
+import React from "react";
 import ReactInterval from "react-interval";
-
 import "./logging.css";
+
 let successToast = {
     theme: "dark",
     icon: "fas fa-ban",
@@ -32,7 +32,7 @@ class AccessPanel extends React.Component {
         super(props);
 
         this.state = {
-            apiUrl: window.location.origin + "/StackV-web/restapi/app/data/users/",
+            apiUrl: window.location.origin + "/StackV-web/restapi/auth/data/users/",
             ipaUrl: window.location.origin + "/StackV-web/restapi/md2/request",
             access: { login: [], sudo: [] }
         };

@@ -1,14 +1,14 @@
-import React from "react";
-import PropTypes from "prop-types";
+import iziModal from "izimodal";
 import iziToast from "izitoast";
 import Mousetrap from "mousetrap";
+import PropTypes from "prop-types";
+import React from "react";
 import ReactInterval from "react-interval";
+import InstancePanel from "../datatables/instance_panel";
+import "./catalog.css";
 
-import iziModal from "izimodal";
 $.fn.iziModal = iziModal;
 
-import "./catalog.css";
-import InstancePanel from "../datatables/instance_panel";
 
 var oldProfileName, oldProfileDescription;
 var $catModal = $("#catalog-modal");
@@ -619,7 +619,7 @@ class Catalog extends React.Component {
 
                     var $select = $("<select class=\"form-control\" id=\"licenseUsername\" style=\"width: 70%;margin-left: 25px;\"></select>");
 
-                    var apiUrl = window.location.origin + "/StackV-web/restapi/app/data/users";
+                    var apiUrl = window.location.origin + "/StackV-web/restapi/auth/data/users";
                     $.ajax({
                         url: apiUrl,
                         type: "GET",

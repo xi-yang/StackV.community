@@ -28,7 +28,7 @@ class SettingsPanel extends React.Component {
                 <label style={{ width: "100%", margin: "5px 0", textAlign: "left" }}>StackV Orchestrator Name</label>
                 <div className="input-group">
                     <input className="form-control" name="system.name" disabled={this.state.registered}></input>
-                    <div className="input-group-btn">
+                    <div className="input-group-btn" style={{ width: "50%" }}>
                         <button type="button" onClick={() => { this.deregister(); }} className={this.state.md2 ? (this.state.registered ? "btn btn-default" : "btn btn-primary") : "btn btn-danger"} disabled={!this.state.md2 || !this.state.registered}>{this.state.registered ? "Deregister" : "Deregistered"}</button>
                         <button type="button" onClick={() => { this.register(); }} className={this.state.md2 ? (this.state.registered ? "btn btn-primary" : "btn btn-default") : "btn btn-danger"} disabled={!this.state.md2 || this.state.registered}>{this.state.registered ? "Registered" : "Register"}</button>
                     </div>
@@ -37,7 +37,8 @@ class SettingsPanel extends React.Component {
                 <label style={{ width: "50%" }}>Server URL<input className="form-control" name="system.keycloak"></input></label>
                 <hr /><h3>MD2</h3>
                 <div className={this.state.md2 ? "form-group" : "form-group has-error"}>
-                    <label style={{ width: "70%" }}>Server URL<input className="form-control" name="ipa.server"></input></label>
+                    <label style={{ width: "40%" }}>Server URL<input className="form-control" name="ipa.server"></input></label>
+                    <label style={{ width: "40%" }}>Root Domain<input className="form-control" name="ipa.domain"></input></label>
                     <label style={{ width: "40%" }}>Username<input className="form-control" name="ipa.username"></input></label>
                     <label style={{ width: "40%" }}>Password<input type="password" className="form-control" name="ipa.password"></input></label>
                     {!this.state.md2 && <span className="help-block">Invalid server information or credentials. Please re-validate and save.</span>}
@@ -86,7 +87,7 @@ class SettingsPanel extends React.Component {
                     success: function (config) {
                         page.props.frameLoad(1000);
                         $.ajax({
-                            url: window.location.origin + "/StackV-web/restapi/app/reload",
+                            url: window.location.origin + "/StackV-web/restapi/auth/reload",
                             async: false,
                             type: "PUT",
                             beforeSend: function (xhr) {
