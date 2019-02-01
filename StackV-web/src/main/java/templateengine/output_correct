@@ -1,6 +1,6 @@
 <serviceDelta>
 <uuid>6ad3ed78-7ede-45c2-a3aa-3c7b709e63e7</uuid>
-<workerClassPath>net.stackv.service.orchestrate.SimpleWorker</workerClassPath>
+<workerClassPath>net.maxgigapop.mrs.service.orchestrate.SimpleWorker</workerClassPath>
 
 <modelAddition>
 

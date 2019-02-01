@@ -162,19 +162,19 @@ class ButtonPanel extends React.Component {
                                 window.document.location = "/StackV-web/portal/";
                             }, 100);
                         } else {
-                            if (panel.props.resume) { panel.props.resume(); }
+                            if (panel.props.resume) { panel.props.frameLoad(1000); panel.props.resume(); }
                         }
                         break;
                     case "verify":
                         if (panel.props.page === "details") {
-                            panel.props.load(5);
+                            panel.props.frameLoad(4000);
                         } else {
                             if (panel.props.resume) { panel.props.resume(); }
                         }
                         break;
                     default:
                         if (panel.props.page === "details") {
-                            panel.props.load(5);
+                            panel.props.frameLoad(4000);
                         } else {
                             if (panel.props.resume) { panel.props.resume(); }
                         }
